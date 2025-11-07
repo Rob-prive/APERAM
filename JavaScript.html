@@ -86,7 +86,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.8.7-DEBUG-BABEL-FIX";
+    const version = "2.8.8-EMAIL-TEST";
     const stylesheetVersion = "1.1.3";
 
     // ===== HELPER FUNCTIONS =====
@@ -1549,6 +1549,49 @@
                   >
                     🔄 Reload Page
                   </button>
+
+                  <button
+                    onClick={() => {
+                      console.log('📧 Sending test email...');
+                      const btn = event.target;
+                      const originalText = btn.textContent;
+                      btn.disabled = true;
+                      btn.textContent = '📧 Verzenden...';
+
+                      google.script.run
+                        .withSuccessHandler((result) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+
+                          if (result.success) {
+                            console.log('✅ Email sent:', result);
+                            alert('✅ Test email verzonden!\n\n' + result.message + '\n\nTijdstip: ' + result.timestamp);
+                          } else {
+                            console.error('❌ Email failed:', result);
+                            alert('❌ Email verzenden mislukt:\n\n' + result.message);
+                          }
+                        })
+                        .withFailureHandler((error) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+                          console.error('❌ Error:', error);
+                          alert('❌ Fout bij verzenden email:\n\n' + error.message);
+                        })
+                        .sendTestEmail();
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📧 Send Test Email
+                  </button>
                 </div>
 
                 <div style={{
@@ -1563,6 +1606,21 @@
                   </div>
                   <div style={{ color: '#2c5f7a', fontSize: '13px', lineHeight: '1.6' }}>
                     Open browser DevTools (F12) voor gedetailleerde console logs en network monitoring.
+                  </div>
+                </div>
+
+                <div style={{
+                  marginTop: '15px',
+                  padding: '15px',
+                  backgroundColor: '#e8f5e9',
+                  borderRadius: '8px',
+                  border: '1px solid #a5d6a7'
+                }}>
+                  <div style={{ color: '#2e7d32', fontSize: '12px', fontWeight: '600', marginBottom: '8px' }}>
+                    📧 EMAIL TEST
+                  </div>
+                  <div style={{ color: '#2e7d32', fontSize: '13px', lineHeight: '1.6' }}>
+                    Test email wordt verzonden naar: rob.oversteyns@gmail.com
                   </div>
                 </div>
               </div>

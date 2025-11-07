@@ -616,6 +616,56 @@ function getUserEmail() {
 }
 
 /**
+ * Sends a test email (for debug purposes)
+ * @returns {Object} Result of the email sending operation
+ */
+function sendTestEmail() {
+  try {
+    const userEmail = Session.getActiveUser().getEmail();
+    const timestamp = new Date().toLocaleString('nl-NL');
+
+    const subject = '🔧 Test Email from Aanvragen Rimses Debug Panel';
+    const body = `
+Hallo,
+
+Dit is een test email verzonden vanuit het Debug & Test panel van de Aanvragen Rimses applicatie.
+
+Details:
+- Verzonden door: ${userEmail}
+- Tijdstip: ${timestamp}
+- Applicatie: Aanvragen Rimses v2.8.8-EMAIL-TEST
+- Environment: Google Apps Script
+
+Als je deze email ontvangt, betekent dit dat de email functionaliteit correct werkt!
+
+Met vriendelijke groet,
+Aanvragen Rimses Systeem
+    `;
+
+    // Send email via MailApp
+    MailApp.sendEmail({
+      to: 'rob.oversteyns@gmail.com',
+      subject: subject,
+      body: body
+    });
+
+    return {
+      success: true,
+      message: 'Test email succesvol verzonden naar rob.oversteyns@gmail.com',
+      timestamp: timestamp
+    };
+
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    return {
+      success: false,
+      message: 'Fout bij verzenden email: ' + error.message,
+      error: error.toString()
+    };
+  }
+}
+
+/**
  * Validates user credentials against DATA sheet
  */
 function validateUser(username, password) {
