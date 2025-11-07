@@ -83,7 +83,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
     
-    const version = "2.8.4-DEBUG-PAGE";
+    const version = "2.8.5-DEBUG-PAGE-FIX";
     const stylesheetVersion = "1.1.3";
 
     // ===== HELPER FUNCTIONS =====
@@ -1275,7 +1275,11 @@
                 className="nav-button"
                 onClick={() => {
                   console.log('🔧 Opening debug page...');
-                  window.open('debug.html', '_blank');
+                  // Get current URL and add ?page=debug parameter
+                  const currentUrl = window.location.href.split('?')[0];
+                  const debugUrl = currentUrl + '?page=debug';
+                  console.log('Debug URL:', debugUrl);
+                  window.open(debugUrl, '_blank');
                 }}
                 title="Open debug & test pagina in nieuw tabblad"
               >

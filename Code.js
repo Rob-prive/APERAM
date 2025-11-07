@@ -565,7 +565,18 @@ function testAanvraagSubmission() {
 /**
  * Serves the HTML page
  */
-function doGet() {
+function doGet(e) {
+  // Check if debug page is requested
+  const page = e && e.parameter && e.parameter.page;
+
+  if (page === 'debug') {
+    // Serve debug page
+    return HtmlService.createHtmlOutputFromFile('debug')
+        .setTitle('Debug & Test - Aanvragen Rimses')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
+  // Default: serve main application
   return HtmlService.createTemplateFromFile('Index')
       .evaluate()
       .setTitle('Vergrendelgroepaanvraag')
