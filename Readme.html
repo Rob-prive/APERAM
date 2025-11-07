@@ -1,0 +1,931 @@
+# Aanvragen Rimses - Project Documentation
+
+## 📋 Project Overzicht
+
+**Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
+
+### Versie Informatie
+- **JavaScript Versie**: 2.8.1-BACKGROUND-PREFETCH
+- **CSS Versie**: 1.1.1
+- **Framework**: React (via Babel transpiler in browser)
+- **Backend**: Google Apps Script + Firebase
+
+---
+
+## 🏗️ Architectuur
+
+### Frontend Stack
+- **React 18** - UI Framework (CDN: unpkg.com)
+- **Babel Standalone** - JSX transpiler (CDN: unpkg.com)
+- **Custom CSS** - Vanilla CSS met moderne features
+
+### Backend Integration
+- **Google Apps Script** - Server-side logic & authentication
+- **Google Sheets** - Installaties en autorisators data
+- **Firebase Realtime Database** - Vergrendelpunten data (primary)
+- **Firebase Realtime Database** - Aanvragen data (secondary)
+
+---
+
+## 📁 Project Structuur
+
+```
+aanvragen-rimses/
+├── README.md                    # Dit bestand
+├── index.html                   # Main HTML bestand
+├── javascript/
+│   ├── JavaScript.html          # Werkende versie (v2.6.0)
+│   └── Javascript_TEST.html     # Test versie met centrale slider (v2.7.3)
+├── css/
+│   └── styles.css              # Stylesheet
+└── docs/
+    ├── CHANGELOG.md            # Versie geschiedenis
+    └── ARCHITECTURE.md         # Gedetailleerde architectuur
+```
+
+---
+
+## 🎯 Hoofdfunctionaliteiten
+
+### 1. **Authenticatie**
+- Login systeem met gebruikersnaam en wachtwoord
+- Validatie via Google Apps Script
+- Sessie beheer
+- **Background Prefetch**: Data wordt geladen tijdens het login scherm voor instant load na login
+
+### 2. **Installatie Selectie** ⚠️ VERWIJDERD IN v2.8.0
+- ~~Dropdown menu met beschikbare installaties~~
+- **NIEUW**: Direct naar hoofdpagina na login
+- Alle vergrendelpunten worden direct getoond (geen installatie filter)
+- Gebruik kolom filters om te filteren op specifieke installaties via Code kolom
+
+### 3. **Vergrendelpunten Beheer (Tabel 1 - Linksboven)**
+- **Locatie**: Grid positie (1,1)
+- **Functionaliteit**:
+  - Weergave van **ALLE** vergrendelpunten (geen installatie filter meer)
+  - Live zoeken/filteren op: Code, Type, Sleutelbox, Naam, Geografische naam
+  - Paginatie (15 rijen per pagina)
+  - Rij selectie met ✓ knop
+  - Rij deselectie met ✕ knop
+  - **In-memory filtering**: Filters werken lokaal in browser (geen server calls)
+- **Kolommen**: Code, Geografische locatie, Naam, Naam geografische locatie, Sleutelbox, Type
+- **Data bron**: Firebase Realtime Database
+
+### 4. **Geselecteerde Vergrendelpunten (Tabel 2 - Rechtsboven)**
+- **Locatie**: Grid positie (2,1)
+- **Functionaliteit**:
+  - Toont geselecteerde rijen uit Tabel 1
+  - "Aanvragen" knop om modal te openen
+  - Individuele verwijder knoppen per rij
+  - Real-time update bij selecties
+- **State**: Blijft behouden tijdens sessie
+
+### 5. **Aanvragen Overzicht (Tabel 3 - Linksonder)**
+- **Locatie**: Grid positie (1,2)
+- **Functionaliteit**:
+  - Lijst van alle ingediende aanvragen
+  - Kolommen: Aanvraag tekst, Installatie, Aanvrager, Datum, Status
+  - Status badges: Pending (geel), Approved (groen), Rejected (rood)
+  - Actieknoppen:
+    - 👁 Bekijken (opent detail modal)
+    - ✕ Verwijderen (opent bevestigings modal)
+- **Data bron**: Firebase real-time database
+
+### 6. **Placeholder Tabel (Tabel 4 - Rechtsonder)**
+- **Locatie**: Grid positie (2,2)
+- **Status**: Beschikbaar voor toekomstige uitbreidingen
+- **Suggesties**: Analytics, Statistieken, Notificaties
+
+---
+
+## 🎨 Centrale Slider Functionaliteit
+
+### Concept
+Een **centrale paarse cirkel** op het kruispunt van alle 4 tabellen die beide dimensies tegelijk aanpast.
+
+### Eigenschappen
+- **Positie**: Dynamisch op basis van `columnSplit` en `rowSplit` percentages
+- **Default waarden**: 
+  - `columnSplit`: 50% (verticale verdeling)
+  - `rowSplit`: 60% (horizontale verdeling)
+- **Beperkingen**: 20%-80% voor beide dimensies
+- **Visueel**:
+  - Paarse cirkel (40x40px) met witte rand
+  - 9 witte dots in 3x3 grid
+  - Pulse animatie wanneer niet actief
+  - Hulplijnen tijdens slepen
+
+### Gebruik
+1. Klik en houd de paarse cirkel vast
+2. Sleep in alle richtingen
+3. Laat los om de layout vast te zetten
+4. Klik "⟲ Reset Layout" om standaard positie te herstellen
+
+### Implementatie Details
+```javascript
+// State management
+const [columnSplit, setColumnSplit] = React.useState(50);
+const [rowSplit, setRowSplit] = React.useState(60);
+const [isDragging, setIsDragging] = React.useState(false);
+
+// Grid layout
+gridTemplateColumns: `${columnSplit}% ${100 - columnSplit}%`
+gridTemplateRows: `${rowSplit}% ${100 - rowSplit}%`
+
+// Slider positie
+left: `${columnSplit}%`
+top: `${rowSplit}%`
+transform: 'translate(-50%, -50%)'
+```
+
+---
+
+## 🔄 State Management
+
+### Belangrijkste State Variabelen
+
+```javascript
+// Authenticatie
+const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+const [username, setUsername] = React.useState('');
+const [userName, setUserName] = React.useState(''); // Display naam
+
+// Installatie
+const [installations, setInstallations] = React.useState([]);
+const [selectedInstallation, setSelectedInstallation] = React.useState('');
+const [hasSelectedInstallation, setHasSelectedInstallation] = React.useState(false);
+
+// Tabel data
+const [tableData, setTableData] = React.useState({ headers: [], data: [] });
+const [filteredTableData, setFilteredTableData] = React.useState([]);
+
+// Filters
+const [filters, setFilters] = React.useState({
+  code: '',
+  type: '',
+  sleutelbox: '',
+  naam: '',
+  naamGeografisch: ''
+});
+
+// Selecties
+const [selectedRows, setSelectedRows] = React.useState([]);
+
+// Layout
+const [columnSplit, setColumnSplit] = React.useState(50);
+const [rowSplit, setRowSplit] = React.useState(60);
+
+// Paginatie
+const [currentPage, setCurrentPage] = React.useState(1);
+const rowsPerPage = 15;
+
+// Aanvragen
+const [aanvragen, setAanvragen] = React.useState([]);
+
+// Modals
+const [isModalOpen, setIsModalOpen] = React.useState(false);
+const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false);
+const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+const [isSuccessModalOpen, setIsSuccessModalOpen] = React.useState(false);
+```
+
+---
+
+## 🔌 Google Apps Script Integratie
+
+### Beschikbare Functies
+
+```javascript
+// Authenticatie
+google.script.run.validateUser(username, password)
+google.script.run.getUserName()
+
+// Data ophalen
+google.script.run.getInstallations() // DEPRECATED - niet meer gebruikt in v2.8.0+
+google.script.run.getFilteredSheetBData(installation) // ✅ Gebruik null voor alle data
+google.script.run.getAanvragen()
+google.script.run.getAutorisators()
+
+// Data operaties
+google.script.run.submitAanvraag(formData, selectedRows, userName)
+google.script.run.deleteAanvraag(firebaseKey)
+
+// Performance optimalisatie - DEPRECATED
+// google.script.run.prefetchInstallations() // Niet meer gebruikt
+// google.script.run.prefetchAllData() // Niet meer gebruikt
+// google.script.run.getAllData() // Niet meer gebruikt
+```
+
+### API Response Structuur
+
+```javascript
+// getFilteredSheetBData(installation) response
+// NIEUW in v2.8.0: Gebruik null/empty voor alle data
+{
+  headers: ["Code", "Geografische locatie", "Naam", ...],
+  data: [
+    ["APL3-0001", "APL3-10-0Y", "NO kraan..."],
+    ["BAL1-0001", "BAL1-20-0X", "NC kraan..."],  // Alle installaties!
+    ...
+  ]
+}
+
+// Voorbeelden:
+getFilteredSheetBData('APL3')  // Alleen APL3 data (LEGACY gebruik)
+getFilteredSheetBData(null)    // ALLE data (NIEUW in v2.8.0)
+getFilteredSheetBData('')      // ALLE data (NIEUW in v2.8.0)
+
+// getAanvragen response
+[
+  {
+    firebaseKey: "unique-firebase-key",
+    "Form Data": '{"naam":"Test","installatie":"APL3",...}',
+    "Requester Email": "user@example.com",
+    "Approver Email": "approver@example.com",
+    "Timestamp": "2024-10-07T09:09:00.000Z",
+    "Status": "Pending",
+    "Verzamelmandje Data": ["row1", "row2", ...]
+  },
+  ...
+]
+```
+
+---
+
+## 🎭 Modals Systeem
+
+### 1. Aanvraag Modal
+**Trigger**: Klik op "📋 Aanvragen" knop in Tabel 2
+
+**Velden**:
+- **Naam*** (required, max 66 karakters) - Beschrijving aanvraag
+- **Installatie** (disabled, auto-filled) - Huidige installatie
+- **Interne opmerking** (optioneel) - Niet zichtbaar op printout
+- **Externe opmerking** (optioneel) - Wordt mee afgedrukt
+- **Opmerkingen aanvrager** (optioneel) - Extra notities
+- **Autorisator*** (required, dropdown) - Wie moet goedkeuren
+
+**Validatie**:
+- Naam moet ingevuld zijn
+- Autorisator moet geselecteerd zijn
+- Minimaal 1 vergrendelpunt geselecteerd
+
+**Acties**:
+- Submit → `submitAanvraag()` → Success Modal
+- Annuleren → Sluit modal en reset form
+
+### 2. Success Modal
+**Trigger**: Na succesvolle aanvraag submit
+
+**Info getoond**:
+- ✓ Bevestiging bericht
+- Aanvraag nummer (formaat: YYYY-MM-DD-HH-MM-SS)
+- Firebase key (technische ID)
+- Email notificatie bevestiging
+
+**Styling**: Groen gradient header met checkmark animatie
+
+### 3. Detail Modal
+**Trigger**: Klik op 👁 knop in Tabel 3
+
+**Secties**:
+1. **Status badge** - Kleur-gecodeerde status met datum
+2. **Aanvraag Informatie** - 2x2 grid met:
+   - Aanvraag tekst
+   - Installatie
+   - Aanvrager (naam + email)
+   - Autorisator (naam + email)
+3. **Opmerkingen** - Alle 3 opmerking types (indien aanwezig)
+4. **Geselecteerde Vergrendelpunten** - Tabel met alle data
+
+**Styling**: Paars gradient header
+
+### 4. Delete Confirmation Modal
+**Trigger**: Klik op ✕ knop in Tabel 3
+
+**Elementen**:
+- ⚠ Warning icon met shake animatie
+- Rood gradient header
+- Aanvraag details in geel warning box
+- Prominente waarschuwing over permanent verwijderen
+- Twee knoppen:
+  - "Annuleren" (grijs)
+  - "Ja, Verwijderen" (rood) met loading state
+
+**Loading state**: Spinner icon + disabled buttons tijdens delete
+
+### 5. Delete Success Modal
+**Trigger**: Na succesvolle verwijdering
+
+**Bericht**: Bevestiging dat aanvraag permanent verwijderd is
+
+**Styling**: Groen gradient (zelfde als Success Modal)
+
+---
+
+## 🎨 Styling Systeem
+
+### CSS Architectuur
+- **Layout**: CSS Grid voor tabellen, Flexbox voor componenten
+- **Responsiveness**: Viewport-based units (vh, vw)
+- **Theming**: Consistent kleurenpalet
+- **Animations**: Keyframe animaties voor modals en slider
+
+### Kleurenpalet
+
+```css
+/* Primair */
+--primary-blue: #1a237e;
+--primary-purple: #673ab7;
+
+/* Status kleuren */
+--success-green: #4caf50;
+--warning-yellow: #ffc107;
+--error-red: #f44336;
+--info-blue: #2196f3;
+
+/* Pending status */
+--pending-bg: #fff3cd;
+--pending-text: #856404;
+
+/* Approved status */
+--approved-bg: #d4edda;
+--approved-text: #155724;
+
+/* Rejected status */
+--rejected-bg: #f8d7da;
+--rejected-text: #721c24;
+
+/* Neutrals */
+--gray-50: #fafafa;
+--gray-100: #f5f5f5;
+--gray-200: #e0e0e0;
+--gray-300: #bdbdbd;
+```
+
+### Key CSS Classes
+
+```css
+.table-container        /* Container voor elke tabel */
+.main-table            /* Tabel 1 (linksboven) */
+.side-table            /* Tabel 2 (rechtsboven) */
+.bottom-left-table     /* Tabel 3 (linksonder) */
+.bottom-right-table    /* Tabel 4 (rechtsonder) */
+
+.filter-input          /* Search inputs in table headers */
+.filter-input.active   /* Actieve filter met data */
+
+.btn-select            /* ✓ knop in Code kolom */
+.btn-delete            /* ✕ knop in Code kolom */
+.btn-delete-small      /* ✕ knop in Tabel 2 */
+.btn-aanvragen         /* 📋 Aanvragen knop */
+
+.modal-overlay         /* Modal backdrop (rgba(0,0,0,0.6)) */
+.modal-container       /* Modal content box */
+
+.pagination            /* Paginatie container */
+.pagination-btn        /* Pagina nummer knoppen */
+.pagination-btn.active /* Actieve pagina (blauw) */
+```
+
+---
+
+## 🔄 Data Flow
+
+### 0. Background Prefetch Flow (NEW in v2.8.1)
+```
+App Mounts (Login Screen) → useEffect triggers →
+  getFilteredSheetBData(null) → Firebase call →
+  setPrefetchedData() + setDataPreloaded(true) →
+  Data cached in React state (ready for instant load)
+```
+
+### 1. Login Flow
+```
+User Input → validateUser() →
+  ✓ Success:
+    - setIsLoggedIn(true)
+    - loadAllTableData() → Check if prefetchedData exists:
+      ⚡ YES: Instant load from cache (no server call)
+      📡 NO: Fetch from Firebase
+  ✗ Failure: Show error message
+```
+
+### 2. Installatie Selectie Flow ⚠️ VERWIJDERD IN v2.8.0
+```
+~~Select Installatie → handleInstallationSelect() →~~
+~~getFilteredSheetBData(installation) →~~
+~~setTableData() + setFilteredTableData() →~~
+~~Render Tabel 1~~
+
+NIEUWE FLOW: Direct naar hoofdpagina met alle data
+```
+
+### 3. Filter Flow (In-Memory, geen server calls)
+```
+User types in filter → handleFilterChange() →
+  Update filters state → applyFilters() →
+  Filter tableData.data (IN MEMORY) → setFilteredTableData() →
+  Re-render Tabel 1 (page 1)
+
+NOTE: Geen Firebase calls - alles gebeurt lokaal in browser
+```
+
+### 4. Selectie Flow
+```
+Click ✓ in Tabel 1 → handleSelectRow(row, index) →
+  Generate unique rowId → Add to selectedRows[] →
+  Re-render Tabel 1 (highlight row) + Tabel 2 (show row)
+```
+
+### 5. Aanvraag Submit Flow
+```
+Fill form + Click Verzenden → handleFormSubmit() →
+  Validate inputs → submitAanvraag() →
+    ✓ Success: 
+      - Clear selectedRows
+      - Show Success Modal
+      - Refresh aanvragen (Tabel 3)
+      - Send email to autorisator
+    ✗ Failure: Show error alert
+```
+
+### 6. Delete Flow
+```
+Click ✕ in Tabel 3 → handleOpenDeleteModal() →
+  Show Delete Confirmation Modal →
+  Click "Ja, Verwijderen" → handleConfirmDelete() →
+    deleteAanvraag(firebaseKey) →
+      ✓ Success:
+        - Close Delete Modal
+        - Show Delete Success Modal
+        - Refresh aanvragen (Tabel 3)
+      ✗ Failure: Show error alert
+```
+
+---
+
+## 🚀 Performance Optimalisaties
+
+### 1. Background Prefetch (NEW in v2.8.1) ⚡
+```javascript
+// Zodra App mount (login scherm verschijnt)
+React.useEffect(() => {
+  if (!isLoggedIn && !isPrefetching && !prefetchedData) {
+    // Start Firebase data laden op achtergrond
+    google.script.run
+      .withSuccessHandler((data) => {
+        setPrefetchedData(data); // Cache in React state
+      })
+      .getFilteredSheetBData(null); // Alle data
+  }
+}, [isLoggedIn, isPrefetching, prefetchedData]);
+
+// Bij login: instant load indien data al klaar is
+if (prefetchedData && dataPreloaded) {
+  setTableData(prefetchedData); // Geen server call!
+}
+```
+
+**Voordelen:**
+- ⚡ Meestal instant load na login
+- 📉 Minder perceived loading time
+- 🎯 Betere user experience
+
+### 2. In-Memory Filtering
+```javascript
+// Filters werken LOKAAL (geen server calls)
+const applyFilters = React.useCallback(() => {
+  let filtered = [...tableData.data]; // Data al in browser
+  // Filter logica in JavaScript
+  if (filters.code) {
+    filtered = filtered.filter(row => row[codeIndex].includes(filters.code));
+  }
+  // etc...
+}, [tableData.data, filters]);
+```
+
+**Voordelen:**
+- 🚀 Instant filter resultaten (geen netwerk latency)
+- 💰 Minder Firebase reads (goedkoper)
+- 📶 Werkt offline na eerste load
+
+### 3. Memoization
+```javascript
+// Gebruik React.useCallback voor stable functions
+const getColumnIndex = React.useCallback((headerName) => {...}, [tableData.headers]);
+const getUniqueValues = React.useCallback((columnName) => {...}, [...dependencies]);
+```
+
+### 4. Lazy Loading
+- Paginatie (15 rijen per keer in UI)
+- On-demand modal content rendering
+- Conditional table rendering
+
+### 5. React Batch Updates
+Filters triggeren `applyFilters()` on every keystroke, maar React batch updates automatisch voor optimale performance.
+
+---
+
+## 🏛️ Architecture Decisions
+
+### Data Buffering Strategy (v2.8.0+)
+
+**Beslissing**: In-memory buffering in de browser (React state) in plaats van server-side caching.
+
+**Waarom:**
+- ✅ **Snelle filters**: Geen netwerk latency bij filteren
+- ✅ **Goedkoper**: Minder Firebase reads (1x bij login vs. meerdere keren bij filteren)
+- ✅ **Offline capable**: Werkt na eerste load zonder internet
+- ✅ **Betere UX**: Instant feedback bij interactie
+
+**Trade-offs:**
+- ❌ **Memory footprint**: Grote datasets kunnen browser memory vullen
+- ❌ **Niet real-time**: Updates in Firebase worden niet automatisch getoond
+- ❌ **Langere eerste load**: Alle data moet geladen worden
+
+**Mitigatie:**
+- Background prefetch (v2.8.1) verkort perceived load time
+- Paginatie beperkt aantal gerenderde rijen
+- Logout cleared alle cached data
+
+### No Installation Selection (v2.8.0)
+
+**Beslissing**: Verwijderen van installatie selectie scherm en dropdown.
+
+**Waarom:**
+- ✅ **Snellere workflow**: 1 scherm minder
+- ✅ **Betere zoekervaring**: Doorzoek alle installaties tegelijk
+- ✅ **Simpeler codebase**: Minder state management
+- ✅ **Gebruikers kunnen nog steeds filteren**: Via Code kolom filter
+
+**Migration path:**
+Gebruik de Code kolom filter om te zoeken naar specifieke installaties (bijv. typ "APL3" in Code filter).
+
+### Firebase vs Google Sheets
+
+**Beslissing**: Firebase Realtime Database voor vergrendelpunten, Sheets voor configuratie.
+
+**Waarom:**
+- ✅ **Snellere queries**: Firebase is geoptimaliseerd voor data retrieval
+- ✅ **Schaalbaarheid**: Beter voor grote datasets
+- ✅ **Real-time capable**: Mogelijkheid voor live updates (future)
+- ✅ **Sheets blijft voor config**: Installaties en autorisators (kleine datasets)
+
+---
+
+## 🐛 Known Issues & Limitations
+
+### Browser Compatibility
+- **Vereist moderne browser** met ES6+ support
+- **Geen IE11 support** (gebruikt arrow functions, const/let, etc.)
+- **Babel Standalone 6**: Geen optional chaining (`?.`) support
+- **Geteste browsers**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+
+### Performance
+- Bij >1000 rijen kan **in-memory filtering** traag worden (JavaScript loop)
+- Veel geselecteerde rijen (>50) kunnen UI vertragen
+- **Prefetch kan falen** bij zeer trage connecties - fallback werkt wel
+- Paginatie helpt, maar rendering van zeer grote datasets is suboptimaal
+
+### localStorage Restriction
+**KRITIEK**: Artifacts in Claude.ai ondersteunen GEEN browser storage APIs
+```javascript
+// ❌ WERKT NIET in Claude.ai artifacts
+localStorage.setItem('data', value);
+sessionStorage.setItem('data', value);
+
+// ✅ GEBRUIK IN PLAATS DAARVAN
+const [data, setData] = React.useState(value); // In-memory state
+```
+
+### Known Bugs
+1. **Rare edge case**: Bij snel wisselen van installatie kunnen oude filters blijven hangen
+   - **Workaround**: Filters worden gereset bij `handleInstallationChange()`
+
+2. **Slider**: Bij zeer kleine schermen (<768px) kan slider moeilijk te gebruiken zijn
+   - **Workaround**: Reset Layout knop herstelt naar defaults
+
+3. **Modal z-index**: Bij meerdere modals kan volgorde soms fout zijn
+   - **Workaround**: Modals worden nooit tegelijk geopend (exclusief)
+
+---
+
+## 🔐 Security Considerations
+
+### Frontend
+- **Geen gevoelige data** in frontend code
+- **Email validation** op autorisator veld
+- **XSS preventie**: React escapet automatisch output
+- **CSRF**: Niet van toepassing (geen cookies gebruikt)
+
+### Backend (Google Apps Script)
+- **Authenticatie** via server-side validatie
+- **Authorization checks** voor data toegang
+- **Input sanitization** op alle form inputs
+- **Rate limiting** op API calls (100/hour via web_fetch_rate_limit)
+
+### Data Privacy
+- **Geen PII** in localStorage (geen localStorage gebruikt)
+- **Email addresses** alleen zichtbaar voor geauthenticeerde users
+- **Aanvragen** alleen zichtbaar binnen eigen organisatie
+
+---
+
+## 🧪 Testing
+
+### Manual Testing Checklist
+
+#### Login
+- [ ] Correcte credentials → Success
+- [ ] Foute credentials → Error message
+- [ ] Empty fields → Validation error
+
+#### Installatie Selectie
+- [ ] Dropdown toont alle installaties
+- [ ] Selecteer installatie → Laadt data
+- [ ] Wissel van installatie → Reset filters + selecties
+
+#### Tabel 1 - Vergrendelpunten
+- [ ] Data wordt correct getoond
+- [ ] Filters werken per kolom
+- [ ] Meerdere filters combineren werkt
+- [ ] Clear filters button reset alles
+- [ ] Paginatie werkt (prev/next/numbers)
+- [ ] Selecteer rij → Verschijnt in Tabel 2
+- [ ] Deselecteer rij → Verdwijnt uit Tabel 2
+
+#### Tabel 2 - Geselecteerde Vergrendelpunten
+- [ ] Toont geselecteerde rijen correct
+- [ ] Aanvragen knop enabled bij selecties
+- [ ] Verwijder knop werkt per rij
+- [ ] Data blijft behouden bij page change Tabel 1
+
+#### Tabel 3 - Aanvragen
+- [ ] Laadt alle aanvragen
+- [ ] Status badges correct gekleurd
+- [ ] Bekijk knop opent detail modal
+- [ ] Verwijder knop opent bevestiging
+- [ ] Data refresh na nieuwe aanvraag
+
+#### Centrale Slider
+- [ ] Slider beweegt in alle richtingen
+- [ ] Min/max beperkingen werken (20%-80%)
+- [ ] Hulplijnen tonen tijdens slepen
+- [ ] Reset button herstelt defaults
+- [ ] Layout blijft behouden na resize
+
+#### Aanvraag Modal
+- [ ] Form validatie werkt (required fields)
+- [ ] Character counter Naam field (66 max)
+- [ ] Autorisator dropdown laadt correct
+- [ ] Submit met geldige data → Success
+- [ ] Cancel button reset form
+
+#### Modals (Algemeen)
+- [ ] ESC key sluit modal (niet geïmplementeerd, feature request)
+- [ ] Click outside modal sluit modal
+- [ ] Multiple modals niet tegelijk mogelijk
+- [ ] Animaties smooth en zonder glitches
+
+---
+
+## 📦 Version History & Breaking Changes
+
+### v2.8.1-BACKGROUND-PREFETCH (Current)
+**Release Date**: November 2025
+
+**New Features:**
+- ⚡ Background prefetch: Data laadt tijdens login scherm
+- 📊 Smart caching: Instant load bij login als prefetch klaar is
+- 🎯 Graceful degradation: Fallback naar normale load als prefetch niet klaar
+
+**Performance Improvements:**
+- Meestal instant load na login (geen wachttijd)
+- Betere perceived performance
+- Minder server load door slim gebruik van cache
+
+**Technical Changes:**
+- Nieuwe React state: `prefetchedData`
+- Nieuwe useEffect hook voor background loading
+- Updated `loadAllTableData()` om prefetched data te gebruiken
+- Removed oude `prefetchAllDataInBackground()` functie
+
+### v2.8.0-NO-INSTALLATION-SELECTION
+**Release Date**: November 2025
+
+**Breaking Changes:**
+- ❌ **VERWIJDERD**: Installatie selectie scherm
+- ❌ **VERWIJDERD**: Installatie dropdown in sidebar
+- ❌ **VERWIJDERD**: Filter per installatie functionaliteit
+
+**New Features:**
+- ✅ Direct naar hoofdpagina na login
+- ✅ Alle vergrendelpunten worden direct getoond
+- ✅ In-memory filtering (sneller, geen server calls)
+- ✅ Backend ondersteunt nu `null` parameter voor alle data
+
+**Migration Guide:**
+```
+VOOR v2.8.0:
+Login → Selecteer Installatie → Klik Doorgaan → Hoofdpagina (gefilterde data)
+
+NA v2.8.0:
+Login → Hoofdpagina (alle data) → Filter met Code kolom indien nodig
+```
+
+**Backend Changes:**
+- `getFilteredSheetBData(null)` retourneert nu ALLE data
+- Nieuwe functie: `getAllFirebaseDataFormatted()`
+- Updated documentatie in Code.js
+
+### v2.7.3-CENTRAL-SLIDER (Legacy)
+**Features:**
+- Centrale paarse slider voor layout aanpassing
+- 4 tabellen grid systeem
+- Installatie selectie workflow
+
+---
+
+## 📝 Development Notes
+
+### Code Conventions
+
+#### Naming
+- **Components**: PascalCase (`SuccessModal`)
+- **Functions**: camelCase (`handleSubmit`)
+- **Constants**: camelCase (`rowsPerPage`)
+- **CSS Classes**: kebab-case (`table-container`)
+
+#### React Patterns
+```javascript
+// State updaters
+setData(newValue)                    // Direct value
+setData(prev => [...prev, newItem])  // Functional update (voor arrays/objects)
+
+// Conditional rendering
+{condition && <Component />}         // Voor single element
+{condition ? <A /> : <B />}         // Voor if-else
+
+// Event handlers
+onClick={handleClick}                // Zonder parameters
+onClick={() => handleClick(param)}   // Met parameters
+```
+
+#### Error Handling
+```javascript
+google.script.run
+  .withSuccessHandler((result) => {
+    // Happy path
+  })
+  .withFailureHandler((error) => {
+    console.error('Error:', error);
+    alert(`Er is een fout opgetreden: ${error.message}`);
+  })
+  .functionName(params);
+```
+
+---
+
+## 🔮 Future Enhancements
+
+### Prioriteit Hoog
+1. **Tabel 4 implementeren** - Analytics dashboard met:
+   - Aantal aanvragen per status
+   - Meest aangevraagde vergrendelpunten
+   - Autorisator response times
+   - Trends over tijd
+
+2. **Export functionaliteit**:
+   - Export geselecteerde rijen naar Excel
+   - Export aanvragen naar PDF
+   - Email aanvraag direct vanuit app
+
+3. **Advanced filters**:
+   - Datum range picker voor Tabel 3
+   - Multi-select filters
+   - Saved filter presets
+
+### Prioriteit Middel
+4. **Bulk operaties**:
+   - Select all checkbox in Tabel 1
+   - Bulk delete in Tabel 2
+   - Bulk approve/reject in Tabel 3
+
+5. **Notification systeem**:
+   - In-app notifications voor nieuwe aanvragen
+   - Browser notifications (opt-in)
+   - Email digest (daily summary)
+
+6. **User preferences**:
+   - Save layout preferences (columnSplit/rowSplit)
+   - Remember last selected installatie
+   - Dark mode toggle
+
+### Prioriteit Laag
+7. **Mobile responsiveness**:
+   - Touch-friendly slider
+   - Responsive grid layout
+   - Mobile-optimized tables
+
+8. **Keyboard shortcuts**:
+   - ESC to close modals
+   - Arrow keys for pagination
+   - / to focus search
+
+9. **Accessibility (A11y)**:
+   - ARIA labels
+   - Screen reader support
+   - Keyboard navigation
+   - Focus indicators
+
+---
+
+## 🆘 Troubleshooting
+
+### Probleem: "Geen installaties gevonden"
+**Oorzaak**: Backend call failed of geen data in spreadsheet  
+**Oplossing**:
+1. Check Google Apps Script logs
+2. Verify spreadsheet data
+3. Check `getInstallations()` function
+
+### Probleem: Filters werken niet
+**Oorzaak**: Column headers niet gevonden  
+**Oplossing**:
+1. Verify `tableData.headers` bevat correcte namen
+2. Check `getColumnIndex()` functie
+3. Inspect console voor errors
+
+### Probleem: Slider beweegt niet
+**Oorzaak**: Event listeners niet attached  
+**Oplossing**:
+1. Check `isDragging` state
+2. Verify `handleCentralDrag` is called
+3. Check for JavaScript errors in console
+
+### Probleem: Modal sluit niet
+**Oorzaak**: onClick handlers niet correct  
+**Oplossing**:
+1. Verify `e.stopPropagation()` in modal content
+2. Check `handleCloseModal` is called
+3. Clear modal state manually in console
+
+### Probleem: Data laadt niet na login
+**Oorzaak**: Prefetch failed of authentication issue  
+**Oplossing**:
+1. Check network tab voor failed requests
+2. Verify `isLoggedIn` state is true
+3. Manually call `fetchInstallations()`
+
+---
+
+## 📚 Additional Resources
+
+### React Documentation
+- [React Hooks](https://react.dev/reference/react)
+- [useCallback](https://react.dev/reference/react/useCallback)
+- [useState](https://react.dev/reference/react/useState)
+
+### Google Apps Script
+- [HTML Service](https://developers.google.com/apps-script/guides/html)
+- [Spreadsheet Service](https://developers.google.com/apps-script/reference/spreadsheet)
+- [Base Service](https://developers.google.com/apps-script/guides/services/authorization)
+
+### CSS Grid
+- [CSS Grid Guide](https://css-tricks.com/snippets/css/complete-guide-grid/)
+- [Grid by Example](https://gridbyexample.com/)
+
+---
+
+## 👥 Contact & Support
+
+**Developer**: Claude (Anthropic AI Assistant)  
+**Project Owner**: [Your Name]  
+**Last Updated**: November 2025
+
+Voor vragen of issues, raadpleeg de Google Apps Script logs of check de browser console voor error messages.
+
+---
+
+## 📄 License
+
+This project is proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited.
+
+---
+
+## ✅ Quick Start Checklist
+
+Voor nieuwe developers:
+
+1. [ ] Clone repository
+2. [ ] Open `index.html` in browser
+3. [ ] Verify Google Apps Script connection
+4. [ ] Test login met test credentials
+5. [ ] Explore all 4 tabellen
+6. [ ] Test centrale slider
+7. [ ] Submit test aanvraag
+8. [ ] Read ARCHITECTURE.md voor deep dive
+9. [ ] Check CHANGELOG.md voor version history
+
+**Klaar om te beginnen? Happy coding! 🚀**

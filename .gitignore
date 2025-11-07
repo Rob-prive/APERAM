@@ -1,0 +1,3 @@
+# Bestanden en mappen genegeerd door Git voor Apps Script projecten
+.clasp.json
+node_modules/

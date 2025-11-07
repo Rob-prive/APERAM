@@ -1,0 +1,2754 @@
+<script type="text/babel">
+  function App() {
+    // Authentication state
+    const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+    const [username, setUsername] = React.useState('');
+    const [password, setPassword] = React.useState('');
+    const [error, setError] = React.useState('');
+    
+    // Installation selection state - NIET MEER NODIG (direct naar hoofdpagina)
+    const [installations, setInstallations] = React.useState([]);
+    const [selectedInstallation, setSelectedInstallation] = React.useState('');
+    const [hasSelectedInstallation, setHasSelectedInstallation] = React.useState(true); // Altijd true om selectie scherm over te slaan
+    
+    // User and data state
+    const [userName, setUserName] = React.useState('');
+    const [tableData, setTableData] = React.useState({ headers: [], data: [] });
+    const [filteredTableData, setFilteredTableData] = React.useState([]);
+    const [showTable, setShowTable] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [isLoadingTable, setIsLoadingTable] = React.useState(false);
+    
+    // Filter state
+    const [filters, setFilters] = React.useState({
+      code: '',
+      type: '',
+      sleutelbox: '',
+      naam: '',
+      naamGeografisch: ''
+    });
+    
+    // Performance optimization state - Prefetch data
+    const [isPrefetching, setIsPrefetching] = React.useState(false);
+    const [dataPreloaded, setDataPreloaded] = React.useState(false);
+    const [prefetchedData, setPrefetchedData] = React.useState(null);
+    
+    // Resizable grid state - CENTRALE SLIDER
+    const [columnSplit, setColumnSplit] = React.useState(50);
+    const [rowSplit, setRowSplit] = React.useState(60);
+    const [isDragging, setIsDragging] = React.useState(false);
+
+    // Sidebar collapse state
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const rowsPerPage = 15;
+    
+    // Selection state
+    const [selectedRows, setSelectedRows] = React.useState([]);
+    
+    // Modal and form state
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [autorisators, setAutorisators] = React.useState([]);
+    const [formData, setFormData] = React.useState({
+      naam: '',
+      installatie: '',
+      interneOpmerking: '',
+      externeOpmerking: '',
+      opmerkingen: '',
+      autorisator: ''
+    });
+    
+    // Success modal state
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = React.useState(false);
+    const [successData, setSuccessData] = React.useState(null);
+    
+    // Detail modal state
+    const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false);
+    const [selectedAanvraag, setSelectedAanvraag] = React.useState(null);
+    
+    // Delete confirmation modal state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+    const [aanvraagToDelete, setAanvraagToDelete] = React.useState(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+    
+    // Delete success modal state
+    const [isDeleteSuccessModalOpen, setIsDeleteSuccessModalOpen] = React.useState(false);
+    
+    // Aanvragen data state
+    const [aanvragen, setAanvragen] = React.useState([]);
+    const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
+    
+    const version = "2.8.2-SIDEBAR-COLLAPSE";
+    const stylesheetVersion = "1.1.2";
+
+    // ===== HELPER FUNCTIONS =====
+    
+    const getNameFromEmail = (email) => {
+      if (!email || !email.includes('@')) return email || 'Onbekend';
+      const parts = email.split('@')[0].split('.');
+      if (parts.length >= 2) {
+        const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+        const lastName = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+        return `${firstName} ${lastName}`;
+      }
+      return email.split('@')[0];
+    };
+    
+    const formatDate = (isoString) => {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      } catch (error) {
+        console.error('Error formatting date:', error);
+        return isoString;
+      }
+    };
+    
+    const parseFormData = (formDataString) => {
+      try {
+        return JSON.parse(formDataString);
+      } catch (error) {
+        console.error('Error parsing form data:', error);
+        return {};
+      }
+    };
+    
+    const getColumnIndex = React.useCallback((headerName) => {
+      const normalizedName = headerName.toLowerCase();
+      return tableData.headers.findIndex(h => h.toLowerCase().includes(normalizedName));
+    }, [tableData.headers]);
+
+    const getUniqueValues = React.useCallback((columnName) => {
+      if (!tableData.data || tableData.data.length === 0) return [];
+      
+      const columnIndex = getColumnIndex(columnName);
+      if (columnIndex === -1) return [];
+
+      let dataToFilter = [...tableData.data];
+      
+      const codeIndex = getColumnIndex('code');
+      const typeIndex = getColumnIndex('type');
+      
+      if (columnName === 'type' && filters.code) {
+        dataToFilter = dataToFilter.filter(row => row[codeIndex] === filters.code);
+      } else if (columnName === 'sleutelbox') {
+        if (filters.code) {
+          dataToFilter = dataToFilter.filter(row => row[codeIndex] === filters.code);
+        }
+        if (filters.type) {
+          dataToFilter = dataToFilter.filter(row => row[typeIndex] === filters.type);
+        }
+      }
+
+      const values = dataToFilter
+        .map(row => row[columnIndex])
+        .filter(value => value !== null && value !== undefined && value !== '');
+      
+      return [...new Set(values)].sort();
+    }, [tableData.data, filters.code, filters.type, getColumnIndex]);
+
+    const applyFilters = React.useCallback(() => {
+      let filtered = [...tableData.data];
+      
+      const codeIndex = getColumnIndex('code');
+      const typeIndex = getColumnIndex('type');
+      const sleutelboxIndex = getColumnIndex('sleutelbox');
+      const naamIndex = getColumnIndex('naam');
+      
+      const naamGeografischIndex = tableData.headers.findIndex(h => {
+        const lower = h.toLowerCase();
+        return lower.includes('naam') && lower.includes('geografische');
+      });
+
+      if (filters.code) {
+        const searchText = filters.code.toLowerCase();
+        filtered = filtered.filter(row => {
+          const cellValue = row[codeIndex];
+          return cellValue && cellValue.toString().toLowerCase().includes(searchText);
+        });
+      }
+      
+      if (filters.type) {
+        const searchText = filters.type.toLowerCase();
+        filtered = filtered.filter(row => {
+          const cellValue = row[typeIndex];
+          return cellValue && cellValue.toString().toLowerCase().includes(searchText);
+        });
+      }
+      
+      if (filters.sleutelbox) {
+        const searchText = filters.sleutelbox.toLowerCase();
+        filtered = filtered.filter(row => {
+          const cellValue = row[sleutelboxIndex];
+          return cellValue && cellValue.toString().toLowerCase().includes(searchText);
+        });
+      }
+
+      if (filters.naam) {
+        const searchText = filters.naam.toLowerCase();
+        filtered = filtered.filter(row => {
+          const cellValue = row[naamIndex];
+          return cellValue && cellValue.toString().toLowerCase().includes(searchText);
+        });
+      }
+
+      if (filters.naamGeografisch) {
+        const searchText = filters.naamGeografisch.toLowerCase();
+        filtered = filtered.filter(row => {
+          const cellValue = row[naamGeografischIndex];
+          return cellValue && cellValue.toString().toLowerCase().includes(searchText);
+        });
+      }
+
+      setFilteredTableData(filtered);
+    }, [tableData.data, tableData.headers, filters]);
+
+    const handleFilterChange = (filterName, value) => {
+      setFilters(prev => ({
+        ...prev,
+        [filterName]: value
+      }));
+    };
+
+    const clearFilters = () => {
+      setFilters({
+        code: '',
+        type: '',
+        sleutelbox: '',
+        naam: '',
+        naamGeografisch: ''
+      });
+      setCurrentPage(1);
+    };
+
+    // ===== SELECTION HANDLERS =====
+
+    const generateRowId = (row, rowIndex) => {
+      const cellValues = row.map(cell => String(cell || '')).join('|');
+      return `row-${rowIndex}-${cellValues}`;
+    };
+
+    const handleSelectRow = (row, rowIndex) => {
+      const fullRowIndex = startIndex + rowIndex;
+      const rowId = generateRowId(row, fullRowIndex);
+      
+      const rowData = {
+        data: row,
+        originalIndex: fullRowIndex,
+        id: rowId
+      };
+      
+      const isAlreadySelected = selectedRows.some(r => r.id === rowId);
+      
+      if (!isAlreadySelected) {
+        setSelectedRows(prev => {
+          const newRows = [...prev, rowData];
+          console.log('Selected rows:', newRows.length);
+          return newRows;
+        });
+      }
+    };
+
+    const handleDeleteRow = (rowId) => {
+      setSelectedRows(prev => prev.filter(r => r.id !== rowId));
+    };
+
+    const isRowSelected = (rowIndex) => {
+      const fullRowIndex = startIndex + rowIndex;
+      const row = paginatedData[rowIndex];
+      if (!row) return false;
+      const rowId = generateRowId(row, fullRowIndex);
+      return selectedRows.some(r => r.id === rowId);
+    };
+
+    // ===== CENTRALE SLIDER HANDLERS =====
+
+    const handleCentralDragStart = (e) => {
+      e.preventDefault();
+      setIsDragging(true);
+      document.body.classList.add('dragging-central');
+    };
+
+    const handleCentralDrag = React.useCallback((e) => {
+      if (!isDragging) return;
+      
+      const container = document.querySelector('.tables-grid');
+      if (!container) return;
+      
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const percentageX = (x / rect.width) * 100;
+      const percentageY = (y / rect.height) * 100;
+      
+      if (percentageX >= 20 && percentageX <= 80) {
+        setColumnSplit(percentageX);
+      }
+      if (percentageY >= 20 && percentageY <= 80) {
+        setRowSplit(percentageY);
+      }
+    }, [isDragging]);
+
+    const handleCentralDragEnd = () => {
+      setIsDragging(false);
+      document.body.classList.remove('dragging-central');
+    };
+
+    // ===== PAGINATION =====
+
+    const totalPages = Math.ceil(filteredTableData.length / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const paginatedData = filteredTableData.slice(startIndex, endIndex);
+
+    const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= totalPages) {
+        setCurrentPage(newPage);
+      }
+    };
+
+    const getPageNumbers = () => {
+      const pages = [];
+      const maxVisible = 5;
+      
+      if (totalPages <= maxVisible) {
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        if (currentPage <= 3) {
+          for (let i = 1; i <= 4; i++) pages.push(i);
+          pages.push('...');
+          pages.push(totalPages);
+        } else if (currentPage >= totalPages - 2) {
+          pages.push(1);
+          pages.push('...');
+          for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+        } else {
+          pages.push(1);
+          pages.push('...');
+          pages.push(currentPage - 1);
+          pages.push(currentPage);
+          pages.push(currentPage + 1);
+          pages.push('...');
+          pages.push(totalPages);
+        }
+      }
+      
+      return pages;
+    };
+	// ===== EFFECTS =====
+
+    React.useEffect(() => {
+      if (tableData.data && tableData.data.length > 0) {
+        applyFilters();
+      }
+    }, [tableData.data, tableData.headers, filters, getColumnIndex]);
+
+    React.useEffect(() => {
+      setCurrentPage(1);
+    }, [filters, selectedInstallation]);
+
+    // VERWIJDERD: Username prefetch voor installaties - niet meer nodig
+
+    React.useEffect(() => {
+      if (isLoggedIn) {
+        google.script.run
+          .withSuccessHandler(setUserName)
+          .withFailureHandler((error) => console.error('Error fetching user name:', error))
+          .getUserName();
+      }
+    }, [isLoggedIn]);
+
+    // useEffect hooks voor installatie selectie verwijderd - data wordt nu direct bij login geladen
+
+    // Prefetch data zodra login scherm gerenderd is (achtergrond laden)
+    React.useEffect(() => {
+      if (!isLoggedIn && !isPrefetching && !prefetchedData) {
+        console.log('🚀 Starting background prefetch of vergrendelpunten data...');
+        setIsPrefetching(true);
+
+        google.script.run
+          .withSuccessHandler((data) => {
+            const itemCount = (data && data.data) ? data.data.length : 0;
+            console.log('✓ Background prefetch completed:', itemCount, 'vergrendelpunten');
+            setPrefetchedData(data);
+            setDataPreloaded(true);
+            setIsPrefetching(false);
+          })
+          .withFailureHandler((error) => {
+            console.log('Background prefetch failed (not critical):', error);
+            setIsPrefetching(false);
+          })
+          .getFilteredSheetBData(null); // Laad alle data zonder filter
+      }
+    }, [isLoggedIn, isPrefetching, prefetchedData]);
+
+    React.useEffect(() => {
+      if (isDragging) {
+        document.addEventListener('mousemove', handleCentralDrag);
+        document.addEventListener('mouseup', handleCentralDragEnd);
+        return () => {
+          document.removeEventListener('mousemove', handleCentralDrag);
+          document.removeEventListener('mouseup', handleCentralDragEnd);
+        };
+      }
+    }, [isDragging, handleCentralDrag]);
+
+    // ===== EVENT HANDLERS =====
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      handleLogin();
+    };
+
+    const handleLogin = () => {
+      setError('');
+      setIsLoading(true);
+
+      google.script.run
+        .withSuccessHandler((isValid) => {
+          setIsLoading(false);
+          if (isValid) {
+            setIsLoggedIn(true);
+            // Direct alle data laden (gebruikt prefetched data indien beschikbaar)
+            loadAllTableData();
+          } else {
+            setError('Ongeldige gebruikersnaam of wachtwoord');
+          }
+        })
+        .withFailureHandler((error) => {
+          setIsLoading(false);
+          setError(`Er is een fout opgetreden: ${error.message}`);
+        })
+        .validateUser(username, password);
+    };
+
+    // VERWIJDERD: fetchAllDataParallel - niet meer nodig
+    // VERWIJDERD: fetchInstallations - niet meer nodig
+    // VERWIJDERD: handleInstallationSelect - niet meer nodig
+
+    // Nieuwe functie: laadt ALLE data zonder installatie filter
+    // Gebruikt prefetched data indien beschikbaar voor snellere load
+    const loadAllTableData = () => {
+      setShowTable(true);
+      setFilters({
+        code: '',
+        type: '',
+        sleutelbox: '',
+        naam: '',
+        naamGeografisch: ''
+      });
+      setCurrentPage(1);
+      setSelectedRows([]);
+
+      // Check of data al geprefetcht is
+      if (prefetchedData && dataPreloaded) {
+        console.log('⚡ Gebruik prefetched data (instant load!)');
+        setTableData(prefetchedData);
+        setFilteredTableData(prefetchedData.data || []);
+        fetchAanvragen();
+        return; // Geen server call nodig!
+      }
+
+      // Fallback: data nog niet geprefetcht, laad nu
+      console.log('📡 Prefetch niet beschikbaar, laden van server...');
+      setIsLoadingTable(true);
+
+      google.script.run
+        .withSuccessHandler((data) => {
+          setIsLoadingTable(false);
+          setTableData(data);
+          setFilteredTableData(data.data || []);
+          setPrefetchedData(data); // Cache voor volgende keer
+          setDataPreloaded(true);
+          console.log('✓ Alle vergrendelpunten data geladen');
+          // Ook aanvragen laden
+          fetchAanvragen();
+        })
+        .withFailureHandler((error) => {
+          setIsLoadingTable(false);
+          setError('Fout bij het ophalen van tabel data');
+          console.error('Error fetching table data:', error);
+        })
+        .getFilteredSheetBData(null); // null = alle data zonder filter
+    };
+
+    // VERWIJDERD: fetchFilteredTableData - niet meer nodig (we laden nu altijd alle data)
+    
+    const fetchAanvragen = () => {
+      setIsLoadingAanvragen(true);
+      
+      google.script.run
+        .withSuccessHandler((data) => {
+          setIsLoadingAanvragen(false);
+          setAanvragen(data || []);
+          console.log('✓ Aanvragen loaded:', data.length);
+        })
+        .withFailureHandler((error) => {
+          setIsLoadingAanvragen(false);
+          console.error('Error fetching aanvragen:', error);
+          setAanvragen([]);
+        })
+        .getAanvragen();
+    };
+
+    const handleLogout = () => {
+      setIsLoggedIn(false);
+      // hasSelectedInstallation wordt niet meer gereset (altijd true)
+      setSelectedInstallation('');
+      setUsername('');
+      setPassword('');
+      setError('');
+      setTableData({ headers: [], data: [] });
+      setFilteredTableData([]);
+      setShowTable(false);
+      setDataPreloaded(false);
+      setIsPrefetching(false);
+      setPrefetchedData(null); // Clear prefetched data bij logout
+      setSelectedRows([]);
+      setAanvragen([]);
+      setFilters({
+        code: '',
+        type: '',
+        sleutelbox: '',
+        naam: '',
+        naamGeografisch: ''
+      });
+    };
+
+    // VERWIJDERD: handleInstallationChange - niet meer nodig
+
+    // ===== MODAL HANDLERS =====
+    
+    const handleOpenDetailModal = (aanvraag) => {
+      setSelectedAanvraag(aanvraag);
+      setIsDetailModalOpen(true);
+    };
+    
+    const handleCloseDetailModal = () => {
+      setIsDetailModalOpen(false);
+      setSelectedAanvraag(null);
+    };
+    
+    const handleOpenDeleteModal = (aanvraag) => {
+      setAanvraagToDelete(aanvraag);
+      setIsDeleteModalOpen(true);
+    };
+    
+    const handleCloseDeleteModal = () => {
+      setIsDeleteModalOpen(false);
+      setAanvraagToDelete(null);
+    };
+    
+    const handleConfirmDelete = () => {
+      if (!aanvraagToDelete || !aanvraagToDelete.firebaseKey) {
+        alert('Geen geldige aanvraag om te verwijderen');
+        return;
+      }
+      
+      setIsDeleting(true);
+      
+      google.script.run
+        .withSuccessHandler((result) => {
+          setIsDeleting(false);
+          
+          if (result.success) {
+            handleCloseDeleteModal();
+            fetchAanvragen();
+            setIsDeleteSuccessModalOpen(true);
+          } else {
+            alert(`✖ Fout bij verwijderen:\n\n${result.error}`);
+          }
+        })
+        .withFailureHandler((error) => {
+          setIsDeleting(false);
+          alert(`✖ Er is een fout opgetreden:\n\n${error.message}`);
+        })
+        .deleteAanvraag(aanvraagToDelete.firebaseKey);
+    };
+    
+    const handleOpenModal = () => {
+      console.log('Opening modal...');
+      setFormData(prev => ({
+        ...prev,
+        installatie: selectedInstallation
+      }));
+      
+      google.script.run
+        .withSuccessHandler((data) => {
+          console.log('Autorisators loaded:', data);
+          setAutorisators(data);
+        })
+        .withFailureHandler((error) => {
+          console.error('Error fetching autorisators:', error);
+          setAutorisators([]);
+        })
+        .getAutorisators();
+      
+      setIsModalOpen(true);
+      console.log('Modal state set to true');
+    };
+    
+    const handleCloseModal = () => {
+      setIsModalOpen(false);
+      setFormData({
+        naam: '',
+        installatie: selectedInstallation,
+        interneOpmerking: '',
+        externeOpmerking: '',
+        opmerkingen: '',
+        autorisator: ''
+      });
+    };
+    
+    const handleFormChange = (field, value) => {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
+    
+    const handleFormSubmit = (e) => {
+      e.preventDefault();
+      
+      if (!formData.naam.trim()) {
+        alert('Vul een naam in');
+        return;
+      }
+      
+      if (!formData.autorisator) {
+        alert('Selecteer een autorisator');
+        return;
+      }
+      
+      if (selectedRows.length === 0) {
+        alert('Selecteer minimaal 1 vergrendelpunt');
+        return;
+      }
+      
+      const submitButton = e.target.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = 'Bezig met verzenden...';
+      
+      console.log('Submitting aanvraag:', {
+        formData: formData,
+        selectedRows: selectedRows,
+        userName: userName,
+        timestamp: new Date().toISOString()
+      });
+      
+      google.script.run
+        .withSuccessHandler((result) => {
+          console.log('Aanvraag result:', result);
+          
+          if (result.success) {
+            handleCloseModal();
+            setSelectedRows([]);
+            
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            
+            fetchAanvragen();
+            
+            setSuccessData({
+              requestId: result.requestId,
+              aanvraagNr: result.aanvraagNr,
+              autorisatorEmail: formData.autorisator
+            });
+            setIsSuccessModalOpen(true);
+          } else {
+            alert(`✖ Fout bij het indienen van de aanvraag:\n\n${result.error}`);
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+          }
+        })
+        .withFailureHandler((error) => {
+          console.error('Error submitting aanvraag:', error);
+          alert(`✖ Er is een fout opgetreden:\n\n${error.message}`);
+          
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .submitAanvraag(formData, selectedRows, userName);
+    };
+
+    // ===== SUCCESS MODAL COMPONENT =====
+    
+    const SuccessModal = () => {
+      if (!isSuccessModalOpen || !successData) return null;
+      
+      return (
+        <div 
+          className="success-modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            padding: '20px',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onClick={() => setIsSuccessModalOpen(false)}
+        >
+          <div 
+            className="success-modal-container"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              maxWidth: '500px',
+              width: '100%',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{
+              background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
+              padding: '30px 25px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                margin: '0 auto 20px',
+                backgroundColor: 'white',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative'
+              }}>
+                <div style={{
+                  width: '35px',
+                  height: '70px',
+                  borderBottom: '8px solid #4caf50',
+                  borderRight: '8px solid #4caf50',
+                  transform: 'rotate(45deg)',
+                  marginBottom: '15px',
+                  marginLeft: '5px'
+                }}></div>
+              </div>
+
+              <h2 style={{
+                margin: 0,
+                color: 'white',
+                fontSize: '26px',
+                fontWeight: '700',
+                textAlign: 'center',
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}>
+                Aanvraag Succesvol!
+              </h2>
+            </div>
+
+            <div style={{ padding: '30px 25px' }}>
+              <div style={{
+                backgroundColor: '#e8f5e9',
+                border: '2px solid #4caf50',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '25px'
+              }}>
+                <p style={{
+                  margin: '0 0 8px 0',
+                  color: '#2e7d32',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  lineHeight: '1.5'
+                }}>
+                  Aanvraag succesvol ingediend!
+                </p>
+                <p style={{
+                  margin: 0,
+                  color: '#558b2f',
+                  fontSize: '13px',
+                  lineHeight: '1.5'
+                }}>
+                  Je aanvraag is opgeslagen en wordt nu verwerkt.
+                </p>
+              </div>
+
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '8px',
+                borderLeft: '4px solid #4caf50'
+              }}>
+                <div style={{
+                  color: '#666',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '6px'
+                }}>
+                  Aanvraag Nummer
+                </div>
+                <div style={{
+                  color: '#333',
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.5px',
+                  wordBreak: 'break-all'
+                }}>
+                  {successData.aanvraagNr}
+                </div>
+                <div style={{
+                  color: '#999',
+                  fontSize: '11px',
+                  marginTop: '4px',
+                  fontFamily: 'monospace'
+                }}>
+                  {successData.requestId}
+                </div>
+              </div>
+
+              <div style={{
+                padding: '16px',
+                backgroundColor: '#e3f2fd',
+                borderRadius: '8px',
+                border: '1px solid #90caf9'
+              }}>
+                <p style={{
+                  margin: '0 0 4px 0',
+                  color: '#1565c0',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  lineHeight: '1.4'
+                }}>
+                  Email notificatie verzonden
+                </p>
+                <p style={{
+                  margin: 0,
+                  color: '#1976d2',
+                  fontSize: '12px',
+                  lineHeight: '1.5'
+                }}>
+                  De autorisator ontvangt binnenkort een email om de aanvraag goed te keuren of af te wijzen.
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '20px 25px',
+              backgroundColor: '#fafafa',
+              borderTop: '1px solid #e0e0e0',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={() => setIsSuccessModalOpen(false)}
+                style={{
+                  padding: '12px 40px',
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '15px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Begrepen
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+// ===== RENDER =====
+
+    if (!isLoggedIn) {
+      return (
+        <div className="login-container">
+          <form onSubmit={handleSubmit}>
+            <h1>Login</h1>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Gebruikersnaam"
+              required
+              disabled={isLoading}
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Wachtwoord"
+              required
+              disabled={isLoading}
+            />
+            <button type="submit" disabled={isLoading}>
+              {isLoading ? 'Bezig met inloggen...' : 'Inloggen'}
+            </button>
+            {error && <p className="error">{error}</p>}
+            {isPrefetching && (
+              <p className="prefetch-info">⚡ Data wordt voorgeladen...</p>
+            )}
+            <div className="version-info">
+              <span className="version-badge">JS: {version} | CSS: {stylesheetVersion}</span>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    // Installatie selectie scherm verwijderd - ga direct naar hoofdpagina na login
+
+    return (
+      <React.Fragment>
+        <style>{`
+          body.dragging-central {
+            user-select: none;
+            cursor: move;
+          }
+          body.dragging-central * {
+            cursor: move !important;
+          }
+          @keyframes pulse-ring {
+            0% {
+              box-shadow: 0 0 0 0 rgba(103, 58, 183, 0.7);
+            }
+            70% {
+              box-shadow: 0 0 0 15px rgba(103, 58, 183, 0);
+            }
+            100% {
+              box-shadow: 0 0 0 0 rgba(103, 58, 183, 0);
+            }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideUp {
+            from { 
+              opacity: 0;
+              transform: translateY(20px) scale(0.95);
+            }
+            to { 
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}</style>
+        
+        <div className="app-container">
+          <nav className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+            <button
+              className="sidebar-toggle-btn"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? "Open menu" : "Sluit menu"}
+            >
+              {isSidebarCollapsed ? '☰' : '✕'}
+            </button>
+
+            <div className="app-title">{isSidebarCollapsed ? 'AR' : 'Aanvragen Rimses'}</div>
+
+            {/* Installatie dropdown verwijderd - toon nu alle data zonder filter */}
+
+            {!isSidebarCollapsed && (
+              <button className="nav-button active">
+                <span className="icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
+                    <path fill="currentColor" d="M6.906.664a1.75 1.75 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z"/>
+                  </svg>
+                </span>
+                Vergrendelpunten
+              </button>
+            )}
+
+            {!isSidebarCollapsed && (
+              <button className="nav-button" onClick={handleLogout}>
+                <span className="icon">⎋</span>
+                Uitloggen
+              </button>
+            )}
+          </nav>
+          
+          <main className="main-content">
+            <header>
+              <div className="welcome">Welkom: {userName}</div>
+              <div className="header-actions">
+                {showTable && (
+                  <button 
+                    className="reset-layout-btn" 
+                    onClick={() => {
+                      setColumnSplit(50);
+                      setRowSplit(60);
+                    }}
+                    title="Reset layout naar standaard"
+                  >
+                    ⟲ Reset Layout
+                  </button>
+                )}
+                <div className="about">About</div>
+              </div>
+            </header>
+            
+            {isLoadingTable ? (
+              <div className="loading-spinner">
+                <div className="spinner"></div>
+                <p>Bezig met laden van data...</p>
+              </div>
+            ) : showTable && tableData.headers.length > 0 ? (
+              <div 
+                className="tables-grid"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: `${columnSplit}% ${100 - columnSplit}%`,
+                  gridTemplateRows: `${rowSplit}% ${100 - rowSplit}%`,
+                  gap: 0,
+                  height: 'calc(100vh - 180px)',
+                  position: 'relative'
+                }}
+              >
+                {/* TABEL 1 - TOP LEFT - Vergrendelpunten */}
+                <div className="table-container main-table" style={{ gridColumn: 1, gridRow: 1 }}>
+                  <div className="table-header-info">
+                    <h3>Vergrendelpunten voor {selectedInstallation}</h3>
+                    <div className="table-info-row">
+                      <p className="data-count">
+                        Rij {startIndex + 1}-{Math.min(endIndex, filteredTableData.length)} van {filteredTableData.length} 
+                        {tableData.data.length !== filteredTableData.length && ` (totaal: ${tableData.data.length})`}
+                        {(filters.code || filters.type || filters.sleutelbox || filters.naam || filters.naamGeografisch) && (
+                          <span className="filter-indicator"> (gefilterd)</span>
+                        )}
+                      </p>
+                      {(filters.code || filters.type || filters.sleutelbox || filters.naam || filters.naamGeografisch) && (
+                        <button onClick={clearFilters} className="clear-filters-btn">
+                          ✕ Wis filters
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {filteredTableData.length > 0 ? (
+                    <div className="table-content">
+                      <div className="table-wrapper">
+                        <table>
+                          <thead>
+                            <tr className="filter-row">
+                              {tableData.headers.map((header, index) => {
+                                const headerLower = header.toLowerCase();
+                                const isCode = headerLower.includes('code');
+                                const isType = headerLower.includes('type');
+                                const isSleutelbox = headerLower.includes('sleutelbox');
+                                const isNaam = headerLower.includes('naam') && !headerLower.includes('geografische');
+                                const isNaamGeografisch = headerLower.includes('naam') && headerLower.includes('geografische');
+                                
+                                if (isCode || isType || isSleutelbox || isNaam || isNaamGeografisch) {
+                                  let filterName = '';
+                                  if (isCode) filterName = 'code';
+                                  else if (isType) filterName = 'type';
+                                  else if (isSleutelbox) filterName = 'sleutelbox';
+                                  else if (isNaamGeografisch) filterName = 'naamGeografisch';
+                                  else if (isNaam) filterName = 'naam';
+                                  
+                                  return (
+                                    <th key={`filter-${index}`}>
+                                      <input
+                                        type="text"
+                                        value={filters[filterName]}
+                                        onChange={(e) => handleFilterChange(filterName, e.target.value)}
+                                        placeholder={`Zoek ${header}...`}
+                                        className={`filter-input ${filters[filterName] ? 'active' : ''}`}
+                                      />
+                                    </th>
+                                  );
+                                }
+                                return <th key={`filter-${index}`}></th>;
+                              })}
+                            </tr>
+                            <tr>
+                              {tableData.headers.map((header, index) => (
+                                <th key={index}>{header}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paginatedData.map((row, rowIndex) => {
+                              const isSelected = isRowSelected(rowIndex);
+                              return (
+                                <tr key={rowIndex} className={isSelected ? 'selected-row' : ''}>
+                                  {row.map((cell, cellIndex) => {
+                                    const headerLower = tableData.headers[cellIndex].toLowerCase();
+                                    const isCode = headerLower.includes('code');
+                                    
+                                    if (isCode) {
+                                      return (
+                                        <td key={cellIndex} className="code-column">
+                                          <div className="code-cell">
+                                            <span className="code-value" title={cell || '-'}>
+                                              {cell !== null && cell !== undefined && cell !== '' ? cell : '-'}
+                                            </span>
+                                            <div className="code-actions">
+                                              <button 
+                                                className="btn-select" 
+                                                title="Selecteer"
+                                                onClick={() => handleSelectRow(row, rowIndex)}
+                                                disabled={isSelected}
+                                              >
+                                                ✓
+                                              </button>
+                                              <button 
+                                                className="btn-delete" 
+                                                title="Verwijder selectie"
+                                                onClick={() => {
+                                                  const fullRowIndex = startIndex + rowIndex;
+                                                  const rowId = generateRowId(row, fullRowIndex);
+                                                  handleDeleteRow(rowId);
+                                                }}
+                                                disabled={!isSelected}
+                                              >
+                                                ✕
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </td>
+                                      );
+                                    }
+                                    
+                                    return (
+                                      <td key={cellIndex} title={cell || '-'}>
+                                        {cell !== null && cell !== undefined && cell !== '' ? cell : '-'}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      {totalPages > 1 && (
+                        <div className="pagination">
+                          <button 
+                            className="pagination-btn" 
+                            onClick={() => handlePageChange(1)}
+                            disabled={currentPage === 1}
+                            title="Eerste pagina"
+                          >
+                            ««
+                          </button>
+                          <button 
+                            className="pagination-btn" 
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            title="Vorige pagina"
+                          >
+                            ‹
+                          </button>
+                          
+                          {getPageNumbers().map((page, index) => (
+                            page === '...' ? (
+                              <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+                            ) : (
+                              <button
+                                key={page}
+                                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                                onClick={() => handlePageChange(page)}
+                              >
+                                {page}
+                              </button>
+                            )
+                          ))}
+                          
+                          <button 
+                            className="pagination-btn" 
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            title="Volgende pagina"
+                          >
+                            ›
+                          </button>
+                          <button 
+                            className="pagination-btn" 
+                            onClick={() => handlePageChange(totalPages)}
+                            disabled={currentPage === totalPages}
+                            title="Laatste pagina"
+                          >
+                            »»
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="no-data">
+                      <p>Geen vergrendelpunten gevonden</p>
+                    </div>
+                  )}
+                </div>
+{/* TABEL 2 - TOP RIGHT - Geselecteerde rijen */}
+                <div 
+                  className={`table-container side-table ${selectedRows.length === 0 ? 'empty' : ''}`}
+                  style={{ gridColumn: 2, gridRow: 1 }}
+                >
+                  {selectedRows.length > 0 ? (
+                    <div className="selected-table">
+                      <div className="table-header-info">
+                        <div className="table-header-row">
+                          <h3>Geselecteerde Vergrendelpunten</h3>
+                          <button 
+                            className="btn-aanvragen"
+                            onClick={handleOpenModal}
+                            disabled={selectedRows.length === 0}
+                            title="Verstuur aanvraag voor geselecteerde vergrendelpunten"
+                          >
+                            📋 Aanvragen
+                          </button>
+                        </div>
+                        <p className="data-count">
+                          {selectedRows.length} {selectedRows.length === 1 ? 'selectie' : 'selecties'}
+                        </p>
+                      </div>
+                      <div className="table-wrapper">
+                        <table key={`selected-table-${selectedRows.length}`}>
+                          <thead>
+                            <tr>
+                              {tableData.headers.map((header, index) => (
+                                <th key={index}>{header}</th>
+                              ))}
+                              <th>Actie</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedRows.length > 0 && (
+                              <tr style={{height: '1px', backgroundColor: 'transparent'}}>
+                                {tableData.headers.map((_, index) => (
+                                  <td key={index} style={{height: '1px', padding: '0', border: 'none'}}></td>
+                                ))}
+                                <td style={{height: '1px', padding: '0', border: 'none'}}></td>
+                              </tr>
+                            )}
+                            
+                            {selectedRows.map((selectedRow, idx) => {
+                              if (!selectedRow.data || !Array.isArray(selectedRow.data)) {
+                                console.error('Invalid row data:', selectedRow);
+                                return null;
+                              }
+                              
+                              return (
+                                <tr 
+                                  key={selectedRow.id}
+                                  style={{
+                                    backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa'
+                                  }}
+                                >
+                                  {selectedRow.data.map((cell, cellIndex) => {
+                                    const cellValue = cell !== null && cell !== undefined && cell !== '' ? String(cell) : '-';
+                                    return (
+                                      <td 
+                                        key={cellIndex} 
+                                        title={cellValue}
+                                      >
+                                        {cellValue}
+                                      </td>
+                                    );
+                                  })}
+                                  <td>
+                                    <button 
+                                      className="btn-delete-small" 
+                                      title="Verwijder selectie"
+                                      onClick={() => handleDeleteRow(selectedRow.id)}
+                                    >
+                                      ✕
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <p>Tabel 2 - Geselecteerde vergrendelpunten verschijnen hier</p>
+                  )}
+                </div>
+                
+                {/* TABEL 3 - BOTTOM LEFT - Aanvragen */}
+                <div 
+                  className="table-container bottom-left-table" 
+                  style={{ gridColumn: 1, gridRow: 2, padding: '8px' }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '6px',
+                    paddingBottom: '6px',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    <h3 style={{margin: 0, color: '#1a237e', fontSize: '14px'}}>Aanvragen</h3>
+                    <p style={{margin: 0, color: '#666', fontSize: '12px'}}>
+                      {isLoadingAanvragen ? 'Laden...' : `${aanvragen.length} aanvragen`}
+                    </p>
+                  </div>
+                  
+                  {isLoadingAanvragen ? (
+                    <div className="loading-spinner">
+                      <div className="spinner"></div>
+                      <p style={{fontSize: '12px'}}>Aanvragen laden...</p>
+                    </div>
+                  ) : aanvragen.length > 0 ? (
+                    <div style={{
+                      flex: '1 1 auto',
+                      overflow: 'auto',
+                      margin: 0,
+                      padding: 0
+                    }}>
+                      <table key={`aanvragen-table-${aanvragen.length}`} style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        fontSize: '10px',
+                        margin: 0,
+                        padding: 0
+                      }}>
+                        <thead>
+                          <tr>
+                            <th style={{
+                              backgroundColor: '#f5f5f5',
+                              fontWeight: 600,
+                              color: '#333',
+                              border: '1px solid #e0e0e0',
+                              padding: '10px',
+                              textAlign: 'left',
+                              fontSize: '11px',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 10
+                            }}>Aanvraag tekst</th>
+                            <th style={{
+                              backgroundColor: '#f5f5f5',
+                              fontWeight: 600,
+                              color: '#333',
+                              border: '1px solid #e0e0e0',
+                              padding: '10px',
+                              textAlign: 'left',
+                              fontSize: '11px',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 10
+                            }}>Installatie</th>
+                            <th style={{
+                              backgroundColor: '#f5f5f5',
+                              fontWeight: 600,
+                              color: '#333',
+                              border: '1px solid #e0e0e0',
+                              padding: '10px',
+                              textAlign: 'left',
+                              fontSize: '11px',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 10
+                            }}>Aanvrager</th>
+                            <th style={{
+                              backgroundColor: '#f5f5f5',
+                              fontWeight: 600,
+                              color: '#333',
+                              border: '1px solid #e0e0e0',
+                              padding: '10px',
+                              textAlign: 'left',
+                              fontSize: '11px',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 10
+                            }}>Aanvraag datum</th>
+                            <th style={{
+                              backgroundColor: '#f5f5f5',
+                              fontWeight: 600,
+                              color: '#333',
+                              border: '1px solid #e0e0e0',
+                              padding: '10px',
+                              textAlign: 'left',
+                              fontSize: '11px',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 10
+                            }}>Status</th>
+                            <th style={{
+                              backgroundColor: '#f5f5f5',
+                              fontWeight: 600,
+                              color: '#333',
+                              border: '1px solid #e0e0e0',
+                              padding: '10px',
+                              textAlign: 'center',
+                              fontSize: '11px',
+                              width: '80px',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 10
+                            }}>Acties</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {aanvragen.map((aanvraag, index) => {
+                            const formData = parseFormData(aanvraag['Form Data'] || '{}');
+                            const aanvragerNaam = getNameFromEmail(aanvraag['Requester Email']);
+                            const datum = formatDate(aanvraag['Timestamp']);
+                            
+                            return (
+                              <tr key={aanvraag.firebaseKey || index} style={{
+                                backgroundColor: index % 2 === 0 ? 'white' : '#fafafa'
+                              }}>
+                                <td title={formData.naam || '-'} style={{
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'left',
+                                  fontSize: '11px',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  maxWidth: '200px'
+                                }}>
+                                  {formData.naam || '-'}
+                                </td>
+                                <td style={{
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  fontSize: '11px'
+                                }}>{formData.installatie || '-'}</td>
+                                <td style={{
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  fontSize: '11px'
+                                }}>{aanvragerNaam}</td>
+                                <td style={{
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  fontSize: '11px'
+                                }}>{datum}</td>
+                                <td style={{
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  fontSize: '11px'
+                                }}>
+                                  <span style={{
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    backgroundColor: aanvraag['Status'] === 'Pending' ? '#fff3cd' : 
+                                                    aanvraag['Status'] === 'Approved' ? '#d4edda' : '#f8d7da',
+                                    color: aanvraag['Status'] === 'Pending' ? '#856404' : 
+                                           aanvraag['Status'] === 'Approved' ? '#155724' : '#721c24'
+                                  }}>
+                                    {aanvraag['Status'] || 'Pending'}
+                                  </span>
+                                </td>
+                                <td style={{
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'center'
+                                }}>
+                                  <div style={{
+                                    display: 'flex',
+                                    gap: '4px',
+                                    justifyContent: 'center',
+                                    alignItems: 'center'
+                                  }}>
+                                    <button
+                                      className="btn-view-aanvraag"
+                                      title="Bekijken"
+                                      onClick={() => handleOpenDetailModal(aanvraag)}
+                                      style={{
+                                        padding: '4px 8px',
+                                        border: 'none',
+                                        borderRadius: '3px',
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        backgroundColor: '#2196f3',
+                                        color: 'white',
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        minWidth: '28px',
+                                        height: '28px'
+                                      }}
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                      </svg>
+                                    </button>
+                                    <button 
+                                      className="btn-delete-aanvraag"
+                                      title="Verwijderen"
+                                      onClick={() => handleOpenDeleteModal(aanvraag)}
+                                      style={{
+                                        padding: '4px 8px',
+                                        border: 'none',
+                                        borderRadius: '3px',
+                                        fontSize: '12px',
+                                        cursor: 'pointer',
+                                        backgroundColor: '#f44336',
+                                        color: 'white',
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        minWidth: '28px',
+                                        height: '28px',
+                                        fontWeight: 'bold'
+                                      }}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="no-data">
+                      <p>Geen aanvragen gevonden</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* TABEL 4 - BOTTOM RIGHT - Placeholder */}
+                <div 
+                  className="table-container bottom-right-table empty"
+                  style={{ gridColumn: 2, gridRow: 2 }}
+                >
+                  <p>Tabel 4 - Beschikbaar voor toekomstige data</p>
+                </div>
+                
+                {/* CENTRALE SLIDER */}
+                <div 
+                  onMouseDown={handleCentralDragStart}
+                  style={{
+                    position: 'absolute',
+                    left: `${columnSplit}%`,
+                    top: `${rowSplit}%`,
+                    transform: 'translate(-50%, -50%)',
+                    width: '40px',
+                    height: '40px',
+                    backgroundColor: isDragging ? '#5e35b1' : '#673ab7',
+                    borderRadius: '50%',
+                    cursor: 'move',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: isDragging ? '0 8px 24px rgba(103, 58, 183, 0.6)' : '0 4px 12px rgba(103, 58, 183, 0.4)',
+                    border: '3px solid white',
+                    zIndex: 1000,
+                    transition: isDragging ? 'none' : 'all 0.2s'
+                  }}
+                  title="Sleep om beide dimensies tegelijk aan te passen"
+                >
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '4px 4px 4px',
+                    gridTemplateRows: '4px 4px 4px',
+                    gap: '3px'
+                  }}>
+                    {[...Array(9)].map((_, i) => (
+                      <div 
+                        key={i} 
+                        style={{
+                          width: '4px',
+                          height: '4px',
+                          backgroundColor: 'white',
+                          borderRadius: '50%'
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                  
+                  {!isDragging && (
+                    <div style={{
+                      position: 'absolute',
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      animation: 'pulse-ring 2s ease-out infinite'
+                    }}></div>
+                  )}
+                </div>
+                
+                {/* Visuele hulplijnen tijdens slepen */}
+                {isDragging && (
+                  <React.Fragment>
+                    <div style={{
+                      position: 'absolute',
+                      left: `${columnSplit}%`,
+                      top: 0,
+                      bottom: 0,
+                      width: '2px',
+                      backgroundColor: 'rgba(103, 58, 183, 0.5)',
+                      pointerEvents: 'none',
+                      zIndex: 999
+                    }}></div>
+                    <div style={{
+                      position: 'absolute',
+                      top: `${rowSplit}%`,
+                      left: 0,
+                      right: 0,
+                      height: '2px',
+                      backgroundColor: 'rgba(103, 58, 183, 0.5)',
+                      pointerEvents: 'none',
+                      zIndex: 999
+                    }}></div>
+                  </React.Fragment>
+                )}
+              </div>
+            ) : null}
+          </main>
+          
+          <footer className="footer">
+            <div className="version">JS: {version} | CSS: {stylesheetVersion}</div>
+          </footer>
+        </div>
+		{/* Aanvraag Modal */}
+        {isModalOpen && (
+          <div 
+            className="modal-overlay" 
+            onClick={handleCloseModal}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999999,
+              overflowY: 'auto',
+              padding: '20px'
+            }}
+          >
+            <div 
+              className="modal-container" 
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '8px',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+                maxWidth: '600px',
+                width: '90%',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+                margin: 'auto',
+                position: 'relative',
+                zIndex: 1000000
+              }}
+            >
+              <div className="modal-header" style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '20px 25px',
+                borderBottom: '2px solid #e0e0e0',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '8px 8px 0 0'
+              }}>
+                <h2 style={{margin: 0, color: '#1a237e', fontSize: '20px'}}>Aanvraag Vergrendelgroep</h2>
+                <button 
+                  className="modal-close" 
+                  onClick={handleCloseModal} 
+                  title="Sluiten"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '24px',
+                    color: '#666',
+                    cursor: 'pointer',
+                    padding: 0,
+                    width: '30px',
+                    height: '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '4px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <form onSubmit={handleFormSubmit} style={{padding: '25px'}}>
+                <div style={{marginBottom: '20px'}}>
+                  <label htmlFor="naam" style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    color: '#333',
+                    fontWeight: '500',
+                    fontSize: '14px'
+                  }}>
+                    Naam <span style={{color: '#f44336', marginLeft: '2px'}}>*</span>
+                    <span style={{color: '#999', fontSize: '12px', fontWeight: 'normal', marginLeft: '5px'}}>
+                      ({formData.naam.length}/66 karakters)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    id="naam"
+                    value={formData.naam}
+                    onChange={(e) => handleFormChange('naam', e.target.value)}
+                    maxLength={66}
+                    placeholder="Beschrijving van de aanvraag"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                      transition: 'border-color 0.3s',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                
+                <div style={{marginBottom: '20px'}}>
+                  <label htmlFor="installatie" style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    color: '#333',
+                    fontWeight: '500',
+                    fontSize: '14px'
+                  }}>
+                    Installatie:
+                  </label>
+                  <select
+                    id="installatie"
+                    value={formData.installatie}
+                    onChange={(e) => handleFormChange('installatie', e.target.value)}
+                    disabled
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                      backgroundColor: '#f5f5f5',
+                      color: '#666',
+                      cursor: 'not-allowed',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value={selectedInstallation}>{selectedInstallation}</option>
+                  </select>
+                </div>
+                
+                <div style={{marginBottom: '20px'}}>
+                  <label htmlFor="interneOpmerking" style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    color: '#333',
+                    fontWeight: '500',
+                    fontSize: '14px'
+                  }}>
+                    Interne opmerking:
+                  </label>
+                  <textarea
+                    id="interneOpmerking"
+                    value={formData.interneOpmerking}
+                    onChange={(e) => handleFormChange('interneOpmerking', e.target.value)}
+                    rows={3}
+                    placeholder="Deze opmerking is alleen intern zichtbaar"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                      resize: 'vertical',
+                      minHeight: '80px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                
+                <div style={{marginBottom: '20px'}}>
+                  <label htmlFor="externeOpmerking" style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    color: '#333',
+                    fontWeight: '500',
+                    fontSize: '14px'
+                  }}>
+                    Externe opmerking: <span style={{color: '#666', fontSize: '12px', fontWeight: 'normal', fontStyle: 'italic'}}>Deze wordt mee afgedrukt</span>
+                  </label>
+                  <textarea
+                    id="externeOpmerking"
+                    value={formData.externeOpmerking}
+                    onChange={(e) => handleFormChange('externeOpmerking', e.target.value)}
+                    rows={3}
+                    placeholder="Deze opmerking wordt mee afgedrukt op het formulier"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                      resize: 'vertical',
+                      minHeight: '80px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                
+                <div style={{marginBottom: '20px'}}>
+                  <label htmlFor="opmerkingen" style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    color: '#333',
+                    fontWeight: '500',
+                    fontSize: '14px'
+                  }}>
+                    Opmerkingen van de aanvrager:
+                  </label>
+                  <textarea
+                    id="opmerkingen"
+                    value={formData.opmerkingen}
+                    onChange={(e) => handleFormChange('opmerkingen', e.target.value)}
+                    rows={3}
+                    placeholder="Eventuele aanvullende opmerkingen"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                      resize: 'vertical',
+                      minHeight: '80px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                
+                <div style={{marginBottom: '20px'}}>
+                  <label htmlFor="autorisator" style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    color: '#333',
+                    fontWeight: '500',
+                    fontSize: '14px'
+                  }}>
+                    Autorisator: <span style={{color: '#f44336', marginLeft: '2px'}}>*</span>
+                  </label>
+                  <select
+                    id="autorisator"
+                    value={formData.autorisator}
+                    onChange={(e) => handleFormChange('autorisator', e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">Selecteer een autorisator</option>
+                    {autorisators.map((autorisator, index) => (
+                      <option key={index} value={autorisator}>
+                        {autorisator}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div style={{
+                  backgroundColor: '#e8f5e9',
+                  border: '1px solid #4caf50',
+                  borderRadius: '4px',
+                  padding: '12px',
+                  marginBottom: '20px',
+                  color: '#2e7d32',
+                  fontSize: '14px'
+                }}>
+                  <strong style={{fontWeight: 600}}>Geselecteerde vergrendelpunten:</strong> {selectedRows.length} item(s)
+                </div>
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  paddingTop: '20px',
+                  borderTop: '1px solid #e0e0e0'
+                }}>
+                  <button 
+                    type="button" 
+                    onClick={handleCloseModal}
+                    style={{
+                      padding: '10px 20px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      backgroundColor: '#f5f5f5',
+                      color: '#333',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    Annuleren
+                  </button>
+                  <button 
+                    type="submit"
+                    style={{
+                      padding: '10px 20px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      backgroundColor: '#1a237e',
+                      color: 'white',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    Verzenden
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        
+        {/* Success Modal */}
+        <SuccessModal />
+        
+        {/* Delete Success Modal */}
+        {isDeleteSuccessModalOpen && (
+          <div 
+            className="delete-success-modal-overlay"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999999,
+              padding: '20px',
+              animation: 'fadeIn 0.3s ease-out'
+            }}
+            onClick={() => setIsDeleteSuccessModalOpen(false)}
+          >
+            <div 
+              className="delete-success-modal-container"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                maxWidth: '450px',
+                width: '100%',
+                animation: 'slideUp 0.4s ease-out',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{
+                background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
+                padding: '30px 25px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  margin: '0 auto 20px',
+                  backgroundColor: 'white',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative'
+                }}>
+                  <div style={{
+                    width: '35px',
+                    height: '70px',
+                    borderBottom: '8px solid #4caf50',
+                    borderRight: '8px solid #4caf50',
+                    transform: 'rotate(45deg)',
+                    marginBottom: '15px',
+                    marginLeft: '5px'
+                  }}></div>
+                </div>
+
+                <h2 style={{
+                  margin: 0,
+                  color: 'white',
+                  fontSize: '26px',
+                  fontWeight: '700',
+                  textAlign: 'center',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  position: 'relative',
+                  zIndex: 1
+                }}>
+                  Aanvraag Verwijderd!
+                </h2>
+              </div>
+
+              <div style={{ padding: '30px 25px' }}>
+                <div style={{
+                  backgroundColor: '#e8f5e9',
+                  border: '2px solid #4caf50',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginBottom: '20px'
+                }}>
+                  <p style={{
+                    margin: 0,
+                    color: '#2e7d32',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    lineHeight: '1.5',
+                    textAlign: 'center'
+                  }}>
+                    De aanvraag is succesvol verwijderd uit de database.
+                  </p>
+                </div>
+
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: '#e3f2fd',
+                  borderRadius: '6px',
+                  border: '1px solid #90caf9',
+                  textAlign: 'center'
+                }}>
+                  <p style={{
+                    margin: 0,
+                    color: '#1565c0',
+                    fontSize: '13px',
+                    lineHeight: '1.5'
+                  }}>
+                    De aanvraag is permanent verwijderd en kan niet meer worden hersteld.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '20px 25px',
+                backgroundColor: '#fafafa',
+                borderTop: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <button
+                  onClick={() => setIsDeleteSuccessModalOpen(false)}
+                  style={{
+                    padding: '12px 40px',
+                    backgroundColor: '#4caf50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '15px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  Begrepen
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+		{/* Delete Confirmation Modal */}
+        {isDeleteModalOpen && aanvraagToDelete && (
+          <div 
+            className="delete-modal-overlay"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999999,
+              padding: '20px',
+              animation: 'fadeIn 0.3s ease-out'
+            }}
+            onClick={handleCloseDeleteModal}
+          >
+            <style>{`
+              @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+              }
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}</style>
+            
+            <div 
+              className="delete-modal-container"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                maxWidth: '500px',
+                width: '100%',
+                animation: 'slideUp 0.4s ease-out',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                padding: '25px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '-30px',
+                  right: '-30px',
+                  width: '100px',
+                  height: '100px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }}></div>
+                
+                {/* Warning Icon */}
+                <div style={{
+                  width: '70px',
+                  height: '70px',
+                  margin: '0 auto 15px',
+                  backgroundColor: 'white',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  animation: 'shake 0.5s ease-in-out'
+                }}>
+                  <div style={{
+                    fontSize: '40px',
+                    color: '#f44336',
+                    fontWeight: 'bold'
+                  }}>⚠</div>
+                </div>
+
+                <h2 style={{
+                  margin: 0,
+                  color: 'white',
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  textAlign: 'center',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  position: 'relative',
+                  zIndex: 1
+                }}>
+                  Aanvraag Verwijderen?
+                </h2>
+              </div>
+
+              {/* Content */}
+              <div style={{ padding: '25px' }}>
+                {(() => {
+                  const formData = parseFormData(aanvraagToDelete['Form Data'] || '{}');
+                  const aanvragerNaam = getNameFromEmail(aanvraagToDelete['Requester Email']);
+                  
+                  return (
+                    <React.Fragment>
+                      <p style={{
+                        margin: '0 0 20px 0',
+                        fontSize: '15px',
+                        color: '#333',
+                        lineHeight: '1.6',
+                        textAlign: 'center'
+                      }}>
+                        Weet je zeker dat je deze aanvraag wilt verwijderen? Deze actie kan niet ongedaan gemaakt worden.
+                      </p>
+
+                      {/* Aanvraag info */}
+                      <div style={{
+                        backgroundColor: '#fff3cd',
+                        border: '2px solid #ffc107',
+                        borderRadius: '8px',
+                        padding: '15px',
+                        marginBottom: '20px'
+                      }}>
+                        <div style={{
+                          fontSize: '11px',
+                          color: '#856404',
+                          fontWeight: '600',
+                          marginBottom: '8px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Te verwijderen aanvraag
+                        </div>
+                        
+                        <div style={{marginBottom: '8px'}}>
+                          <span style={{fontSize: '12px', color: '#666', fontWeight: '600'}}>Aanvraag: </span>
+                          <span style={{fontSize: '13px', color: '#333', fontWeight: '500'}}>{formData.naam || '-'}</span>
+                        </div>
+                        
+                        <div style={{marginBottom: '8px'}}>
+                          <span style={{fontSize: '12px', color: '#666', fontWeight: '600'}}>Installatie: </span>
+                          <span style={{fontSize: '13px', color: '#333', fontWeight: '500'}}>{formData.installatie || '-'}</span>
+                        </div>
+                        
+                        <div>
+                          <span style={{fontSize: '12px', color: '#666', fontWeight: '600'}}>Aanvrager: </span>
+                          <span style={{fontSize: '13px', color: '#333', fontWeight: '500'}}>{aanvragerNaam}</span>
+                        </div>
+                      </div>
+
+                      {/* Warning message */}
+                      <div style={{
+                        backgroundColor: '#ffebee',
+                        border: '1px solid #ef5350',
+                        borderRadius: '6px',
+                        padding: '12px',
+                        marginBottom: '20px',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px'
+                      }}>
+                        <div style={{fontSize: '18px', flexShrink: 0}}>⚠️</div>
+                        <div>
+                          <p style={{
+                            margin: 0,
+                            fontSize: '12px',
+                            color: '#c62828',
+                            fontWeight: '600',
+                            lineHeight: '1.5'
+                          }}>
+                            Let op: Deze aanvraag wordt permanent verwijderd uit de database. Alle bijbehorende data gaat verloren.
+                          </p>
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                })()}
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                padding: '20px 25px',
+                backgroundColor: '#fafafa',
+                borderTop: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px'
+              }}>
+                <button
+                  onClick={handleCloseDeleteModal}
+                  disabled={isDeleting}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#f5f5f5',
+                    color: '#333',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s',
+                    opacity: isDeleting ? 0.5 : 1
+                  }}
+                >
+                  Annuleren
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#f44336',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s',
+                    boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)',
+                    opacity: isDeleting ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  {isDeleting ? (
+                    <React.Fragment>
+                      <div style={{
+                        width: '14px',
+                        height: '14px',
+                        border: '2px solid white',
+                        borderTopColor: 'transparent',
+                        borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite'
+                      }}></div>
+                      Bezig met verwijderen...
+                    </React.Fragment>
+                  ) : (
+                    <React.Fragment>
+                      <span>✕</span>
+                      Ja, Verwijderen
+                    </React.Fragment>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Detail Modal - Aanvraag bekijken */}
+        {isDetailModalOpen && selectedAanvraag && (
+          <div 
+            className="detail-modal-overlay"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999999,
+              padding: '20px',
+              overflowY: 'auto'
+            }}
+            onClick={handleCloseDetailModal}
+          >
+            <div 
+              className="detail-modal-container"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                maxWidth: '800px',
+                width: '95%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                margin: 'auto'
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '20px 25px',
+                borderBottom: '2px solid #e0e0e0',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '12px 12px 0 0',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+              }}>
+                <h2 style={{margin: 0, color: 'white', fontSize: '20px', fontWeight: '700'}}>
+                  Aanvraag Details
+                </h2>
+                <button
+                  onClick={handleCloseDetailModal}
+                  title="Sluiten"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    fontSize: '24px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    padding: 0,
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    transition: 'all 0.2s',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Content */}
+              <div style={{padding: '25px'}}>
+                {(() => {
+                  const formData = parseFormData(selectedAanvraag['Form Data'] || '{}');
+                  const aanvragerNaam = getNameFromEmail(selectedAanvraag['Requester Email']);
+                  const datum = formatDate(selectedAanvraag['Timestamp']);
+                  
+                  // Verzamelmandje Data - ensure it's always an array
+                  let verzamelmandjeData = selectedAanvraag['Verzamelmandje Data'] || [];
+                  if (!Array.isArray(verzamelmandjeData)) {
+                    // If it's an object, convert to array
+                    if (typeof verzamelmandjeData === 'object') {
+                      verzamelmandjeData = Object.values(verzamelmandjeData);
+                    } else {
+                      verzamelmandjeData = [];
+                    }
+                  }
+                  
+                  return (
+                    <React.Fragment>
+                      {/* Status Badge */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '20px',
+                        padding: '15px',
+                        backgroundColor: selectedAanvraag['Status'] === 'Pending' ? '#fff3cd' : 
+                                        selectedAanvraag['Status'] === 'Approved' ? '#d4edda' : '#f8d7da',
+                        borderRadius: '8px',
+                        border: '2px solid',
+                        borderColor: selectedAanvraag['Status'] === 'Pending' ? '#ffc107' : 
+                                    selectedAanvraag['Status'] === 'Approved' ? '#28a745' : '#dc3545'
+                      }}>
+                        <div>
+                          <div style={{fontSize: '12px', color: '#666', fontWeight: '600', marginBottom: '4px'}}>
+                            STATUS
+                          </div>
+                          <div style={{
+                            fontSize: '18px',
+                            fontWeight: '700',
+                            color: selectedAanvraag['Status'] === 'Pending' ? '#856404' : 
+                                   selectedAanvraag['Status'] === 'Approved' ? '#155724' : '#721c24'
+                          }}>
+                            {selectedAanvraag['Status'] || 'Pending'}
+                          </div>
+                        </div>
+                        <div style={{textAlign: 'right'}}>
+                          <div style={{fontSize: '12px', color: '#666', fontWeight: '600', marginBottom: '4px'}}>
+                            AANVRAAG DATUM
+                          </div>
+                          <div style={{fontSize: '14px', fontWeight: '600', color: '#333'}}>
+                            {datum}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Aanvraag Info */}
+                      <div style={{marginBottom: '25px'}}>
+                        <h3 style={{
+                          margin: '0 0 15px 0',
+                          color: '#1a237e',
+                          fontSize: '16px',
+                          paddingBottom: '10px',
+                          borderBottom: '2px solid #e0e0e0'
+                        }}>
+                          Aanvraag Informatie
+                        </h3>
+                        
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                          <div style={{
+                            padding: '12px',
+                            backgroundColor: '#f9f9f9',
+                            borderRadius: '6px',
+                            border: '1px solid #e0e0e0'
+                          }}>
+                            <div style={{fontSize: '11px', color: '#666', fontWeight: '600', marginBottom: '4px'}}>
+                              AANVRAAG TEKST
+                            </div>
+                            <div style={{fontSize: '14px', fontWeight: '500', color: '#333'}}>
+                              {formData.naam || '-'}
+                            </div>
+                          </div>
+                          
+                          <div style={{
+                            padding: '12px',
+                            backgroundColor: '#f9f9f9',
+                            borderRadius: '6px',
+                            border: '1px solid #e0e0e0'
+                          }}>
+                            <div style={{fontSize: '11px', color: '#666', fontWeight: '600', marginBottom: '4px'}}>
+                              INSTALLATIE
+                            </div>
+                            <div style={{fontSize: '14px', fontWeight: '500', color: '#333'}}>
+                              {formData.installatie || '-'}
+                            </div>
+                          </div>
+                          
+                          <div style={{
+                            padding: '12px',
+                            backgroundColor: '#f9f9f9',
+                            borderRadius: '6px',
+                            border: '1px solid #e0e0e0'
+                          }}>
+                            <div style={{fontSize: '11px', color: '#666', fontWeight: '600', marginBottom: '4px'}}>
+                              AANVRAGER
+                            </div>
+                            <div style={{fontSize: '14px', fontWeight: '500', color: '#333'}}>
+                              {aanvragerNaam}
+                            </div>
+                            <div style={{fontSize: '11px', color: '#999', marginTop: '2px'}}>
+                              {selectedAanvraag['Requester Email']}
+                            </div>
+                          </div>
+                          
+                          <div style={{
+                            padding: '12px',
+                            backgroundColor: '#f9f9f9',
+                            borderRadius: '6px',
+                            border: '1px solid #e0e0e0'
+                          }}>
+                            <div style={{fontSize: '11px', color: '#666', fontWeight: '600', marginBottom: '4px'}}>
+                              AUTORISATOR
+                            </div>
+                            <div style={{fontSize: '14px', fontWeight: '500', color: '#333'}}>
+                              {getNameFromEmail(selectedAanvraag['Approver Email'])}
+                            </div>
+                            <div style={{fontSize: '11px', color: '#999', marginTop: '2px'}}>
+                              {selectedAanvraag['Approver Email']}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Opmerkingen */}
+                      {(formData.interneOpmerking || formData.externeOpmerking || formData.opmerkingen) && (
+                        <div style={{marginBottom: '25px'}}>
+                          <h3 style={{
+                            margin: '0 0 15px 0',
+                            color: '#1a237e',
+                            fontSize: '16px',
+                            paddingBottom: '10px',
+                            borderBottom: '2px solid #e0e0e0'
+                          }}>
+                            Opmerkingen
+                          </h3>
+                          
+                          {formData.interneOpmerking && (
+                            <div style={{marginBottom: '12px'}}>
+                              <div style={{
+                                fontSize: '11px',
+                                color: '#666',
+                                fontWeight: '600',
+                                marginBottom: '4px'
+                              }}>
+                                Interne opmerking
+                              </div>
+                              <div style={{
+                                padding: '10px',
+                                backgroundColor: '#f9f9f9',
+                                borderRadius: '4px',
+                                fontSize: '13px',
+                                color: '#333',
+                                border: '1px solid #e0e0e0',
+                                whiteSpace: 'pre-wrap'
+                              }}>
+                                {formData.interneOpmerking}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {formData.externeOpmerking && (
+                            <div style={{marginBottom: '12px'}}>
+                              <div style={{
+                                fontSize: '11px',
+                                color: '#666',
+                                fontWeight: '600',
+                                marginBottom: '4px'
+                              }}>
+                                Externe opmerking
+                              </div>
+                              <div style={{
+                                padding: '10px',
+                                backgroundColor: '#f9f9f9',
+                                borderRadius: '4px',
+                                fontSize: '13px',
+                                color: '#333',
+                                border: '1px solid #e0e0e0',
+                                whiteSpace: 'pre-wrap'
+                              }}>
+                                {formData.externeOpmerking}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {formData.opmerkingen && (
+                            <div style={{marginBottom: '12px'}}>
+                              <div style={{
+                                fontSize: '11px',
+                                color: '#666',
+                                fontWeight: '600',
+                                marginBottom: '4px'
+                              }}>
+                                Opmerkingen aanvrager
+                              </div>
+                              <div style={{
+                                padding: '10px',
+                                backgroundColor: '#f9f9f9',
+                                borderRadius: '4px',
+                                fontSize: '13px',
+                                color: '#333',
+                                border: '1px solid #e0e0e0',
+                                whiteSpace: 'pre-wrap'
+                              }}>
+                                {formData.opmerkingen}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Verzamelmandje Data */}
+                      <div style={{marginBottom: '20px'}}>
+                        <h3 style={{
+                          margin: '0 0 15px 0',
+                          color: '#1a237e',
+                          fontSize: '16px',
+                          paddingBottom: '10px',
+                          borderBottom: '2px solid #e0e0e0'
+                        }}>
+                          Geselecteerde Vergrendelpunten ({verzamelmandjeData.length})
+                        </h3>
+                        
+                        {verzamelmandjeData.length > 0 ? (
+                          <div style={{
+                            maxHeight: '300px',
+                            overflowY: 'auto',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '6px'
+                          }}>
+                            <table style={{
+                              width: '100%',
+                              borderCollapse: 'collapse',
+                              fontSize: '12px'
+                            }}>
+                              <thead>
+                                <tr style={{backgroundColor: '#f5f5f5'}}>
+                                  <th style={{
+                                    padding: '10px',
+                                    textAlign: 'left',
+                                    borderBottom: '2px solid #e0e0e0',
+                                    position: 'sticky',
+                                    top: 0,
+                                    backgroundColor: '#f5f5f5',
+                                    zIndex: 1
+                                  }}>Data</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {verzamelmandjeData.map((item, index) => (
+                                  <tr key={index} style={{
+                                    backgroundColor: index % 2 === 0 ? 'white' : '#fafafa'
+                                  }}>
+                                    <td style={{
+                                      padding: '10px',
+                                      borderBottom: '1px solid #e0e0e0',
+                                      fontFamily: 'monospace',
+                                      fontSize: '11px'
+                                    }}>
+                                      {item}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div style={{
+                            padding: '20px',
+                            textAlign: 'center',
+                            color: '#999',
+                            backgroundColor: '#f9f9f9',
+                            borderRadius: '6px',
+                            border: '1px dashed #ddd'
+                          }}>
+                            Geen vergrendelpunten geselecteerd
+                          </div>
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
+                })()}
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                padding: '15px 25px',
+                backgroundColor: '#f9f9f9',
+                borderTop: '1px solid #e0e0e0',
+                borderRadius: '0 0 12px 12px',
+                display: 'flex',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  onClick={handleCloseDetailModal}
+                  style={{
+                    padding: '10px 30px',
+                    backgroundColor: '#667eea',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  Sluiten
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </React.Fragment>
+    );
+  }
+
+  ReactDOM.render(<App />, document.getElementById('root'));
+</script>
