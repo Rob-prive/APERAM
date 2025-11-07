@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug & Test Pagina - Aanvragen Rimses</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .debug-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .debug-header {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .debug-header h1 {
+      color: #1a237e;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .debug-header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .debug-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 20px;
+      height: calc(100vh - 180px);
+      min-height: 600px;
+    }
+
+    .debug-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a237e;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-badge {
+      font-size: 12px;
+      background: #e8eaf6;
+      color: #1a237e;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .version-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .version-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      border-radius: 8px;
+      color: white;
+    }
+
+    .version-label {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .version-value {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+    }
+
+    .info-section {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+
+    .info-section h4 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .info-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .info-list li {
+      padding: 8px 0;
+      color: #666;
+      font-size: 13px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .info-list li:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .test-button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .test-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    .test-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .test-button.secondary {
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+
+    .test-button.secondary:hover {
+      box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    }
+
+    .test-button.danger {
+      background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+      box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+    }
+
+    .test-button.danger:hover {
+      box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
+    }
+
+    .empty-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-style: italic;
+      min-height: 200px;
+    }
+
+    .empty-panel-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
+    .console-output {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+
+    .console-line {
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .console-line:last-child {
+      border-bottom: none;
+    }
+
+    .console-time {
+      color: #858585;
+      margin-right: 10px;
+    }
+
+    .console-success {
+      color: #4caf50;
+    }
+
+    .console-error {
+      color: #f44336;
+    }
+
+    .console-info {
+      color: #2196f3;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .debug-panel {
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      padding: 20px;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal-container {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 550px;
+      width: 100%;
+      overflow: hidden;
+      animation: slideUp 0.4s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 30px 25px;
+      text-align: center;
+    }
+
+    .modal-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background-color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+
+    .modal-title {
+      margin: 0;
+      color: white;
+      font-size: 28px;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .modal-body {
+      padding: 30px 25px;
+    }
+
+    .modal-footer {
+      padding: 20px 25px;
+      background-color: #fafafa;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .modal-button {
+      padding: 12px 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .modal-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    @media (max-width: 768px) {
+      .debug-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        height: auto;
+      }
+
+      .debug-panel {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    function DebugApp() {
+      const [consoleLog, setConsoleLog] = React.useState([]);
+      const [isModalOpen, setIsModalOpen] = React.useState(false);
+      const [modalData, setModalData] = React.useState({ title: '', content: '' });
+
+      // Version info
+      const versions = {
+        javascript: "2.8.3-ABOUT-MODAL-DEBUG",
+        stylesheet: "1.1.3",
+        react: "18.2.0",
+        babel: "6.26.0"
+      };
+
+      // Add log to console
+      const addLog = (message, type = 'info') => {
+        const timestamp = new Date().toLocaleTimeString();
+        setConsoleLog(prev => [...prev, { message, type, timestamp }]);
+        console.log(`[${type.toUpperCase()}]`, message);
+      };
+
+      // Clear console
+      const clearConsole = () => {
+        setConsoleLog([]);
+        console.clear();
+        addLog('Console cleared', 'info');
+      };
+
+      // Test button handlers
+      const handleButton1 = () => {
+        addLog('✅ Knop 1 geklikt - Test About Modal', 'success');
+        setModalData({
+          title: 'Test Modal',
+          content: 'Dit is een test modal vanuit Knop 1. De About modal functionaliteit werkt!'
+        });
+        setIsModalOpen(true);
+      };
+
+      const handleButton2 = () => {
+        addLog('🔵 Knop 2 geklikt - State test', 'info');
+        addLog(`Current modal state: ${isModalOpen}`, 'info');
+      };
+
+      const handleButton3 = () => {
+        addLog('⚡ Knop 3 geklikt - Performance test', 'success');
+        const start = performance.now();
+        // Simulate some work
+        for (let i = 0; i < 1000000; i++) {}
+        const end = performance.now();
+        addLog(`Performance test completed in ${(end - start).toFixed(2)}ms`, 'success');
+      };
+
+      const handleButton4 = () => {
+        addLog('⚠️ Knop 4 geklikt - Error test', 'error');
+        try {
+          throw new Error('Dit is een test error');
+        } catch (error) {
+          addLog(`Error caught: ${error.message}`, 'error');
+        }
+      };
+
+      const handleButton5 = () => {
+        addLog('🔄 Knop 5 geklikt - Async test', 'info');
+        setTimeout(() => {
+          addLog('Async operation completed after 1 second', 'success');
+        }, 1000);
+      };
+
+      const handleButton6 = () => {
+        addLog('🎨 Knop 6 geklikt - Style test', 'info');
+        document.body.style.animation = 'none';
+        setTimeout(() => {
+          document.body.style.animation = '';
+        }, 10);
+      };
+
+      const closeModal = () => {
+        addLog('🔴 Modal gesloten', 'info');
+        setIsModalOpen(false);
+      };
+
+      return (
+        <div className="debug-container">
+          {/* Header */}
+          <div className="debug-header">
+            <h1>🔧 Debug & Test Pagina</h1>
+            <p>Test functionaliteit voordat je ze in de hoofdcode implementeert</p>
+          </div>
+
+          {/* 4-panel grid */}
+          <div className="debug-grid">
+            {/* Panel 1: Version Info */}
+            <div className="debug-panel">
+              <div className="panel-header">
+                <div className="panel-title">
+                  ℹ️ Versie Informatie
+                </div>
+                <div className="panel-badge">Panel 1</div>
+              </div>
+
+              <div className="version-grid">
+                <div className="version-card">
+                  <div className="version-label">JavaScript</div>
+                  <div className="version-value">{versions.javascript}</div>
+                </div>
+                <div className="version-card">
+                  <div className="version-label">Stylesheet</div>
+                  <div className="version-value">{versions.stylesheet}</div>
+                </div>
+                <div className="version-card">
+                  <div className="version-label">React</div>
+                  <div className="version-value">{versions.react}</div>
+                </div>
+                <div className="version-card">
+                  <div className="version-label">Babel</div>
+                  <div className="version-value">{versions.babel}</div>
+                </div>
+              </div>
+
+              <div className="info-section">
+                <h4>System Info</h4>
+                <ul className="info-list">
+                  <li>
+                    <span className="info-label">Browser:</span>
+                    <span>{navigator.userAgent.split(' ').slice(-2).join(' ')}</span>
+                  </li>
+                  <li>
+                    <span className="info-label">Platform:</span>
+                    <span>{navigator.platform}</span>
+                  </li>
+                  <li>
+                    <span className="info-label">Screen:</span>
+                    <span>{window.screen.width} x {window.screen.height}</span>
+                  </li>
+                  <li>
+                    <span className="info-label">Viewport:</span>
+                    <span>{window.innerWidth} x {window.innerHeight}</span>
+                  </li>
+                  <li>
+                    <span className="info-label">Online:</span>
+                    <span>{navigator.onLine ? '✅ Yes' : '❌ No'}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="console-output">
+                <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong style={{ color: '#4caf50' }}>Console Output:</strong>
+                  <button
+                    onClick={clearConsole}
+                    style={{
+                      background: '#333',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '4px 12px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '11px'
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+                {consoleLog.length === 0 ? (
+                  <div style={{ color: '#666', fontStyle: 'italic' }}>Geen logs...</div>
+                ) : (
+                  consoleLog.map((log, index) => (
+                    <div key={index} className="console-line">
+                      <span className="console-time">{log.timestamp}</span>
+                      <span className={`console-${log.type}`}>{log.message}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Panel 2: Test Buttons */}
+            <div className="debug-panel">
+              <div className="panel-header">
+                <div className="panel-title">
+                  🎮 Test Knoppen
+                </div>
+                <div className="panel-badge">Panel 2</div>
+              </div>
+
+              <div className="button-grid">
+                <button className="test-button" onClick={handleButton1}>
+                  Knop 1<br/>
+                  <small style={{ fontSize: '11px', opacity: 0.8 }}>Modal Test</small>
+                </button>
+                <button className="test-button secondary" onClick={handleButton2}>
+                  Knop 2<br/>
+                  <small style={{ fontSize: '11px', opacity: 0.8 }}>State Test</small>
+                </button>
+                <button className="test-button" onClick={handleButton3}>
+                  Knop 3<br/>
+                  <small style={{ fontSize: '11px', opacity: 0.8 }}>Performance</small>
+                </button>
+                <button className="test-button danger" onClick={handleButton4}>
+                  Knop 4<br/>
+                  <small style={{ fontSize: '11px', opacity: 0.8 }}>Error Test</small>
+                </button>
+                <button className="test-button secondary" onClick={handleButton5}>
+                  Knop 5<br/>
+                  <small style={{ fontSize: '11px', opacity: 0.8 }}>Async Test</small>
+                </button>
+                <button className="test-button" onClick={handleButton6}>
+                  Knop 6<br/>
+                  <small style={{ fontSize: '11px', opacity: 0.8 }}>Style Test</small>
+                </button>
+              </div>
+
+              <div className="info-section" style={{ marginTop: '20px' }}>
+                <h4>Instructies:</h4>
+                <ul style={{ paddingLeft: '20px', color: '#666', fontSize: '13px', lineHeight: '1.8' }}>
+                  <li>Klik op een knop om de functionaliteit te testen</li>
+                  <li>Check de console output voor debug informatie</li>
+                  <li>Open browser DevTools (F12) voor gedetailleerde logs</li>
+                  <li>Test verschillende scenario's voordat je implementeert</li>
+                </ul>
+              </div>
+
+              <div style={{ marginTop: '20px', padding: '15px', background: '#e8f4f8', borderRadius: '8px', border: '1px solid #b3d9e8' }}>
+                <div style={{ color: '#2c5f7a', fontSize: '12px', fontWeight: '600', marginBottom: '8px' }}>
+                  💡 TIP
+                </div>
+                <div style={{ color: '#2c5f7a', fontSize: '13px', lineHeight: '1.6' }}>
+                  Gebruik deze pagina om nieuwe features te testen voordat je ze in de hoofdapplicatie implementeert.
+                  Alle functionaliteit hier is geïsoleerd.
+                </div>
+              </div>
+            </div>
+
+            {/* Panel 3: Empty (voor toekomstige tests) */}
+            <div className="debug-panel">
+              <div className="panel-header">
+                <div className="panel-title">
+                  📊 Test Resultaten
+                </div>
+                <div className="panel-badge">Panel 3</div>
+              </div>
+              <div className="empty-panel">
+                <div className="empty-panel-icon">📦</div>
+                <div>Dit vlak is beschikbaar voor toekomstige tests</div>
+                <div style={{ fontSize: '12px', marginTop: '10px', color: '#bbb' }}>
+                  Bijvoorbeeld: data visualisatie, test resultaten, metrics
+                </div>
+              </div>
+            </div>
+
+            {/* Panel 4: Empty (voor toekomstige tests) */}
+            <div className="debug-panel">
+              <div className="panel-header">
+                <div className="panel-title">
+                  🧪 Experimenteer
+                </div>
+                <div className="panel-badge">Panel 4</div>
+              </div>
+              <div className="empty-panel">
+                <div className="empty-panel-icon">🔬</div>
+                <div>Dit vlak is beschikbaar voor experimenten</div>
+                <div style={{ fontSize: '12px', marginTop: '10px', color: '#bbb' }}>
+                  Bijvoorbeeld: API tests, nieuwe components, prototypes
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Test Modal */}
+          {isModalOpen && (
+            <div className="modal-overlay" onClick={closeModal}>
+              <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <div className="modal-icon">✅</div>
+                  <h2 className="modal-title">{modalData.title}</h2>
+                </div>
+                <div className="modal-body">
+                  <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#666', textAlign: 'center' }}>
+                    {modalData.content}
+                  </p>
+                  <div style={{
+                    marginTop: '20px',
+                    padding: '15px',
+                    background: '#e8f5e9',
+                    borderRadius: '8px',
+                    border: '2px solid #4caf50'
+                  }}>
+                    <p style={{ margin: 0, color: '#2e7d32', fontSize: '14px', fontWeight: '600' }}>
+                      ✓ Modal werkt correct!
+                    </p>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="modal-button" onClick={closeModal}>
+                    Sluiten
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Render the app
+    ReactDOM.render(<DebugApp />, document.getElementById('root'));
+  </script>
+</body>
+</html>
