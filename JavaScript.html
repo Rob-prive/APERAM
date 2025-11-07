@@ -83,8 +83,8 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
     
-    const version = "2.8.2-SIDEBAR-COLLAPSE";
-    const stylesheetVersion = "1.1.2";
+    const version = "2.8.3-ABOUT-MODAL-DEBUG";
+    const stylesheetVersion = "1.1.3";
 
     // ===== HELPER FUNCTIONS =====
     
@@ -554,11 +554,16 @@
     };
 
     const handleOpenAboutModal = () => {
+      console.log('🔵 About button clicked! Opening modal...');
+      console.log('Current state - isAboutModalOpen:', isAboutModalOpen);
       setIsAboutModalOpen(true);
+      console.log('✅ setIsAboutModalOpen(true) called');
     };
 
     const handleCloseAboutModal = () => {
+      console.log('🔴 Closing About modal...');
       setIsAboutModalOpen(false);
+      console.log('✅ setIsAboutModalOpen(false) called');
     };
 
     const handleConfirmDelete = () => {
@@ -895,8 +900,14 @@
     // ===== ABOUT MODAL COMPONENT =====
 
     const AboutModal = () => {
-      if (!isAboutModalOpen) return null;
+      console.log('📊 AboutModal render - isAboutModalOpen:', isAboutModalOpen);
 
+      if (!isAboutModalOpen) {
+        console.log('⏭️ AboutModal: Not rendering (modal closed)');
+        return null;
+      }
+
+      console.log('✅ AboutModal: Rendering modal!');
       return (
         <div
           className="about-modal-overlay"

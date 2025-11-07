@@ -1,5 +1,5 @@
 <style>
-  /* Stylesheet Version 1.1.2 */
+  /* Stylesheet Version 1.1.3 */
   
   * {
     box-sizing: border-box;
@@ -405,15 +405,28 @@
     background-color: #283593;
   }
 
-  .about {
+  button.about {
+    background-color: transparent;
     color: #1a237e;
+    border: 2px solid #1a237e;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    font-weight: 500;
-    transition: color 0.3s;
+    transition: all 0.3s;
   }
 
-  .about:hover {
-    color: #283593;
+  button.about:hover {
+    background-color: #1a237e;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(26, 35, 126, 0.3);
+  }
+
+  button.about:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(26, 35, 126, 0.3);
   }
 
   /* ===== Multi-table Grid Layout ===== */
