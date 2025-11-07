@@ -79,11 +79,14 @@
     // About modal state
     const [isAboutModalOpen, setIsAboutModalOpen] = React.useState(false);
 
+    // Debug panel state
+    const [isDebugPanelOpen, setIsDebugPanelOpen] = React.useState(false);
+
     // Aanvragen data state
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
-    
-    const version = "2.8.5-DEBUG-PAGE-FIX";
+
+    const version = "2.8.6-DEBUG-OVERLAY";
     const stylesheetVersion = "1.1.3";
 
     // ===== HELPER FUNCTIONS =====
@@ -564,6 +567,11 @@
       console.log('🔴 Closing About modal...');
       setIsAboutModalOpen(false);
       console.log('✅ setIsAboutModalOpen(false) called');
+    };
+
+    const handleToggleDebugPanel = () => {
+      console.log('🔧 Toggle debug panel:', !isDebugPanelOpen);
+      setIsDebugPanelOpen(!isDebugPanelOpen);
     };
 
     const handleConfirmDelete = () => {
@@ -1168,6 +1176,402 @@
       );
     };
 
+    // ===== DEBUG PANEL COMPONENT =====
+
+    const DebugPanel = () => {
+      if (!isDebugPanelOpen) return null;
+
+      const browserInfo = navigator.userAgent.split(' ').slice(-2).join(' ');
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          zIndex: 999999,
+          padding: '20px',
+          overflow: 'auto',
+          animation: 'fadeIn 0.3s ease-out'
+        }}
+        onClick={handleToggleDebugPanel}
+        >
+          <div style={{
+            maxWidth: '1400px',
+            margin: '0 auto',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '30px',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '30px',
+              paddingBottom: '20px',
+              borderBottom: '3px solid #667eea'
+            }}>
+              <div>
+                <h1 style={{ margin: '0 0 10px 0', color: '#1a237e', fontSize: '32px' }}>
+                  🔧 Debug & Test Panel
+                </h1>
+                <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+                  Test functionaliteit en bekijk system informatie
+                </p>
+              </div>
+              <button
+                onClick={handleToggleDebugPanel}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                ✕ Sluiten
+              </button>
+            </div>
+
+            {/* 4-panel grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gridTemplateRows: 'auto auto',
+              gap: '20px',
+              minHeight: '600px'
+            }}>
+              {/* Panel 1: Version Info */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '12px',
+                padding: '25px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#1a237e',
+                  marginBottom: '20px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e0e0e0'
+                }}>
+                  ℹ️ Versie Informatie
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    color: 'white'
+                  }}>
+                    <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '8px' }}>JavaScript</div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', fontFamily: 'monospace' }}>{version}</div>
+                  </div>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    color: 'white'
+                  }}>
+                    <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '8px' }}>Stylesheet</div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', fontFamily: 'monospace' }}>{stylesheetVersion}</div>
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ color: '#333', marginBottom: '10px', fontSize: '14px' }}>System Info</h4>
+                  <div style={{ fontSize: '13px', color: '#666', lineHeight: '2' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                      <strong>Browser:</strong>
+                      <span>{browserInfo}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                      <strong>Platform:</strong>
+                      <span>{navigator.platform}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                      <strong>Screen:</strong>
+                      <span>{window.screen.width} x {window.screen.height}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                      <strong>Viewport:</strong>
+                      <span>{window.innerWidth} x {window.innerHeight}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel 2: State Info */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '12px',
+                padding: '25px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#1a237e',
+                  marginBottom: '20px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e0e0e0'
+                }}>
+                  🎮 Application State
+                </div>
+
+                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Logged In:</strong>
+                    <span style={{ color: isLoggedIn ? '#4caf50' : '#f44336' }}>
+                      {isLoggedIn ? '✅ Yes' : '❌ No'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>User Name:</strong>
+                    <span>{userName || 'N/A'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Table Data Rows:</strong>
+                    <span>{tableData.data?.length || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Filtered Rows:</strong>
+                    <span>{filteredTableData?.length || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Selected Rows:</strong>
+                    <span>{selectedRows?.length || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Aanvragen:</strong>
+                    <span>{aanvragen?.length || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Current Page:</strong>
+                    <span>{currentPage} / {totalPages}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Active Filters:</strong>
+                    <span>
+                      {Object.values(filters).filter(f => f).length}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>About Modal:</strong>
+                    <span style={{ color: isAboutModalOpen ? '#4caf50' : '#666' }}>
+                      {isAboutModalOpen ? 'Open' : 'Closed'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                    <strong>Sidebar Collapsed:</strong>
+                    <span style={{ color: isSidebarCollapsed ? '#f44336' : '#4caf50' }}>
+                      {isSidebarCollapsed ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleOpenAboutModal}
+                  style={{
+                    marginTop: '15px',
+                    width: '100%',
+                    padding: '12px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🧪 Test About Modal
+                </button>
+              </div>
+
+              {/* Panel 3: Filters & Layout */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '12px',
+                padding: '25px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#1a237e',
+                  marginBottom: '20px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e0e0e0'
+                }}>
+                  🎨 Filters & Layout
+                </div>
+
+                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Active Filters:</h4>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    {Object.entries(filters).map(([key, value]) => (
+                      <div key={key} style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
+                        <strong style={{ textTransform: 'capitalize' }}>{key}:</strong>
+                        <span style={{ fontFamily: 'monospace', color: value ? '#4caf50' : '#999' }}>
+                          {value || '(empty)'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Layout:</h4>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
+                      <strong>Column Split:</strong>
+                      <span style={{ fontFamily: 'monospace' }}>{columnSplit}%</span>
+                    </div>
+                    <div style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
+                      <strong>Row Split:</strong>
+                      <span style={{ fontFamily: 'monospace' }}>{rowSplit}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel 4: Quick Actions */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '12px',
+                padding: '25px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#1a237e',
+                  marginBottom: '20px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e0e0e0'
+                }}>
+                  ⚡ Quick Actions
+                </div>
+
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  <button
+                    onClick={() => {
+                      console.log('Current state:', {
+                        version,
+                        isLoggedIn,
+                        userName,
+                        tableDataRows: tableData.data?.length,
+                        selectedRows: selectedRows?.length,
+                        filters
+                      });
+                      alert('Check console for state dump');
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #2196f3 0%, #1565c0 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📊 Dump State to Console
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      clearFilters();
+                      console.log('✅ Filters cleared');
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🗑️ Clear All Filters
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setColumnSplit(50);
+                      setRowSplit(60);
+                      console.log('✅ Layout reset');
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⟲ Reset Layout
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      window.location.reload();
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #f44336 0%, #c62828 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔄 Reload Page
+                  </button>
+                </div>
+
+                <div style={{
+                  marginTop: '20px',
+                  padding: '15px',
+                  backgroundColor: '#e8f4f8',
+                  borderRadius: '8px',
+                  border: '1px solid #b3d9e8'
+                }}>
+                  <div style={{ color: '#2c5f7a', fontSize: '12px', fontWeight: '600', marginBottom: '8px' }}>
+                    💡 TIP
+                  </div>
+                  <div style={{ color: '#2c5f7a', fontSize: '13px', lineHeight: '1.6' }}>
+                    Open browser DevTools (F12) voor gedetailleerde console logs en network monitoring.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
 // ===== RENDER =====
 
     if (!isLoggedIn) {
@@ -1273,15 +1677,8 @@
             {!isSidebarCollapsed && (
               <button
                 className="nav-button"
-                onClick={() => {
-                  console.log('🔧 Opening debug page...');
-                  // Get current URL and add ?page=debug parameter
-                  const currentUrl = window.location.href.split('?')[0];
-                  const debugUrl = currentUrl + '?page=debug';
-                  console.log('Debug URL:', debugUrl);
-                  window.open(debugUrl, '_blank');
-                }}
-                title="Open debug & test pagina in nieuw tabblad"
+                onClick={handleToggleDebugPanel}
+                title="Toggle debug & test panel"
               >
                 <span className="icon">🔧</span>
                 Debug & Test
@@ -2264,6 +2661,9 @@
 
         {/* About Modal */}
         <AboutModal />
+
+        {/* Debug Panel */}
+        <DebugPanel />
 
         {/* Delete Success Modal */}
         {isDeleteSuccessModalOpen && (
