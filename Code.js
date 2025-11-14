@@ -624,7 +624,7 @@ function sendTestEmail() {
     const userEmail = Session.getActiveUser().getEmail();
     const timestamp = new Date().toLocaleString('nl-NL');
     const fromEmail = 'reliabilitycmms@gmail.com';
-    const fromName = 'Aanvragen Rimses System';
+    const fromName = 'Reliability CMMS';
 
     const subject = '🔧 Test Email from Aanvragen Rimses Debug Panel';
     const body = `
@@ -636,55 +636,33 @@ Details:
 - Verzonden door gebruiker: ${userEmail}
 - Verzonden vanuit account: ${fromEmail}
 - Tijdstip: ${timestamp}
-- Applicatie: Aanvragen Rimses v2.8.8-EMAIL-TEST
+- Applicatie: Aanvragen Rimses v2.8.9-EMAIL-ALIAS
 - Environment: Google Apps Script
 
 Als je deze email ontvangt, betekent dit dat de email functionaliteit correct werkt!
 
 Met vriendelijke groet,
+Reliability CMMS
 Aanvragen Rimses Systeem
     `;
 
-    // Try to send via GmailApp with specific sender
-    // Note: This requires reliabilitycmms@gmail.com to be added as an alias
-    // in the Google account settings, or the script to run as that account
-    try {
-      GmailApp.sendEmail(
-        'rob.oversteyns@gmail.com',
-        subject,
-        body,
-        {
-          name: fromName,
-          from: fromEmail,
-          noReply: false
-        }
-      );
+    // Send via GmailApp with alias
+    GmailApp.sendEmail(
+      'rob.oversteyns@gmail.com',
+      subject,
+      body,
+      {
+        from: fromEmail,
+        name: fromName
+      }
+    );
 
-      return {
-        success: true,
-        message: 'Test email succesvol verzonden naar rob.oversteyns@gmail.com vanuit ' + fromEmail,
-        timestamp: timestamp,
-        from: fromEmail
-      };
-    } catch (gmailError) {
-      // Fallback to MailApp if GmailApp fails
-      console.log('GmailApp failed, trying MailApp:', gmailError);
-
-      MailApp.sendEmail({
-        to: 'rob.oversteyns@gmail.com',
-        subject: subject,
-        body: body,
-        name: fromName,
-        replyTo: fromEmail
-      });
-
-      return {
-        success: true,
-        message: 'Test email verzonden naar rob.oversteyns@gmail.com (via MailApp met replyTo: ' + fromEmail + ')',
-        timestamp: timestamp,
-        warning: 'Email verzonden vanuit ' + userEmail + ' met replyTo set naar ' + fromEmail
-      };
-    }
+    return {
+      success: true,
+      message: 'Test email succesvol verzonden naar rob.oversteyns@gmail.com vanuit ' + fromEmail,
+      timestamp: timestamp,
+      from: fromEmail
+    };
 
   } catch (error) {
     console.error('Error sending test email:', error);
