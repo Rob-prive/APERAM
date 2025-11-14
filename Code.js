@@ -11,6 +11,10 @@ const FIREBASE_SECRET = 'lUqckdwDhaz6NNjjzTllOPv2q5LZ0Tg5tsfxhdMn';
 const FIREBASE_AANVRAGEN_URL = 'https://aanvragen-groepen-default-rtdb.europe-west1.firebasedatabase.app';
 const FIREBASE_AANVRAGEN_SECRET = 'Cv5y8Dk4hPEGbjAiilKeReRvijqECnUu89qSY2TZ';
 
+// Firebase for Users database
+const FIREBASE_USERS_URL = 'https://users-6e913.firebaseio.com';
+const FIREBASE_USERS_SECRET = 'lUqckdwDhaz6NNjjzTllOPv2q5LZ0Tg5tsfxhdMn';
+
 // ===== FIREBASE DATA FETCHING =====
 
 /**
@@ -1017,28 +1021,41 @@ function prefetchInstallations() {
  */
 function getAutorisators() {
   try {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('DATA');
-    
-    if (!sheet) {
-      throw new Error('Sheet DATA not found');
-    }
-    
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) {
+    // Fetch users from Firebase users database
+    const url = `${FIREBASE_USERS_URL}/users.json?auth=${FIREBASE_USERS_SECRET}`;
+    const response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    const responseCode = response.getResponseCode();
+    if (responseCode !== 200) {
+      console.error('Firebase users error:', responseCode, response.getContentText());
       return [];
     }
-    
-    // Get column B values, starting from row 2 (skip header)
-    const data = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
-    
-    // Filter out empty values and flatten array
-    const autorisators = data
-      .map(row => row[0])
-      .filter(value => value !== null && value !== undefined && value !== '');
-    
-    return autorisators;
+
+    const data = JSON.parse(response.getContentText());
+
+    if (!data || typeof data !== 'object') {
+      console.log('No users data found in Firebase');
+      return [];
+    }
+
+    // Extract USER_NAME from each user object
+    const autorisators = [];
+    for (const key in data) {
+      if (data.hasOwnProperty(key) && data[key].USER_NAME) {
+        autorisators.push(data[key].USER_NAME);
+      }
+    }
+
+    // Sort alphabetically and remove duplicates
+    const uniqueAutorisators = [...new Set(autorisators)].sort();
+
+    console.log('Autorisators fetched from Firebase:', uniqueAutorisators.length);
+    return uniqueAutorisators;
   } catch (error) {
-    console.error('Error fetching autorisators:', error);
+    console.error('Error fetching autorisators from Firebase:', error);
     return [];
   }
 }
