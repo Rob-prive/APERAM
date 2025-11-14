@@ -395,12 +395,25 @@ function submitAanvraag(formData, selectedRows, userName) {
       console.log('✓ Aanvraag submitted successfully');
       console.log('Request ID:', requestId);
       console.log('Firebase Key:', result.firebaseKey);
-      
+
+      // Send notification email to authorizer
+      console.log('Sending notification email to authorizer:', formData.autorisator);
+      const emailResult = sendAuthorizerNotification(aanvraagData, formData, selectedRows, userName);
+
+      if (emailResult.success) {
+        console.log('✓ Notification email sent successfully');
+      } else {
+        console.warn('⚠ Failed to send notification email:', emailResult.message);
+        // Continue anyway - the aanvraag was saved successfully
+      }
+
       return {
         success: true,
         requestId: requestId,
         aanvraagNr: requestId.split('-')[0], // First part of UUID as display number
-        firebaseKey: result.firebaseKey
+        firebaseKey: result.firebaseKey,
+        emailSent: emailResult.success,
+        emailMessage: emailResult.message
       };
     } else {
       console.error('Failed to submit aanvraag:', result.error);
@@ -613,6 +626,103 @@ function getUserName() {
  */
 function getUserEmail() {
   return Session.getActiveUser().getEmail();
+}
+
+/**
+ * Sends notification email to authorizer when a new request is submitted
+ * @param {Object} aanvraagData - The request data
+ * @param {Object} formData - The form data
+ * @param {Array} selectedRows - Selected vergrendelpunten
+ * @param {string} userName - Name of the requester
+ * @returns {Object} Result of email sending
+ */
+function sendAuthorizerNotification(aanvraagData, formData, selectedRows, userName) {
+  try {
+    const authorizerEmail = formData.autorisator;
+    const requestId = aanvraagData['Request ID'];
+    const timestamp = new Date(aanvraagData.Timestamp).toLocaleString('nl-NL');
+    const requesterEmail = aanvraagData['Requester Email'];
+
+    // Build list of selected vergrendelpunten
+    let vergrendelpuntenList = '';
+    selectedRows.forEach((row, index) => {
+      const rowData = row.data;
+      // Assuming structure: Code, Type, Sleutelbox, Naam, Naam Geografisch
+      vergrendelpuntenList += `${index + 1}. Code: ${rowData[0] || 'N/A'} | Type: ${rowData[1] || 'N/A'} | Naam: ${rowData[3] || 'N/A'} | Locatie: ${rowData[4] || 'N/A'}\n`;
+    });
+
+    const subject = `🔐 Nieuwe Aanvraag Vergrendelgroep - ${requestId}`;
+    const body = `
+Beste,
+
+Er is een nieuwe aanvraag voor een vergrendelgroep ingediend die uw goedkeuring vereist.
+
+═══════════════════════════════════════════════════
+AANVRAAG DETAILS
+═══════════════════════════════════════════════════
+
+Aanvraag Nummer: ${requestId}
+Ingediend op: ${timestamp}
+Aanvrager: ${userName} (${requesterEmail})
+
+═══════════════════════════════════════════════════
+FORMULIER GEGEVENS
+═══════════════════════════════════════════════════
+
+Installatie: ${formData.installatie || 'N/A'}
+Naam: ${formData.naam || 'N/A'}
+Interne Opmerking: ${formData.interneOpmerking || 'Geen'}
+Externe Opmerking: ${formData.externeOpmerking || 'Geen'}
+Opmerkingen: ${formData.opmerkingen || 'Geen'}
+
+═══════════════════════════════════════════════════
+GESELECTEERDE VERGRENDELPUNTEN (${selectedRows.length})
+═══════════════════════════════════════════════════
+
+${vergrendelpuntenList}
+
+═══════════════════════════════════════════════════
+ACTIE VEREIST
+═══════════════════════════════════════════════════
+
+Deze aanvraag wacht op uw goedkeuring. Log in op de Aanvragen Rimses applicatie om de aanvraag te beoordelen en goed te keuren of af te wijzen.
+
+═══════════════════════════════════════════════════
+
+Met vriendelijke groet,
+Reliability CMMS
+Aanvragen Rimses Systeem
+
+---
+Dit is een automatisch gegenereerde email. Gelieve niet te antwoorden op dit bericht.
+    `;
+
+    // Send email via GmailApp with alias
+    GmailApp.sendEmail(
+      authorizerEmail,
+      subject,
+      body,
+      {
+        from: 'reliabilitycmms@gmail.com',
+        name: 'Reliability CMMS'
+      }
+    );
+
+    console.log('✓ Notification email sent to:', authorizerEmail);
+
+    return {
+      success: true,
+      message: 'Notification email sent to authorizer: ' + authorizerEmail
+    };
+
+  } catch (error) {
+    console.error('Error sending authorizer notification:', error);
+    return {
+      success: false,
+      message: 'Failed to send notification email: ' + error.message,
+      error: error.toString()
+    };
+  }
 }
 
 /**
