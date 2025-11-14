@@ -5,10 +5,10 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.8.1-BACKGROUND-PREFETCH
-- **CSS Versie**: 1.1.1
+- **JavaScript Versie**: 2.10.1-DEBUG-AANVRAAG-EMAIL
+- **CSS Versie**: 1.1.2
 - **Framework**: React (via Babel transpiler in browser)
-- **Backend**: Google Apps Script + Firebase
+- **Backend**: Google Apps Script + Firebase (3 databases)
 
 ---
 
@@ -20,10 +20,11 @@
 - **Custom CSS** - Vanilla CSS met moderne features
 
 ### Backend Integration
-- **Google Apps Script** - Server-side logic & authentication
-- **Google Sheets** - Installaties en autorisators data
-- **Firebase Realtime Database** - Vergrendelpunten data (primary)
-- **Firebase Realtime Database** - Aanvragen data (secondary)
+- **Google Apps Script** - Server-side logic, authentication & email verzending
+- **Google Sheets** - Installaties data (DATA sheet, kolom A)
+- **Firebase Realtime Database #1** - Vergrendelpunten data (`aanvragen-a3d22`)
+- **Firebase Realtime Database #2** - Aanvragen data (`aanvragen-groepen`)
+- **Firebase Realtime Database #3** - Gebruikers/Autorisators data (`users-6e913`)
 
 ---
 
@@ -201,14 +202,19 @@ google.script.run.validateUser(username, password)
 google.script.run.getUserName()
 
 // Data ophalen
-google.script.run.getInstallations() // DEPRECATED - niet meer gebruikt in v2.8.0+
+google.script.run.getInstallations() // ✅ Haalt installaties uit Google Sheets
 google.script.run.getFilteredSheetBData(installation) // ✅ Gebruik null voor alle data
-google.script.run.getAanvragen()
-google.script.run.getAutorisators()
+google.script.run.getAanvragen() // ✅ Haalt aanvragen uit Firebase
+google.script.run.getAutorisators() // ✅ Haalt autorisators uit Firebase Users database (v2.10.0+)
 
 // Data operaties
-google.script.run.submitAanvraag(formData, selectedRows, userName)
+google.script.run.submitAanvraag(formData, selectedRows, userName) // ✅ Stuurt ook email naar autorisator (v2.10.0+)
 google.script.run.deleteAanvraag(firebaseKey)
+
+// Email functies (NEW in v2.10.0)
+google.script.run.sendAuthorizerNotification(aanvraagData, formData, selectedRows, userName) // ✅ Stuurt notificatie email
+google.script.run.sendTestEmail() // 🔧 Debug: test email functionaliteit
+google.script.run.testAanvraagEmail() // 🔧 Debug: test aanvraag notification email
 
 // Performance optimalisatie - DEPRECATED
 // google.script.run.prefetchInstallations() // Niet meer gebruikt
@@ -248,6 +254,17 @@ getFilteredSheetBData('')      // ALLE data (NIEUW in v2.8.0)
   },
   ...
 ]
+
+// getAutorisators() response (NEW in v2.10.0 - uit Firebase Users)
+[
+  "jan.janssen@example.com",
+  "marie.pieters@example.com",
+  "rob.oversteyns@gmail.com",
+  ...
+]
+// Haalt USER_NAME uit Firebase users database (/fire-data)
+// Filtert alleen actieve gebruikers (ACTIVE === 1)
+// Gesorteerd alfabetisch, duplicaten verwijderd
 ```
 
 ---
@@ -438,16 +455,22 @@ Click ✓ in Tabel 1 → handleSelectRow(row, index) →
   Re-render Tabel 1 (highlight row) + Tabel 2 (show row)
 ```
 
-### 5. Aanvraag Submit Flow
+### 5. Aanvraag Submit Flow (v2.10.0 met Email)
 ```
 Fill form + Click Verzenden → handleFormSubmit() →
   Validate inputs → submitAanvraag() →
-    ✓ Success: 
+    Write to Firebase Aanvragen database →
+    ✓ Success:
+      - sendAuthorizerNotification() → Email naar autorisator (NEW in v2.10.0)
+        ↳ HTML email met aanvraag details en vergrendelpunten tabel
+        ↳ Van: reliabilitycmms@gmail.com
+        ↳ Naar: geselecteerde autorisator email
       - Clear selectedRows
-      - Show Success Modal
+      - Show Success Modal (met email bevestiging)
       - Refresh aanvragen (Tabel 3)
-      - Send email to autorisator
     ✗ Failure: Show error alert
+
+NOTE: Aanvraag wordt opgeslagen zelfs als email faalt (email failure wordt gelogd)
 ```
 
 ### 6. Delete Flow
@@ -461,6 +484,106 @@ Click ✕ in Tabel 3 → handleOpenDeleteModal() →
         - Show Delete Success Modal
         - Refresh aanvragen (Tabel 3)
       ✗ Failure: Show error alert
+```
+
+---
+
+## 📧 Email Systeem (NEW in v2.10.0)
+
+### Autorisator Notificatie Email
+
+**Wanneer**: Automatisch verzonden na succesvolle aanvraag submit
+
+**Functie**: `sendAuthorizerNotification(aanvraagData, formData, selectedRows, userName)`
+
+**Email Details**:
+- **Van**: `reliabilitycmms@gmail.com` (via GmailApp alias)
+- **Naar**: Geselecteerde autorisator email uit dropdown
+- **Onderwerp**: `Nieuwe Aanvraag Vergrendelgroep - [Request ID]`
+- **Formaat**: HTML email met plain text fallback
+
+**Email Inhoud**:
+1. **Header**: Gradient header met titel "Nieuwe Aanvraag Vergrendelgroep"
+2. **Aanvraag Details** (groen panel):
+   - Aanvraag Nummer (UUID)
+   - Ingediend op (datum/tijd)
+   - Aanvrager naam
+   - Aanvrager email
+3. **Formulier Gegevens** (blauw panel):
+   - Installatie
+   - Naam aanvraag
+   - Interne opmerking
+   - Externe opmerking
+   - Algemene opmerkingen
+4. **Vergrendelpunten Tabel**:
+   - Volledig geformatteerde HTML tabel
+   - Kolommen: #, Code, Type, Sleutelbox, Naam, Locatie
+   - Alle geselecteerde vergrendelpunten
+5. **Call to Action** (oranje panel):
+   - Melding dat actie vereist is
+   - Instructie om in te loggen op applicatie
+6. **Footer**: Automatische email disclaimer
+
+**Error Handling**:
+```javascript
+// Email failure stopt NIET de aanvraag
+if (emailResult.success) {
+  console.log('✓ Notification email sent successfully');
+} else {
+  console.warn('⚠ Failed to send notification email:', emailResult.message);
+  // Continue anyway - aanvraag was saved successfully
+}
+```
+
+**Return Object**:
+```javascript
+{
+  success: true,
+  requestId: "5a2e681f-b775-4f99-...",
+  aanvraagNr: "5a2e681f",
+  firebaseKey: "firebase-generated-key",
+  emailSent: true,              // NEW in v2.10.0
+  emailMessage: "Notification..."  // NEW in v2.10.0
+}
+```
+
+### Debug Email Functies
+
+**1. sendTestEmail()** 🔧
+- Stuurt test email naar `rob.oversteyns@gmail.com`
+- Controleert GmailApp alias configuratie
+- Returns: `{success: boolean, message: string, timestamp: string}`
+
+**2. testAanvraagEmail()** 🔧
+- Stuurt aanvraag notification email met dummy data
+- Test volledige email template en formatting
+- Gebruikt echte `sendAuthorizerNotification()` functie
+- Returns: `{success: boolean, message: string, testData: {...}}`
+
+**3. debugLoadUsersFirebase()** 🔧
+- Test Firebase Users database connectie
+- Controleert verschillende paths (/, /users, /fire-data)
+- Returns gedetailleerde debug info over database structuur
+
+### GmailApp Configuratie
+
+**Vereisten**:
+- Google Apps Script moet toegang hebben tot Gmail
+- `reliabilitycmms@gmail.com` moet als alias ingesteld zijn
+- OAuth scopes: `https://www.googleapis.com/auth/gmail.send`
+
+**Code**:
+```javascript
+GmailApp.sendEmail(
+  authorizerEmail,
+  subject,
+  plainTextBody,
+  {
+    from: 'reliabilitycmms@gmail.com',
+    name: 'Reliability CMMS',
+    htmlBody: htmlBody
+  }
+);
 ```
 
 ---
@@ -564,13 +687,20 @@ Gebruik de Code kolom filter om te zoeken naar specifieke installaties (bijv. ty
 
 ### Firebase vs Google Sheets
 
-**Beslissing**: Firebase Realtime Database voor vergrendelpunten, Sheets voor configuratie.
+**Beslissing**: Firebase Realtime Database voor alle runtime data, Sheets alleen voor installaties lijst.
 
-**Waarom:**
-- ✅ **Snellere queries**: Firebase is geoptimaliseerd voor data retrieval
-- ✅ **Schaalbaarheid**: Beter voor grote datasets
-- ✅ **Real-time capable**: Mogelijkheid voor live updates (future)
-- ✅ **Sheets blijft voor config**: Installaties en autorisators (kleine datasets)
+**Data Bronnen (v2.10.0):**
+- ✅ **Firebase #1** (`aanvragen-a3d22`): Vergrendelpunten data
+- ✅ **Firebase #2** (`aanvragen-groepen`): Aanvragen data
+- ✅ **Firebase #3** (`users-6e913`): Autorisators/Gebruikers data (NEW in v2.10.0)
+- ✅ **Google Sheets**: Alleen installaties lijst (DATA sheet, kolom A)
+
+**Waarom Firebase voor Autorisators? (v2.10.0 wijziging):**
+- ✅ **Centrale user management**: Gebruikers beheer in één systeem
+- ✅ **Betere integratie**: Alle runtime data uit Firebase
+- ✅ **Sneller**: Geen Sheets API calls nodig
+- ✅ **Actieve gebruikers filter**: `ACTIVE === 1` flag support
+- ✅ **Schaalbaarheid**: Beter voor groeiend aantal gebruikers
 
 ---
 
@@ -692,7 +822,39 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.8.1-BACKGROUND-PREFETCH (Current)
+### v2.10.0-DEBUG-AANVRAAG-EMAIL (Current)
+**Release Date**: November 2025
+
+**New Features:**
+- 📧 **Email Notificaties**: Automatische email naar autorisator bij nieuwe aanvraag
+- 🔥 **Firebase Users Database**: Autorisators worden nu uit Firebase gelezen (was Google Sheets)
+- 📨 **HTML Email Template**: Professionele email met volledige aanvraag details
+- 🔧 **Debug Panel**: Nieuwe debug functies voor email testing
+
+**Email Functionaliteit:**
+- `sendAuthorizerNotification()` - Stuurt HTML email naar gekozen autorisator
+- Email bevat: Aanvraag details, formulier gegevens, vergrendelpunten tabel
+- Van: `reliabilitycmms@gmail.com` (GmailApp alias)
+- Graceful degradation: Aanvraag wordt opgeslagen zelfs als email faalt
+
+**Backend Changes:**
+- Nieuwe Firebase database: `FIREBASE_USERS_URL` (users-6e913)
+- `getAutorisators()` haalt nu data uit Firebase `/fire-data` path
+- Filtert op actieve gebruikers (`ACTIVE === 1`)
+- `submitAanvraag()` roept automatisch `sendAuthorizerNotification()` aan
+- Return object bevat nu: `emailSent` en `emailMessage` velden
+
+**Debug Functies:**
+- `sendTestEmail()` - Test email functionaliteit
+- `testAanvraagEmail()` - Test aanvraag notification email met dummy data
+- `debugLoadUsersFirebase()` - Debug Firebase users database connectie
+
+**Technical Details:**
+- GmailApp OAuth scopes vereist: `gmail.send`
+- Email alias moet ingesteld zijn in Google Workspace
+- HTML email met plain text fallback voor compatibiliteit
+
+### v2.8.1-BACKGROUND-PREFETCH
 **Release Date**: November 2025
 
 **New Features:**
