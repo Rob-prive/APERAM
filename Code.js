@@ -1021,8 +1021,8 @@ function prefetchInstallations() {
  */
 function getAutorisators() {
   try {
-    // Fetch users from Firebase users database
-    const url = `${FIREBASE_USERS_URL}/users.json?auth=${FIREBASE_USERS_SECRET}`;
+    // Fetch users from Firebase users database (root path)
+    const url = `${FIREBASE_USERS_URL}/.json?auth=${FIREBASE_USERS_SECRET}`;
     const response = UrlFetchApp.fetch(url, {
       method: 'get',
       muteHttpExceptions: true
@@ -1041,11 +1041,14 @@ function getAutorisators() {
       return [];
     }
 
-    // Extract USER_NAME from each user object
+    // Extract USER_NAME from each user object (numerically indexed)
     const autorisators = [];
     for (const key in data) {
-      if (data.hasOwnProperty(key) && data[key].USER_NAME) {
-        autorisators.push(data[key].USER_NAME);
+      if (data.hasOwnProperty(key)) {
+        const user = data[key];
+        if (user && user.USER_NAME && user.ACTIVE === 1) {
+          autorisators.push(user.USER_NAME);
+        }
       }
     }
 
