@@ -1,3 +1,7 @@
+// ===== Google Apps Script Backend =====
+// Version: 2.10.2-SYNC-UPDATE
+// Last Updated: November 2025
+
 // ===== CONFIGURATION =====
 const CACHE_DURATION = 300; // 5 minutes for sheet data
 const CACHE_DURATION_INSTALLATIONS = 600; // 10 minutes for installations
