@@ -1060,6 +1060,96 @@ function getAutorisators() {
   }
 }
 
+/**
+ * Debug function to test Firebase users connection and return detailed info
+ */
+function debugLoadUsersFirebase() {
+  const debugInfo = {
+    timestamp: new Date().toLocaleString('nl-NL'),
+    config: {
+      url: FIREBASE_USERS_URL,
+      hasSecret: FIREBASE_USERS_SECRET ? 'Yes' : 'No',
+      secretLength: FIREBASE_USERS_SECRET ? FIREBASE_USERS_SECRET.length : 0
+    },
+    request: {},
+    response: {},
+    data: {},
+    users: []
+  };
+
+  try {
+    const url = `${FIREBASE_USERS_URL}/users.json?auth=${FIREBASE_USERS_SECRET}`;
+    debugInfo.request.url = url.replace(FIREBASE_USERS_SECRET, '***SECRET***');
+    debugInfo.request.method = 'GET';
+
+    const response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    debugInfo.response.code = response.getResponseCode();
+    debugInfo.response.headers = response.getHeaders();
+    const contentText = response.getContentText();
+    debugInfo.response.contentLength = contentText.length;
+
+    if (debugInfo.response.code !== 200) {
+      debugInfo.response.error = contentText;
+      debugInfo.success = false;
+      debugInfo.message = 'Firebase returned error code: ' + debugInfo.response.code;
+      return debugInfo;
+    }
+
+    const data = JSON.parse(contentText);
+    debugInfo.data.type = typeof data;
+    debugInfo.data.isNull = data === null;
+    debugInfo.data.isArray = Array.isArray(data);
+    debugInfo.data.isObject = typeof data === 'object' && data !== null;
+
+    if (!data || typeof data !== 'object') {
+      debugInfo.success = false;
+      debugInfo.message = 'No valid data found in Firebase response';
+      return debugInfo;
+    }
+
+    debugInfo.data.keyCount = Object.keys(data).length;
+    debugInfo.data.sampleKeys = Object.keys(data).slice(0, 3);
+
+    // Extract users
+    const users = [];
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        const user = data[key];
+        users.push({
+          key: key,
+          hasUserName: !!user.USER_NAME,
+          userName: user.USER_NAME || null,
+          allFields: Object.keys(user)
+        });
+      }
+    }
+
+    debugInfo.users = users.slice(0, 10); // First 10 users
+    debugInfo.data.totalUsers = users.length;
+    debugInfo.data.usersWithUserName = users.filter(u => u.hasUserName).length;
+
+    // Extract USER_NAME values
+    const userNames = users
+      .filter(u => u.hasUserName)
+      .map(u => u.userName);
+
+    debugInfo.userNames = [...new Set(userNames)].sort();
+    debugInfo.success = true;
+    debugInfo.message = 'Successfully loaded ' + debugInfo.userNames.length + ' unique user names';
+
+  } catch (error) {
+    debugInfo.success = false;
+    debugInfo.error = error.toString();
+    debugInfo.message = 'Exception occurred: ' + error.message;
+  }
+
+  return debugInfo;
+}
+
 // ===== LEGACY / BACKWARDS COMPATIBILITY =====
 
 /**
