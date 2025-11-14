@@ -650,12 +650,12 @@ function sendAuthorizerNotification(aanvraagData, formData, selectedRows, userNa
       // Assuming structure: Code, Type, Sleutelbox, Naam, Naam Geografisch
       vergrendelpuntenRows += `
         <tr style="border-bottom: 1px solid #e0e0e0;">
-          <td style="padding: 6px 8px; font-size: 10px; color: #666;">${index + 1}</td>
-          <td style="padding: 6px 8px; font-size: 10px; font-weight: 600; font-family: monospace;">${rowData[0] || 'N/A'}</td>
-          <td style="padding: 6px 8px; font-size: 10px;">${rowData[1] || 'N/A'}</td>
-          <td style="padding: 6px 8px; font-size: 10px;">${rowData[2] || 'N/A'}</td>
-          <td style="padding: 6px 8px; font-size: 10px;">${rowData[3] || 'N/A'}</td>
-          <td style="padding: 6px 8px; font-size: 10px;">${rowData[4] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px; color: #666; white-space: nowrap;">${index + 1}</td>
+          <td style="padding: 8px; font-size: 11px; font-weight: 600; font-family: monospace; white-space: nowrap;">${rowData[0] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px; white-space: nowrap;">${rowData[1] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px; white-space: nowrap;">${rowData[2] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px;">${rowData[3] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px;">${rowData[4] || 'N/A'}</td>
         </tr>
       `;
     });
@@ -693,7 +693,7 @@ Reliability CMMS
     <tr>
       <td align="center">
         <!-- Main container -->
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <table width="750" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
 
           <!-- Header -->
           <tr>
@@ -789,12 +789,12 @@ Reliability CMMS
                 <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden;">
                   <thead>
                     <tr style="background-color: #f5f5f5;">
-                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">#</th>
-                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Code</th>
-                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Type</th>
-                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Sleutelbox</th>
-                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Naam</th>
-                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Locatie</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">#</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Code</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Type</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Sleutelbox</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Naam</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Locatie</th>
                     </tr>
                   </thead>
                   <tbody>
