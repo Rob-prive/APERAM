@@ -75,13 +75,20 @@
     
     // Delete success modal state
     const [isDeleteSuccessModalOpen, setIsDeleteSuccessModalOpen] = React.useState(false);
-    
+
+    // About modal state
+    const [isAboutModalOpen, setIsAboutModalOpen] = React.useState(false);
+
+    // Debug panel state
+    const [isDebugPanelOpen, setIsDebugPanelOpen] = React.useState(false);
+    const [debugOutput, setDebugOutput] = React.useState('');
+
     // Aanvragen data state
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
-    
-    const version = "2.8.2-SIDEBAR-COLLAPSE";
-    const stylesheetVersion = "1.1.2";
+
+    const version = "2.10.0-DEBUG-AANVRAAG-EMAIL";
+    const stylesheetVersion = "1.1.3";
 
     // ===== HELPER FUNCTIONS =====
     
@@ -549,7 +556,25 @@
       setIsDeleteModalOpen(false);
       setAanvraagToDelete(null);
     };
-    
+
+    const handleOpenAboutModal = () => {
+      console.log('🔵 About button clicked! Opening modal...');
+      console.log('Current state - isAboutModalOpen:', isAboutModalOpen);
+      setIsAboutModalOpen(true);
+      console.log('✅ setIsAboutModalOpen(true) called');
+    };
+
+    const handleCloseAboutModal = () => {
+      console.log('🔴 Closing About modal...');
+      setIsAboutModalOpen(false);
+      console.log('✅ setIsAboutModalOpen(false) called');
+    };
+
+    const handleToggleDebugPanel = () => {
+      console.log('🔧 Toggle debug panel:', !isDebugPanelOpen);
+      setIsDebugPanelOpen(!isDebugPanelOpen);
+    };
+
     const handleConfirmDelete = () => {
       if (!aanvraagToDelete || !aanvraagToDelete.firebaseKey) {
         alert('Geen geldige aanvraag om te verwijderen');
@@ -823,30 +848,34 @@
                 </div>
               </div>
 
-              <div style={{
-                padding: '16px',
-                backgroundColor: '#e3f2fd',
-                borderRadius: '8px',
-                border: '1px solid #90caf9'
-              }}>
-                <p style={{
-                  margin: '0 0 4px 0',
-                  color: '#1565c0',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  lineHeight: '1.4'
+              {successData.emailSent !== undefined && (
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: successData.emailSent ? '#e3f2fd' : '#fff3e0',
+                  borderRadius: '8px',
+                  border: successData.emailSent ? '1px solid #90caf9' : '1px solid #ffb74d'
                 }}>
-                  Email notificatie verzonden
-                </p>
-                <p style={{
-                  margin: 0,
-                  color: '#1976d2',
-                  fontSize: '12px',
-                  lineHeight: '1.5'
-                }}>
-                  De autorisator ontvangt binnenkort een email om de aanvraag goed te keuren of af te wijzen.
-                </p>
-              </div>
+                  <p style={{
+                    margin: '0 0 4px 0',
+                    color: successData.emailSent ? '#1565c0' : '#ef6c00',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    lineHeight: '1.4'
+                  }}>
+                    {successData.emailSent ? '✅ Email notificatie verzonden' : '⚠️ Email notificatie mislukt'}
+                  </p>
+                  <p style={{
+                    margin: 0,
+                    color: successData.emailSent ? '#1976d2' : '#f57c00',
+                    fontSize: '12px',
+                    lineHeight: '1.5'
+                  }}>
+                    {successData.emailSent
+                      ? 'De autorisator ontvangt binnenkort een email om de aanvraag goed te keuren of af te wijzen.'
+                      : (successData.emailMessage || 'Email kon niet worden verzonden, maar de aanvraag is wel opgeslagen.')}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div style={{
@@ -880,6 +909,849 @@
         </div>
       );
     };
+
+    // ===== ABOUT MODAL COMPONENT =====
+
+    const AboutModal = () => {
+      console.log('📊 AboutModal render - isAboutModalOpen:', isAboutModalOpen);
+
+      if (!isAboutModalOpen) {
+        console.log('⏭️ AboutModal: Not rendering (modal closed)');
+        return null;
+      }
+
+      console.log('✅ AboutModal: Rendering modal!');
+      return (
+        <div
+          className="about-modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            padding: '20px',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onClick={handleCloseAboutModal}
+        >
+          <div
+            className="about-modal-container"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              maxWidth: '550px',
+              width: '100%',
+              overflow: 'hidden',
+              animation: 'slideUp 0.4s ease-out'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              padding: '30px 25px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                margin: '0 auto 20px',
+                backgroundColor: 'white',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '40px'
+              }}>
+                ℹ️
+              </div>
+
+              <h2 style={{
+                margin: 0,
+                color: 'white',
+                fontSize: '28px',
+                fontWeight: '700',
+                textAlign: 'center',
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}>
+                Over deze applicatie
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '30px 25px' }}>
+              {/* App Info */}
+              <div style={{
+                marginBottom: '25px',
+                textAlign: 'center'
+              }}>
+                <h3 style={{
+                  margin: '0 0 10px 0',
+                  color: '#333',
+                  fontSize: '20px',
+                  fontWeight: '600'
+                }}>
+                  Aanvragen Rimses
+                </h3>
+                <p style={{
+                  margin: 0,
+                  color: '#666',
+                  fontSize: '14px',
+                  lineHeight: '1.6'
+                }}>
+                  Webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties
+                </p>
+              </div>
+
+              {/* Version Info */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '8px',
+                padding: '20px',
+                marginBottom: '20px'
+              }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px'
+                }}>
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '6px',
+                    padding: '14px',
+                    borderLeft: '4px solid #667eea'
+                  }}>
+                    <div style={{
+                      color: '#999',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '6px'
+                    }}>
+                      JavaScript
+                    </div>
+                    <div style={{
+                      color: '#333',
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      fontFamily: 'monospace'
+                    }}>
+                      {version}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '6px',
+                    padding: '14px',
+                    borderLeft: '4px solid #764ba2'
+                  }}>
+                    <div style={{
+                      color: '#999',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '6px'
+                    }}>
+                      Stylesheet
+                    </div>
+                    <div style={{
+                      color: '#333',
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      fontFamily: 'monospace'
+                    }}>
+                      {stylesheetVersion}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tech Stack */}
+              <div style={{
+                backgroundColor: '#e8f4f8',
+                border: '1px solid #b3d9e8',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '20px'
+              }}>
+                <div style={{
+                  color: '#2c5f7a',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '10px'
+                }}>
+                  Tech Stack
+                </div>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px'
+                }}>
+                  {['React 18', 'Google Apps Script', 'Firebase', 'Babel Standalone'].map((tech, index) => (
+                    <span key={index} style={{
+                      backgroundColor: 'white',
+                      color: '#2c5f7a',
+                      padding: '6px 12px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      border: '1px solid #b3d9e8'
+                    }}>
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Features */}
+              <div style={{
+                backgroundColor: '#f0f4f8',
+                borderRadius: '8px',
+                padding: '16px'
+              }}>
+                <div style={{
+                  color: '#555',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '10px'
+                }}>
+                  Features
+                </div>
+                <ul style={{
+                  margin: 0,
+                  paddingLeft: '20px',
+                  color: '#666',
+                  fontSize: '13px',
+                  lineHeight: '1.8'
+                }}>
+                  <li>4 dynamisch aanpasbare tabellen</li>
+                  <li>Background prefetch voor snelle load</li>
+                  <li>Real-time data synchronisatie</li>
+                  <li>In-memory filtering</li>
+                  <li>Centrale layout slider</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '20px 25px',
+              backgroundColor: '#fafafa',
+              borderTop: '1px solid #e0e0e0',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={handleCloseAboutModal}
+                style={{
+                  padding: '12px 40px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '15px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Sluiten
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ===== DEBUG PANEL COMPONENT =====
+
+    const DebugPanel = () => {
+      if (!isDebugPanelOpen) return null;
+
+      const browserInfo = navigator.userAgent.split(' ').slice(-2).join(' ');
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          zIndex: 999999,
+          padding: '20px',
+          overflow: 'auto',
+          animation: 'fadeIn 0.3s ease-out'
+        }}
+        onClick={handleToggleDebugPanel}
+        >
+          <div style={{
+            maxWidth: '1400px',
+            margin: '0 auto',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '30px',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '30px',
+              paddingBottom: '20px',
+              borderBottom: '3px solid #667eea'
+            }}>
+              <div>
+                <h1 style={{ margin: '0 0 10px 0', color: '#1a237e', fontSize: '32px' }}>
+                  🔧 Debug & Test Panel
+                </h1>
+                <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+                  Test functionaliteit en bekijk system informatie
+                </p>
+              </div>
+              <button
+                onClick={handleToggleDebugPanel}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                ✕ Sluiten
+              </button>
+            </div>
+
+            {/* 4-panel grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gridTemplateRows: 'auto auto',
+              gap: '20px',
+              minHeight: '600px'
+            }}>
+              {/* Panel 1: Version Info */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '12px',
+                padding: '25px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#1a237e',
+                  marginBottom: '20px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e0e0e0'
+                }}>
+                  ℹ️ Versie Informatie
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    color: 'white'
+                  }}>
+                    <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '8px' }}>JavaScript</div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', fontFamily: 'monospace' }}>{version}</div>
+                  </div>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    color: 'white'
+                  }}>
+                    <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '8px' }}>Stylesheet</div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', fontFamily: 'monospace' }}>{stylesheetVersion}</div>
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ color: '#333', marginBottom: '10px', fontSize: '14px' }}>System Info</h4>
+                  <div style={{ fontSize: '13px', color: '#666', lineHeight: '2' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                      <strong>Browser:</strong>
+                      <span>{browserInfo}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                      <strong>Platform:</strong>
+                      <span>{navigator.platform}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                      <strong>Screen:</strong>
+                      <span>{window.screen.width} x {window.screen.height}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                      <strong>Viewport:</strong>
+                      <span>{window.innerWidth} x {window.innerHeight}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel 2: State Info */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '12px',
+                padding: '25px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#1a237e',
+                  marginBottom: '20px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e0e0e0'
+                }}>
+                  🎮 Application State
+                </div>
+
+                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Logged In:</strong>
+                    <span style={{ color: isLoggedIn ? '#4caf50' : '#f44336' }}>
+                      {isLoggedIn ? '✅ Yes' : '❌ No'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>User Name:</strong>
+                    <span>{userName || 'N/A'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Table Data Rows:</strong>
+                    <span>{(tableData.data && tableData.data.length) || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Filtered Rows:</strong>
+                    <span>{(filteredTableData && filteredTableData.length) || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Selected Rows:</strong>
+                    <span>{(selectedRows && selectedRows.length) || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Aanvragen:</strong>
+                    <span>{(aanvragen && aanvragen.length) || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Current Page:</strong>
+                    <span>{currentPage} / {totalPages}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>Active Filters:</strong>
+                    <span>
+                      {Object.values(filters).filter(f => f).length}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', padding: '8px 0' }}>
+                    <strong>About Modal:</strong>
+                    <span style={{ color: isAboutModalOpen ? '#4caf50' : '#666' }}>
+                      {isAboutModalOpen ? 'Open' : 'Closed'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                    <strong>Sidebar Collapsed:</strong>
+                    <span style={{ color: isSidebarCollapsed ? '#f44336' : '#4caf50' }}>
+                      {isSidebarCollapsed ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleOpenAboutModal}
+                  style={{
+                    marginTop: '15px',
+                    width: '100%',
+                    padding: '12px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🧪 Test About Modal
+                </button>
+              </div>
+
+              {/* Panel 3: Filters & Layout */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '12px',
+                padding: '25px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#1a237e',
+                  marginBottom: '20px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e0e0e0'
+                }}>
+                  🎨 Filters & Layout
+                </div>
+
+                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Active Filters:</h4>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    {Object.entries(filters).map(([key, value]) => (
+                      <div key={key} style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
+                        <strong style={{ textTransform: 'capitalize' }}>{key}:</strong>
+                        <span style={{ fontFamily: 'monospace', color: value ? '#4caf50' : '#999' }}>
+                          {value || '(empty)'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Layout:</h4>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
+                      <strong>Column Split:</strong>
+                      <span style={{ fontFamily: 'monospace' }}>{columnSplit}%</span>
+                    </div>
+                    <div style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
+                      <strong>Row Split:</strong>
+                      <span style={{ fontFamily: 'monospace' }}>{rowSplit}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel 4: Quick Actions */}
+              <div style={{
+                backgroundColor: '#f5f5f5',
+                borderRadius: '12px',
+                padding: '25px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#1a237e',
+                  marginBottom: '20px',
+                  paddingBottom: '15px',
+                  borderBottom: '2px solid #e0e0e0'
+                }}>
+                  ⚡ Quick Actions
+                </div>
+
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  <button
+                    onClick={() => {
+                      console.log('Current state:', {
+                        version,
+                        isLoggedIn,
+                        userName,
+                        tableDataRows: (tableData.data && tableData.data.length) || 0,
+                        selectedRows: (selectedRows && selectedRows.length) || 0,
+                        filters
+                      });
+                      alert('Check console for state dump');
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #2196f3 0%, #1565c0 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📊 Dump State to Console
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      clearFilters();
+                      console.log('✅ Filters cleared');
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🗑️ Clear All Filters
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setColumnSplit(50);
+                      setRowSplit(60);
+                      console.log('✅ Layout reset');
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⟲ Reset Layout
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      console.log('🔍 Loading Firebase users debug info...');
+                      const btn = event.target;
+                      const originalText = btn.textContent;
+                      btn.disabled = true;
+                      btn.textContent = '⏳ Loading...';
+                      setDebugOutput('Loading Firebase users data...');
+
+                      google.script.run
+                        .withSuccessHandler((result) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+                          console.log('✅ Debug info received:', result);
+                          setDebugOutput(JSON.stringify(result, null, 2));
+                        })
+                        .withFailureHandler((error) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+                          console.error('❌ Error:', error);
+                          setDebugOutput('ERROR: ' + error.message + '\n\n' + error.toString());
+                        })
+                        .debugLoadUsersFirebase();
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #2196f3 0%, #1565c0 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔍 Load Users Firebase
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      console.log('📧 Sending test email...');
+                      const btn = event.target;
+                      const originalText = btn.textContent;
+                      btn.disabled = true;
+                      btn.textContent = '📧 Verzenden...';
+
+                      google.script.run
+                        .withSuccessHandler((result) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+
+                          if (result.success) {
+                            console.log('✅ Email sent:', result);
+                            alert('✅ Test email verzonden!\n\n' + result.message + '\n\nTijdstip: ' + result.timestamp);
+                          } else {
+                            console.error('❌ Email failed:', result);
+                            alert('❌ Email verzenden mislukt:\n\n' + result.message);
+                          }
+                        })
+                        .withFailureHandler((error) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+                          console.error('❌ Error:', error);
+                          alert('❌ Fout bij verzenden email:\n\n' + error.message);
+                        })
+                        .sendTestEmail();
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📧 Send Test Email
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      console.log('📨 Testing aanvraag email...');
+                      const btn = event.target;
+                      const originalText = btn.textContent;
+                      btn.disabled = true;
+                      btn.textContent = '📨 Verzenden...';
+                      setDebugOutput('Testing aanvraag notification email...');
+
+                      google.script.run
+                        .withSuccessHandler((result) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+                          console.log('✅ Aanvraag email test result:', result);
+                          setDebugOutput(JSON.stringify(result, null, 2));
+
+                          if (result.success) {
+                            alert('✅ Aanvraag test email verzonden!\n\n' + result.message + '\n\nRequest ID: ' + result.testData.requestId + '\nVerzonden naar: ' + result.testData.sentTo);
+                          } else {
+                            alert('❌ Aanvraag email mislukt:\n\n' + result.message + '\n\nError: ' + (result.error || 'Unknown'));
+                          }
+                        })
+                        .withFailureHandler((error) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+                          console.error('❌ Error:', error);
+                          setDebugOutput('ERROR: ' + error.message + '\n\n' + error.toString());
+                          alert('❌ Fout bij testen aanvraag email:\n\n' + error.message);
+                        })
+                        .testAanvraagEmail();
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📨 Test Aanvraag Email
+                  </button>
+                </div>
+
+                <div style={{
+                  marginTop: '20px',
+                  padding: '15px',
+                  backgroundColor: '#e8f4f8',
+                  borderRadius: '8px',
+                  border: '1px solid #b3d9e8'
+                }}>
+                  <div style={{ color: '#2c5f7a', fontSize: '12px', fontWeight: '600', marginBottom: '8px' }}>
+                    💡 TIP
+                  </div>
+                  <div style={{ color: '#2c5f7a', fontSize: '13px', lineHeight: '1.6' }}>
+                    Open browser DevTools (F12) voor gedetailleerde console logs en network monitoring.
+                  </div>
+                </div>
+
+                <div style={{
+                  marginTop: '15px',
+                  padding: '15px',
+                  backgroundColor: '#e8f5e9',
+                  borderRadius: '8px',
+                  border: '1px solid #a5d6a7'
+                }}>
+                  <div style={{ color: '#2e7d32', fontSize: '12px', fontWeight: '600', marginBottom: '8px' }}>
+                    📧 EMAIL TEST
+                  </div>
+                  <div style={{ color: '#2e7d32', fontSize: '13px', lineHeight: '1.6' }}>
+                    Test email wordt verzonden naar: rob.oversteyns@gmail.com
+                  </div>
+                </div>
+
+                {debugOutput && (
+                  <div style={{
+                    marginTop: '15px',
+                    padding: '15px',
+                    backgroundColor: '#fff3e0',
+                    borderRadius: '8px',
+                    border: '2px solid #ff9800'
+                  }}>
+                    <div style={{
+                      color: '#e65100',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      marginBottom: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span>🔍 DEBUG OUTPUT</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(debugOutput);
+                          alert('Debug output gekopieerd naar klembord!');
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          backgroundColor: '#ff9800',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📋 Kopieer
+                      </button>
+                    </div>
+                    <pre style={{
+                      color: '#424242',
+                      fontSize: '11px',
+                      lineHeight: '1.4',
+                      maxHeight: '400px',
+                      overflow: 'auto',
+                      margin: 0,
+                      fontFamily: 'Consolas, Monaco, monospace',
+                      whiteSpace: 'pre-wrap',
+                      wordWrap: 'break-word'
+                    }}>
+                      {debugOutput}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
 // ===== RENDER =====
 
     if (!isLoggedIn) {
@@ -983,6 +1855,17 @@
             )}
 
             {!isSidebarCollapsed && (
+              <button
+                className="nav-button"
+                onClick={handleToggleDebugPanel}
+                title="Toggle debug & test panel"
+              >
+                <span className="icon">🔧</span>
+                Debug & Test
+              </button>
+            )}
+
+            {!isSidebarCollapsed && (
               <button className="nav-button" onClick={handleLogout}>
                 <span className="icon">⎋</span>
                 Uitloggen
@@ -1006,7 +1889,7 @@
                     ⟲ Reset Layout
                   </button>
                 )}
-                <div className="about">About</div>
+                <button className="about" onClick={handleOpenAboutModal}>About</button>
               </div>
             </header>
             
@@ -1751,7 +2634,6 @@
                     id="installatie"
                     value={formData.installatie}
                     onChange={(e) => handleFormChange('installatie', e.target.value)}
-                    disabled
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1759,13 +2641,35 @@
                       borderRadius: '4px',
                       fontSize: '14px',
                       fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
-                      backgroundColor: '#f5f5f5',
-                      color: '#666',
-                      cursor: 'not-allowed',
+                      backgroundColor: '#ffffff',
+                      color: '#333',
+                      cursor: 'pointer',
                       boxSizing: 'border-box'
                     }}
                   >
-                    <option value={selectedInstallation}>{selectedInstallation}</option>
+                    <option value="">-- Selecteer Installatie --</option>
+                    <option value="G4">G4</option>
+                    <option value="G5">G5</option>
+                    <option value="SLT2">SLT2</option>
+                    <option value="SF">SF</option>
+                    <option value="APL4">APL4</option>
+                    <option value="CRM3">CRM3</option>
+                    <option value="SLT6">SLT6</option>
+                    <option value="SBL1">SBL1</option>
+                    <option value="CRM5">CRM5</option>
+                    <option value="CCS">CCS</option>
+                    <option value="CPL2">CPL2</option>
+                    <option value="SLT5">SLT5</option>
+                    <option value="APL2">APL2</option>
+                    <option value="CPO2">CPO2</option>
+                    <option value="CRM2">CRM2</option>
+                    <option value="WKSR1+2">WKSR1+2</option>
+                    <option value="CTL1">CTL1</option>
+                    <option value="SKP1">SKP1</option>
+                    <option value="SKP2">SKP2</option>
+                    <option value="CRM4">CRM4</option>
+                    <option value="APL3">APL3</option>
+                    <option value="2O">2O</option>
                   </select>
                 </div>
                 
@@ -1955,7 +2859,13 @@
         
         {/* Success Modal */}
         <SuccessModal />
-        
+
+        {/* About Modal */}
+        <AboutModal />
+
+        {/* Debug Panel */}
+        <DebugPanel />
+
         {/* Delete Success Modal */}
         {isDeleteSuccessModalOpen && (
           <div 

@@ -11,6 +11,10 @@ const FIREBASE_SECRET = 'lUqckdwDhaz6NNjjzTllOPv2q5LZ0Tg5tsfxhdMn';
 const FIREBASE_AANVRAGEN_URL = 'https://aanvragen-groepen-default-rtdb.europe-west1.firebasedatabase.app';
 const FIREBASE_AANVRAGEN_SECRET = 'Cv5y8Dk4hPEGbjAiilKeReRvijqECnUu89qSY2TZ';
 
+// Firebase for Users database
+const FIREBASE_USERS_URL = 'https://users-6e913.firebaseio.com';
+const FIREBASE_USERS_SECRET = 'BBcmkVVW6jrsfA3GSJI0f7NovJNJ8yN8lKOQRzrK';
+
 // ===== FIREBASE DATA FETCHING =====
 
 /**
@@ -395,12 +399,25 @@ function submitAanvraag(formData, selectedRows, userName) {
       console.log('✓ Aanvraag submitted successfully');
       console.log('Request ID:', requestId);
       console.log('Firebase Key:', result.firebaseKey);
-      
+
+      // Send notification email to authorizer
+      console.log('Sending notification email to authorizer:', formData.autorisator);
+      const emailResult = sendAuthorizerNotification(aanvraagData, formData, selectedRows, userName);
+
+      if (emailResult.success) {
+        console.log('✓ Notification email sent successfully');
+      } else {
+        console.warn('⚠ Failed to send notification email:', emailResult.message);
+        // Continue anyway - the aanvraag was saved successfully
+      }
+
       return {
         success: true,
         requestId: requestId,
         aanvraagNr: requestId.split('-')[0], // First part of UUID as display number
-        firebaseKey: result.firebaseKey
+        firebaseKey: result.firebaseKey,
+        emailSent: emailResult.success,
+        emailMessage: emailResult.message
       };
     } else {
       console.error('Failed to submit aanvraag:', result.error);
@@ -565,7 +582,18 @@ function testAanvraagSubmission() {
 /**
  * Serves the HTML page
  */
-function doGet() {
+function doGet(e) {
+  // Check if debug page is requested
+  const page = e && e.parameter && e.parameter.page;
+
+  if (page === 'debug') {
+    // Serve debug page
+    return HtmlService.createHtmlOutputFromFile('debug')
+        .setTitle('Debug & Test - Aanvragen Rimses')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
+  // Default: serve main application
   return HtmlService.createTemplateFromFile('Index')
       .evaluate()
       .setTitle('Vergrendelgroepaanvraag')
@@ -602,6 +630,376 @@ function getUserName() {
  */
 function getUserEmail() {
   return Session.getActiveUser().getEmail();
+}
+
+/**
+ * Sends notification email to authorizer when a new request is submitted
+ * @param {Object} aanvraagData - The request data
+ * @param {Object} formData - The form data
+ * @param {Array} selectedRows - Selected vergrendelpunten
+ * @param {string} userName - Name of the requester
+ * @returns {Object} Result of email sending
+ */
+function sendAuthorizerNotification(aanvraagData, formData, selectedRows, userName) {
+  try {
+    const authorizerEmail = formData.autorisator;
+    const requestId = aanvraagData['Request ID'];
+    const timestamp = new Date(aanvraagData.Timestamp).toLocaleString('nl-NL');
+    const requesterEmail = aanvraagData['Requester Email'];
+
+    // Build HTML table rows for selected vergrendelpunten
+    let vergrendelpuntenRows = '';
+    selectedRows.forEach((row, index) => {
+      const rowData = row.data;
+      // Assuming structure: Code, Type, Sleutelbox, Naam, Naam Geografisch
+      vergrendelpuntenRows += `
+        <tr style="border-bottom: 1px solid #e0e0e0;">
+          <td style="padding: 8px; font-size: 11px; color: #666; white-space: nowrap;">${index + 1}</td>
+          <td style="padding: 8px; font-size: 11px; font-weight: 600; font-family: monospace; white-space: nowrap;">${rowData[0] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px; white-space: nowrap;">${rowData[1] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px; white-space: nowrap;">${rowData[2] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px;">${rowData[3] || 'N/A'}</td>
+          <td style="padding: 8px; font-size: 11px;">${rowData[4] || 'N/A'}</td>
+        </tr>
+      `;
+    });
+
+    const subject = `Nieuwe Aanvraag Vergrendelgroep - ${requestId}`;
+
+    // Plain text fallback
+    const plainTextBody = `
+Beste,
+
+Er is een nieuwe aanvraag voor een vergrendelgroep ingediend die uw goedkeuring vereist.
+
+Aanvraag Nummer: ${requestId}
+Ingediend op: ${timestamp}
+Aanvrager: ${userName} (${requesterEmail})
+
+Installatie: ${formData.installatie || 'N/A'}
+Naam: ${formData.naam || 'N/A'}
+
+Deze aanvraag wacht op uw goedkeuring. Log in op de Aanvragen Rimses applicatie om de aanvraag te beoordelen.
+
+Met vriendelijke groet,
+Reliability CMMS
+    `;
+
+    // HTML email body
+    const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
+    <tr>
+      <td align="center">
+        <!-- Main container -->
+        <table width="750" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">
+                Nieuwe Aanvraag Vergrendelgroep
+              </h1>
+              <p style="margin: 10px 0 0 0; color: #e0e0e0; font-size: 14px;">
+                Reliability CMMS - Aanvragen Rimses
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 30px;">
+
+              <!-- Introduction -->
+              <p style="margin: 0 0 20px 0; color: #333; font-size: 15px; line-height: 1.6;">
+                Beste,
+              </p>
+              <p style="margin: 0 0 25px 0; color: #666; font-size: 14px; line-height: 1.6;">
+                Er is een nieuwe aanvraag voor een vergrendelgroep ingediend die uw goedkeuring vereist.
+              </p>
+
+              <!-- Aanvraag Details -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px; margin-bottom: 25px;">
+                <tr>
+                  <td style="padding: 15px;">
+                    <h3 style="margin: 0 0 12px 0; color: #2e7d32; font-size: 16px; font-weight: 600;">
+                      Aanvraag Details
+                    </h3>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600; width: 140px;">Aanvraag Nummer:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px; font-family: monospace;">${requestId}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Ingediend op:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${timestamp}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Aanvrager:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${userName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Email:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${requesterEmail}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Formulier Gegevens -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px; margin-bottom: 25px;">
+                <tr>
+                  <td style="padding: 15px;">
+                    <h3 style="margin: 0 0 12px 0; color: #1565c0; font-size: 16px; font-weight: 600;">
+                      Formulier Gegevens
+                    </h3>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600; width: 140px;">Installatie:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.installatie || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Naam:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.naam || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Interne Opmerking:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.interneOpmerking || 'Geen'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Externe Opmerking:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.externeOpmerking || 'Geen'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Opmerkingen:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.opmerkingen || 'Geen'}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Vergrendelpunten Table -->
+              <div style="margin-bottom: 25px;">
+                <h3 style="margin: 0 0 12px 0; color: #333; font-size: 16px; font-weight: 600;">
+                  Geselecteerde Vergrendelpunten (${selectedRows.length})
+                </h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden;">
+                  <thead>
+                    <tr style="background-color: #f5f5f5;">
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">#</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Code</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Type</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Sleutelbox</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Naam</th>
+                      <th style="padding: 10px 8px; text-align: left; font-size: 11px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0; white-space: nowrap;">Locatie</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${vergrendelpuntenRows}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Call to Action -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff3e0; border-left: 4px solid #ff9800; border-radius: 4px; margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 15px;">
+                    <h3 style="margin: 0 0 8px 0; color: #e65100; font-size: 15px; font-weight: 600;">
+                      Actie Vereist
+                    </h3>
+                    <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.6;">
+                      Deze aanvraag wacht op uw goedkeuring. Log in op de Aanvragen Rimses applicatie om de aanvraag te beoordelen en goed te keuren of af te wijzen.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Closing -->
+              <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.6;">
+                Met vriendelijke groet,<br>
+                <strong>Reliability CMMS</strong><br>
+                Aanvragen Rimses Systeem
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f5f5f5; padding: 15px; text-align: center; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; color: #999; font-size: 11px;">
+                Dit is een automatisch gegenereerde email. Gelieve niet te antwoorden op dit bericht.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    // Send email via GmailApp with alias
+    GmailApp.sendEmail(
+      authorizerEmail,
+      subject,
+      plainTextBody,
+      {
+        from: 'reliabilitycmms@gmail.com',
+        name: 'Reliability CMMS',
+        htmlBody: htmlBody
+      }
+    );
+
+    console.log('✓ Notification email sent to:', authorizerEmail);
+
+    return {
+      success: true,
+      message: 'Notification email sent to authorizer: ' + authorizerEmail
+    };
+
+  } catch (error) {
+    console.error('Error sending authorizer notification:', error);
+    return {
+      success: false,
+      message: 'Failed to send notification email: ' + error.message,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * Sends a test email (for debug purposes)
+ * @returns {Object} Result of the email sending operation
+ */
+function sendTestEmail() {
+  try {
+    const userEmail = Session.getActiveUser().getEmail();
+    const timestamp = new Date().toLocaleString('nl-NL');
+    const fromEmail = 'reliabilitycmms@gmail.com';
+    const fromName = 'Reliability CMMS';
+
+    const subject = '🔧 Test Email from Aanvragen Rimses Debug Panel';
+    const body = `
+Hallo,
+
+Dit is een test email verzonden vanuit het Debug & Test panel van de Aanvragen Rimses applicatie.
+
+Details:
+- Verzonden door gebruiker: ${userEmail}
+- Verzonden vanuit account: ${fromEmail}
+- Tijdstip: ${timestamp}
+- Applicatie: Aanvragen Rimses v2.8.9-EMAIL-ALIAS
+- Environment: Google Apps Script
+
+Als je deze email ontvangt, betekent dit dat de email functionaliteit correct werkt!
+
+Met vriendelijke groet,
+Reliability CMMS
+Aanvragen Rimses Systeem
+    `;
+
+    // Send via GmailApp with alias
+    GmailApp.sendEmail(
+      'rob.oversteyns@gmail.com',
+      subject,
+      body,
+      {
+        from: fromEmail,
+        name: fromName
+      }
+    );
+
+    return {
+      success: true,
+      message: 'Test email succesvol verzonden naar rob.oversteyns@gmail.com vanuit ' + fromEmail,
+      timestamp: timestamp,
+      from: fromEmail
+    };
+
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    return {
+      success: false,
+      message: 'Fout bij verzenden email: ' + error.message,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * Test aanvraag notification email with dummy data
+ */
+function testAanvraagEmail() {
+  try {
+    const userEmail = Session.getActiveUser().getEmail();
+
+    // Create dummy aanvraag data
+    const dummyAanvraagData = {
+      "Request ID": "TEST-" + new Date().getTime(),
+      "Approval Token": "dummy-token-123",
+      "Requester Email": userEmail,
+      "Approver Email": "rob.oversteyns@gmail.com",
+      "Status": "Pending",
+      "Timestamp": new Date().toISOString()
+    };
+
+    const dummyFormData = {
+      installatie: "G4",
+      naam: "Test Vergrendelgroep",
+      interneOpmerking: "Dit is een test interne opmerking",
+      externeOpmerking: "Dit is een test externe opmerking",
+      opmerkingen: "Test algemene opmerkingen",
+      autorisator: "rob.oversteyns@gmail.com"
+    };
+
+    const dummySelectedRows = [
+      { data: ["VP001", "Type A", "Box 1", "Test Punt 1", "Locatie A"] },
+      { data: ["VP002", "Type B", "Box 2", "Test Punt 2", "Locatie B"] },
+      { data: ["VP003", "Type C", "Box 3", "Test Punt 3", "Locatie C"] }
+    ];
+
+    const dummyUserName = "Test User (Debug)";
+
+    console.log('Testing aanvraag email with dummy data...');
+    console.log('Sending to:', dummyFormData.autorisator);
+
+    // Call the actual sendAuthorizerNotification function
+    const result = sendAuthorizerNotification(
+      dummyAanvraagData,
+      dummyFormData,
+      dummySelectedRows,
+      dummyUserName
+    );
+
+    return {
+      success: result.success,
+      message: result.message,
+      testData: {
+        requestId: dummyAanvraagData["Request ID"],
+        sentTo: dummyFormData.autorisator,
+        timestamp: new Date().toLocaleString('nl-NL')
+      },
+      error: result.error || null
+    };
+
+  } catch (error) {
+    console.error('Error in testAanvraagEmail:', error);
+    return {
+      success: false,
+      message: 'Fout bij testen aanvraag email: ' + error.message,
+      error: error.toString()
+    };
+  }
 }
 
 /**
@@ -689,30 +1087,155 @@ function prefetchInstallations() {
  */
 function getAutorisators() {
   try {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('DATA');
-    
-    if (!sheet) {
-      throw new Error('Sheet DATA not found');
-    }
-    
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) {
+    // Fetch users from Firebase users database (fire-data path)
+    const url = `${FIREBASE_USERS_URL}/fire-data.json?auth=${FIREBASE_USERS_SECRET}`;
+    const response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    const responseCode = response.getResponseCode();
+    if (responseCode !== 200) {
+      console.error('Firebase users error:', responseCode, response.getContentText());
       return [];
     }
-    
-    // Get column B values, starting from row 2 (skip header)
-    const data = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
-    
-    // Filter out empty values and flatten array
-    const autorisators = data
-      .map(row => row[0])
-      .filter(value => value !== null && value !== undefined && value !== '');
-    
-    return autorisators;
+
+    const data = JSON.parse(response.getContentText());
+
+    if (!data || !Array.isArray(data)) {
+      console.log('No users data found in Firebase or invalid format');
+      return [];
+    }
+
+    // Extract USER_NAME from each user object in array
+    const autorisators = [];
+    data.forEach((user) => {
+      if (user && user.USER_NAME && user.ACTIVE === 1) {
+        autorisators.push(user.USER_NAME);
+      }
+    });
+
+    // Sort alphabetically and remove duplicates
+    const uniqueAutorisators = [...new Set(autorisators)].sort();
+
+    console.log('Autorisators fetched from Firebase:', uniqueAutorisators.length);
+    return uniqueAutorisators;
   } catch (error) {
-    console.error('Error fetching autorisators:', error);
+    console.error('Error fetching autorisators from Firebase:', error);
     return [];
   }
+}
+
+/**
+ * Debug function to test Firebase users connection and return detailed info
+ */
+function debugLoadUsersFirebase() {
+  const debugInfo = {
+    timestamp: new Date().toLocaleString('nl-NL'),
+    config: {
+      url: FIREBASE_USERS_URL,
+      hasSecret: FIREBASE_USERS_SECRET ? 'Yes' : 'No',
+      secretLength: FIREBASE_USERS_SECRET ? FIREBASE_USERS_SECRET.length : 0
+    },
+    attempts: []
+  };
+
+  try {
+    // Attempt 1: Check root of database
+    const rootUrl = `${FIREBASE_USERS_URL}/.json?auth=${FIREBASE_USERS_SECRET}`;
+    const rootAttempt = {
+      path: '/ (root)',
+      url: rootUrl.replace(FIREBASE_USERS_SECRET, '***SECRET***'),
+      method: 'GET'
+    };
+
+    const rootResponse = UrlFetchApp.fetch(rootUrl, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    rootAttempt.responseCode = rootResponse.getResponseCode();
+    const rootContentText = rootResponse.getContentText();
+    rootAttempt.contentLength = rootContentText.length;
+    rootAttempt.rawContent = rootContentText.substring(0, 500); // First 500 chars
+
+    if (rootAttempt.responseCode === 200) {
+      const rootData = JSON.parse(rootContentText);
+      rootAttempt.dataType = typeof rootData;
+      rootAttempt.isNull = rootData === null;
+
+      if (rootData && typeof rootData === 'object') {
+        rootAttempt.keys = Object.keys(rootData);
+        rootAttempt.keyCount = rootAttempt.keys.length;
+      }
+    }
+    debugInfo.attempts.push(rootAttempt);
+
+    // Attempt 2: Check /users path
+    const usersUrl = `${FIREBASE_USERS_URL}/users.json?auth=${FIREBASE_USERS_SECRET}`;
+    const usersAttempt = {
+      path: '/users',
+      url: usersUrl.replace(FIREBASE_USERS_SECRET, '***SECRET***'),
+      method: 'GET'
+    };
+
+    const usersResponse = UrlFetchApp.fetch(usersUrl, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    usersAttempt.responseCode = usersResponse.getResponseCode();
+    const usersContentText = usersResponse.getContentText();
+    usersAttempt.contentLength = usersContentText.length;
+    usersAttempt.rawContent = usersContentText.substring(0, 500);
+
+    if (usersAttempt.responseCode === 200) {
+      const usersData = JSON.parse(usersContentText);
+      usersAttempt.dataType = typeof usersData;
+      usersAttempt.isNull = usersData === null;
+
+      if (usersData && typeof usersData === 'object') {
+        usersAttempt.keys = Object.keys(usersData);
+        usersAttempt.keyCount = usersAttempt.keys.length;
+
+        // Extract users with USER_NAME
+        const users = [];
+        for (const key in usersData) {
+          if (usersData.hasOwnProperty(key)) {
+            const user = usersData[key];
+            users.push({
+              key: key,
+              hasUserName: !!user.USER_NAME,
+              userName: user.USER_NAME || null,
+              allFields: Object.keys(user)
+            });
+          }
+        }
+
+        usersAttempt.users = users.slice(0, 10);
+        usersAttempt.totalUsers = users.length;
+        usersAttempt.usersWithUserName = users.filter(u => u.hasUserName).length;
+
+        const userNames = users
+          .filter(u => u.hasUserName)
+          .map(u => u.userName);
+
+        usersAttempt.userNames = [...new Set(userNames)].sort();
+      }
+    }
+    debugInfo.attempts.push(usersAttempt);
+
+    // Summary
+    debugInfo.success = true;
+    debugInfo.message = 'Debug complete - check attempts array for details';
+
+  } catch (error) {
+    debugInfo.success = false;
+    debugInfo.error = error.toString();
+    debugInfo.message = 'Exception occurred: ' + error.message;
+  }
+
+  return debugInfo;
 }
 
 // ===== LEGACY / BACKWARDS COMPATIBILITY =====
