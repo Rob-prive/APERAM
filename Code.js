@@ -1071,75 +1071,97 @@ function debugLoadUsersFirebase() {
       hasSecret: FIREBASE_USERS_SECRET ? 'Yes' : 'No',
       secretLength: FIREBASE_USERS_SECRET ? FIREBASE_USERS_SECRET.length : 0
     },
-    request: {},
-    response: {},
-    data: {},
-    users: []
+    attempts: []
   };
 
   try {
-    const url = `${FIREBASE_USERS_URL}/users.json?auth=${FIREBASE_USERS_SECRET}`;
-    debugInfo.request.url = url.replace(FIREBASE_USERS_SECRET, '***SECRET***');
-    debugInfo.request.method = 'GET';
+    // Attempt 1: Check root of database
+    const rootUrl = `${FIREBASE_USERS_URL}/.json?auth=${FIREBASE_USERS_SECRET}`;
+    const rootAttempt = {
+      path: '/ (root)',
+      url: rootUrl.replace(FIREBASE_USERS_SECRET, '***SECRET***'),
+      method: 'GET'
+    };
 
-    const response = UrlFetchApp.fetch(url, {
+    const rootResponse = UrlFetchApp.fetch(rootUrl, {
       method: 'get',
       muteHttpExceptions: true
     });
 
-    debugInfo.response.code = response.getResponseCode();
-    debugInfo.response.headers = response.getHeaders();
-    const contentText = response.getContentText();
-    debugInfo.response.contentLength = contentText.length;
+    rootAttempt.responseCode = rootResponse.getResponseCode();
+    const rootContentText = rootResponse.getContentText();
+    rootAttempt.contentLength = rootContentText.length;
+    rootAttempt.rawContent = rootContentText.substring(0, 500); // First 500 chars
 
-    if (debugInfo.response.code !== 200) {
-      debugInfo.response.error = contentText;
-      debugInfo.success = false;
-      debugInfo.message = 'Firebase returned error code: ' + debugInfo.response.code;
-      return debugInfo;
-    }
+    if (rootAttempt.responseCode === 200) {
+      const rootData = JSON.parse(rootContentText);
+      rootAttempt.dataType = typeof rootData;
+      rootAttempt.isNull = rootData === null;
 
-    const data = JSON.parse(contentText);
-    debugInfo.data.type = typeof data;
-    debugInfo.data.isNull = data === null;
-    debugInfo.data.isArray = Array.isArray(data);
-    debugInfo.data.isObject = typeof data === 'object' && data !== null;
-
-    if (!data || typeof data !== 'object') {
-      debugInfo.success = false;
-      debugInfo.message = 'No valid data found in Firebase response';
-      return debugInfo;
-    }
-
-    debugInfo.data.keyCount = Object.keys(data).length;
-    debugInfo.data.sampleKeys = Object.keys(data).slice(0, 3);
-
-    // Extract users
-    const users = [];
-    for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        const user = data[key];
-        users.push({
-          key: key,
-          hasUserName: !!user.USER_NAME,
-          userName: user.USER_NAME || null,
-          allFields: Object.keys(user)
-        });
+      if (rootData && typeof rootData === 'object') {
+        rootAttempt.keys = Object.keys(rootData);
+        rootAttempt.keyCount = rootAttempt.keys.length;
       }
     }
+    debugInfo.attempts.push(rootAttempt);
 
-    debugInfo.users = users.slice(0, 10); // First 10 users
-    debugInfo.data.totalUsers = users.length;
-    debugInfo.data.usersWithUserName = users.filter(u => u.hasUserName).length;
+    // Attempt 2: Check /users path
+    const usersUrl = `${FIREBASE_USERS_URL}/users.json?auth=${FIREBASE_USERS_SECRET}`;
+    const usersAttempt = {
+      path: '/users',
+      url: usersUrl.replace(FIREBASE_USERS_SECRET, '***SECRET***'),
+      method: 'GET'
+    };
 
-    // Extract USER_NAME values
-    const userNames = users
-      .filter(u => u.hasUserName)
-      .map(u => u.userName);
+    const usersResponse = UrlFetchApp.fetch(usersUrl, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
 
-    debugInfo.userNames = [...new Set(userNames)].sort();
+    usersAttempt.responseCode = usersResponse.getResponseCode();
+    const usersContentText = usersResponse.getContentText();
+    usersAttempt.contentLength = usersContentText.length;
+    usersAttempt.rawContent = usersContentText.substring(0, 500);
+
+    if (usersAttempt.responseCode === 200) {
+      const usersData = JSON.parse(usersContentText);
+      usersAttempt.dataType = typeof usersData;
+      usersAttempt.isNull = usersData === null;
+
+      if (usersData && typeof usersData === 'object') {
+        usersAttempt.keys = Object.keys(usersData);
+        usersAttempt.keyCount = usersAttempt.keys.length;
+
+        // Extract users with USER_NAME
+        const users = [];
+        for (const key in usersData) {
+          if (usersData.hasOwnProperty(key)) {
+            const user = usersData[key];
+            users.push({
+              key: key,
+              hasUserName: !!user.USER_NAME,
+              userName: user.USER_NAME || null,
+              allFields: Object.keys(user)
+            });
+          }
+        }
+
+        usersAttempt.users = users.slice(0, 10);
+        usersAttempt.totalUsers = users.length;
+        usersAttempt.usersWithUserName = users.filter(u => u.hasUserName).length;
+
+        const userNames = users
+          .filter(u => u.hasUserName)
+          .map(u => u.userName);
+
+        usersAttempt.userNames = [...new Set(userNames)].sort();
+      }
+    }
+    debugInfo.attempts.push(usersAttempt);
+
+    // Summary
     debugInfo.success = true;
-    debugInfo.message = 'Successfully loaded ' + debugInfo.userNames.length + ' unique user names';
+    debugInfo.message = 'Debug complete - check attempts array for details';
 
   } catch (error) {
     debugInfo.success = false;
