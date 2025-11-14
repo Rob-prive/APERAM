@@ -937,6 +937,72 @@ Aanvragen Rimses Systeem
 }
 
 /**
+ * Test aanvraag notification email with dummy data
+ */
+function testAanvraagEmail() {
+  try {
+    const userEmail = Session.getActiveUser().getEmail();
+
+    // Create dummy aanvraag data
+    const dummyAanvraagData = {
+      "Request ID": "TEST-" + new Date().getTime(),
+      "Approval Token": "dummy-token-123",
+      "Requester Email": userEmail,
+      "Approver Email": "rob.oversteyns@gmail.com",
+      "Status": "Pending",
+      "Timestamp": new Date().toISOString()
+    };
+
+    const dummyFormData = {
+      installatie: "G4",
+      naam: "Test Vergrendelgroep",
+      interneOpmerking: "Dit is een test interne opmerking",
+      externeOpmerking: "Dit is een test externe opmerking",
+      opmerkingen: "Test algemene opmerkingen",
+      autorisator: "rob.oversteyns@gmail.com"
+    };
+
+    const dummySelectedRows = [
+      { data: ["VP001", "Type A", "Box 1", "Test Punt 1", "Locatie A"] },
+      { data: ["VP002", "Type B", "Box 2", "Test Punt 2", "Locatie B"] },
+      { data: ["VP003", "Type C", "Box 3", "Test Punt 3", "Locatie C"] }
+    ];
+
+    const dummyUserName = "Test User (Debug)";
+
+    console.log('Testing aanvraag email with dummy data...');
+    console.log('Sending to:', dummyFormData.autorisator);
+
+    // Call the actual sendAuthorizerNotification function
+    const result = sendAuthorizerNotification(
+      dummyAanvraagData,
+      dummyFormData,
+      dummySelectedRows,
+      dummyUserName
+    );
+
+    return {
+      success: result.success,
+      message: result.message,
+      testData: {
+        requestId: dummyAanvraagData["Request ID"],
+        sentTo: dummyFormData.autorisator,
+        timestamp: new Date().toLocaleString('nl-NL')
+      },
+      error: result.error || null
+    };
+
+  } catch (error) {
+    console.error('Error in testAanvraagEmail:', error);
+    return {
+      success: false,
+      message: 'Fout bij testen aanvraag email: ' + error.message,
+      error: error.toString()
+    };
+  }
+}
+
+/**
  * Validates user credentials against DATA sheet
  */
 function validateUser(username, password) {

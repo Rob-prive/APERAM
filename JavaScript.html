@@ -87,7 +87,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.9.9-FIREBASE-FIRE-DATA";
+    const version = "2.10.0-DEBUG-AANVRAAG-EMAIL";
     const stylesheetVersion = "1.1.3";
 
     // ===== HELPER FUNCTIONS =====
@@ -1616,6 +1616,51 @@
                     }}
                   >
                     📧 Send Test Email
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      console.log('📨 Testing aanvraag email...');
+                      const btn = event.target;
+                      const originalText = btn.textContent;
+                      btn.disabled = true;
+                      btn.textContent = '📨 Verzenden...';
+                      setDebugOutput('Testing aanvraag notification email...');
+
+                      google.script.run
+                        .withSuccessHandler((result) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+                          console.log('✅ Aanvraag email test result:', result);
+                          setDebugOutput(JSON.stringify(result, null, 2));
+
+                          if (result.success) {
+                            alert('✅ Aanvraag test email verzonden!\n\n' + result.message + '\n\nRequest ID: ' + result.testData.requestId + '\nVerzonden naar: ' + result.testData.sentTo);
+                          } else {
+                            alert('❌ Aanvraag email mislukt:\n\n' + result.message + '\n\nError: ' + (result.error || 'Unknown'));
+                          }
+                        })
+                        .withFailureHandler((error) => {
+                          btn.disabled = false;
+                          btn.textContent = originalText;
+                          console.error('❌ Error:', error);
+                          setDebugOutput('ERROR: ' + error.message + '\n\n' + error.toString());
+                          alert('❌ Fout bij testen aanvraag email:\n\n' + error.message);
+                        })
+                        .testAanvraagEmail();
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📨 Test Aanvraag Email
                   </button>
                 </div>
 
