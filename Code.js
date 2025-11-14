@@ -643,68 +643,216 @@ function sendAuthorizerNotification(aanvraagData, formData, selectedRows, userNa
     const timestamp = new Date(aanvraagData.Timestamp).toLocaleString('nl-NL');
     const requesterEmail = aanvraagData['Requester Email'];
 
-    // Build list of selected vergrendelpunten
-    let vergrendelpuntenList = '';
+    // Build HTML table rows for selected vergrendelpunten
+    let vergrendelpuntenRows = '';
     selectedRows.forEach((row, index) => {
       const rowData = row.data;
       // Assuming structure: Code, Type, Sleutelbox, Naam, Naam Geografisch
-      vergrendelpuntenList += `${index + 1}. Code: ${rowData[0] || 'N/A'} | Type: ${rowData[1] || 'N/A'} | Naam: ${rowData[3] || 'N/A'} | Locatie: ${rowData[4] || 'N/A'}\n`;
+      vergrendelpuntenRows += `
+        <tr style="border-bottom: 1px solid #e0e0e0;">
+          <td style="padding: 6px 8px; font-size: 10px; color: #666;">${index + 1}</td>
+          <td style="padding: 6px 8px; font-size: 10px; font-weight: 600; font-family: monospace;">${rowData[0] || 'N/A'}</td>
+          <td style="padding: 6px 8px; font-size: 10px;">${rowData[1] || 'N/A'}</td>
+          <td style="padding: 6px 8px; font-size: 10px;">${rowData[2] || 'N/A'}</td>
+          <td style="padding: 6px 8px; font-size: 10px;">${rowData[3] || 'N/A'}</td>
+          <td style="padding: 6px 8px; font-size: 10px;">${rowData[4] || 'N/A'}</td>
+        </tr>
+      `;
     });
 
-    const subject = `🔐 Nieuwe Aanvraag Vergrendelgroep - ${requestId}`;
-    const body = `
+    const subject = `Nieuwe Aanvraag Vergrendelgroep - ${requestId}`;
+
+    // Plain text fallback
+    const plainTextBody = `
 Beste,
 
 Er is een nieuwe aanvraag voor een vergrendelgroep ingediend die uw goedkeuring vereist.
-
-═══════════════════════════════════════════════════
-AANVRAAG DETAILS
-═══════════════════════════════════════════════════
 
 Aanvraag Nummer: ${requestId}
 Ingediend op: ${timestamp}
 Aanvrager: ${userName} (${requesterEmail})
 
-═══════════════════════════════════════════════════
-FORMULIER GEGEVENS
-═══════════════════════════════════════════════════
-
 Installatie: ${formData.installatie || 'N/A'}
 Naam: ${formData.naam || 'N/A'}
-Interne Opmerking: ${formData.interneOpmerking || 'Geen'}
-Externe Opmerking: ${formData.externeOpmerking || 'Geen'}
-Opmerkingen: ${formData.opmerkingen || 'Geen'}
 
-═══════════════════════════════════════════════════
-GESELECTEERDE VERGRENDELPUNTEN (${selectedRows.length})
-═══════════════════════════════════════════════════
-
-${vergrendelpuntenList}
-
-═══════════════════════════════════════════════════
-ACTIE VEREIST
-═══════════════════════════════════════════════════
-
-Deze aanvraag wacht op uw goedkeuring. Log in op de Aanvragen Rimses applicatie om de aanvraag te beoordelen en goed te keuren of af te wijzen.
-
-═══════════════════════════════════════════════════
+Deze aanvraag wacht op uw goedkeuring. Log in op de Aanvragen Rimses applicatie om de aanvraag te beoordelen.
 
 Met vriendelijke groet,
 Reliability CMMS
-Aanvragen Rimses Systeem
+    `;
 
----
-Dit is een automatisch gegenereerde email. Gelieve niet te antwoorden op dit bericht.
+    // HTML email body
+    const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
+    <tr>
+      <td align="center">
+        <!-- Main container -->
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">
+                Nieuwe Aanvraag Vergrendelgroep
+              </h1>
+              <p style="margin: 10px 0 0 0; color: #e0e0e0; font-size: 14px;">
+                Reliability CMMS - Aanvragen Rimses
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 30px;">
+
+              <!-- Introduction -->
+              <p style="margin: 0 0 20px 0; color: #333; font-size: 15px; line-height: 1.6;">
+                Beste,
+              </p>
+              <p style="margin: 0 0 25px 0; color: #666; font-size: 14px; line-height: 1.6;">
+                Er is een nieuwe aanvraag voor een vergrendelgroep ingediend die uw goedkeuring vereist.
+              </p>
+
+              <!-- Aanvraag Details -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px; margin-bottom: 25px;">
+                <tr>
+                  <td style="padding: 15px;">
+                    <h3 style="margin: 0 0 12px 0; color: #2e7d32; font-size: 16px; font-weight: 600;">
+                      Aanvraag Details
+                    </h3>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600; width: 140px;">Aanvraag Nummer:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px; font-family: monospace;">${requestId}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Ingediend op:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${timestamp}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Aanvrager:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${userName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Email:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${requesterEmail}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Formulier Gegevens -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px; margin-bottom: 25px;">
+                <tr>
+                  <td style="padding: 15px;">
+                    <h3 style="margin: 0 0 12px 0; color: #1565c0; font-size: 16px; font-weight: 600;">
+                      Formulier Gegevens
+                    </h3>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600; width: 140px;">Installatie:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.installatie || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Naam:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.naam || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Interne Opmerking:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.interneOpmerking || 'Geen'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Externe Opmerking:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.externeOpmerking || 'Geen'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Opmerkingen:</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${formData.opmerkingen || 'Geen'}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Vergrendelpunten Table -->
+              <div style="margin-bottom: 25px;">
+                <h3 style="margin: 0 0 12px 0; color: #333; font-size: 16px; font-weight: 600;">
+                  Geselecteerde Vergrendelpunten (${selectedRows.length})
+                </h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden;">
+                  <thead>
+                    <tr style="background-color: #f5f5f5;">
+                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">#</th>
+                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Code</th>
+                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Type</th>
+                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Sleutelbox</th>
+                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Naam</th>
+                      <th style="padding: 8px; text-align: left; font-size: 10px; font-weight: 600; color: #666; border-bottom: 2px solid #e0e0e0;">Locatie</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${vergrendelpuntenRows}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Call to Action -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff3e0; border-left: 4px solid #ff9800; border-radius: 4px; margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 15px;">
+                    <h3 style="margin: 0 0 8px 0; color: #e65100; font-size: 15px; font-weight: 600;">
+                      Actie Vereist
+                    </h3>
+                    <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.6;">
+                      Deze aanvraag wacht op uw goedkeuring. Log in op de Aanvragen Rimses applicatie om de aanvraag te beoordelen en goed te keuren of af te wijzen.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Closing -->
+              <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.6;">
+                Met vriendelijke groet,<br>
+                <strong>Reliability CMMS</strong><br>
+                Aanvragen Rimses Systeem
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f5f5f5; padding: 15px; text-align: center; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; color: #999; font-size: 11px;">
+                Dit is een automatisch gegenereerde email. Gelieve niet te antwoorden op dit bericht.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
     `;
 
     // Send email via GmailApp with alias
     GmailApp.sendEmail(
       authorizerEmail,
       subject,
-      body,
+      plainTextBody,
       {
         from: 'reliabilitycmms@gmail.com',
-        name: 'Reliability CMMS'
+        name: 'Reliability CMMS',
+        htmlBody: htmlBody
       }
     );
 
