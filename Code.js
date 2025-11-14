@@ -13,7 +13,7 @@ const FIREBASE_AANVRAGEN_SECRET = 'Cv5y8Dk4hPEGbjAiilKeReRvijqECnUu89qSY2TZ';
 
 // Firebase for Users database
 const FIREBASE_USERS_URL = 'https://users-6e913.firebaseio.com';
-const FIREBASE_USERS_SECRET = 'lUqckdwDhaz6NNjjzTllOPv2q5LZ0Tg5tsfxhdMn';
+const FIREBASE_USERS_SECRET = 'BBcmkVVW6jrsfA3GSJI0f7NovJNJ8yN8lKOQRzrK';
 
 // ===== FIREBASE DATA FETCHING =====
 
