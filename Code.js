@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.14.0-ROLE-BASED-FILTERING
+// Version: 2.15.2-DEBUG-CLEANUP
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====

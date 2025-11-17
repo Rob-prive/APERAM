@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.14.0-ROLE-BASED-FILTERING";
+//version = "2.15.2-DEBUG-CLEANUP";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -21,13 +21,21 @@
     const [isLoading, setIsLoading] = React.useState(false);
     const [isLoadingTable, setIsLoadingTable] = React.useState(false);
     
-    // Filter state
+    // Filter state - Vergrendelpunten
     const [filters, setFilters] = React.useState({
       code: '',
       type: '',
       sleutelbox: '',
       naam: '',
       naamGeografisch: ''
+    });
+
+    // Filter state - Aanvragen
+    const [aanvraagFilters, setAanvraagFilters] = React.useState({
+      naam: '',
+      datum: '',
+      aanvrager: '',
+      status: ''
     });
     
     // Performance optimization state - Prefetch data
@@ -95,7 +103,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.14.0-ROLE-BASED-FILTERING";
+    const version = "2.15.2-DEBUG-CLEANUP";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -228,6 +236,13 @@
 
     const handleFilterChange = (filterName, value) => {
       setFilters(prev => ({
+        ...prev,
+        [filterName]: value
+      }));
+    };
+
+    const handleAanvraagFilterChange = (filterName, value) => {
+      setAanvraagFilters(prev => ({
         ...prev,
         [filterName]: value
       }));
@@ -384,6 +399,7 @@
     const filteredAanvragen = React.useMemo(() => {
       if (!aanvragen || aanvragen.length === 0) return [];
 
+      // Role-based filtering only
       if (userRole === 'C') {
         // Admin sees all
         return aanvragen;
@@ -984,14 +1000,9 @@
     // ===== ABOUT MODAL COMPONENT =====
 
     const AboutModal = () => {
-      console.log('📊 AboutModal render - isAboutModalOpen:', isAboutModalOpen);
-
       if (!isAboutModalOpen) {
-        console.log('⏭️ AboutModal: Not rendering (modal closed)');
         return null;
       }
-
-      console.log('✅ AboutModal: Rendering modal!');
       return (
         <div
           className="about-modal-overlay"
