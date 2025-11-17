@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.13.1-USERNAME-FIX
+// Version: 2.13.2-REQUESTER-EMAIL-FIX
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -346,19 +346,20 @@ function writeToFirebaseAanvragen(data) {
  * @param {string} userName - Name of requester
  * @returns {Object} {success: boolean, requestId: string, aanvraagNr?: string, error?: string}
  */
-function submitAanvraag(formData, selectedRows, userName) {
+function submitAanvraag(formData, selectedRows, userName, requesterEmail) {
   try {
     console.log('Submitting aanvraag...');
     console.log('Form data:', JSON.stringify(formData, null, 2));
     console.log('Selected rows:', selectedRows.length);
-    
+    console.log('Requester email (from login):', requesterEmail);
+
     // Generate unique IDs
     const requestId = generateRequestId();
     const approvalToken = generateApprovalToken();
     const timestamp = new Date().toISOString();
-    
-    // Get requester email
-    const requesterEmail = getUserEmail();
+
+    // Requester email now comes from login username parameter
+    // This works correctly with "Execute as: Me" deployment
     
     // Prepare Form Data object (matches screenshot structure)
     const formDataObject = {
@@ -738,11 +739,7 @@ Reliability CMMS
                       </tr>
                       <tr>
                         <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Aanvrager:</td>
-                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${userName}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Email:</td>
-                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${requesterEmail}</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${userName} (${requesterEmail})</td>
                       </tr>
                     </table>
                   </td>

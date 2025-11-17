@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.13.1-USERNAME-FIX
+- **JavaScript Versie**: 2.13.2-REQUESTER-EMAIL-FIX
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -822,7 +822,80 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.13.1-USERNAME-FIX (Current)
+### v2.13.2-REQUESTER-EMAIL-FIX (Current)
+**Release Date**: November 2025
+
+**Bug Fix: Requester Email bij "Execute as: Me" Deployment 📧**
+- ✅ **Correcte requester email**: Aanvragen tonen nu de email van de daadwerkelijke gebruiker
+- 🧹 **Opgeschoonde email**: "Email" veld verwijderd uit autorisator notification (was redundant)
+- 🔧 **Deploy-agnostic**: Werkt correct met "Execute as: Me" deployment
+
+**Het Probleem:**
+Wanneer de app gepubliceerd wordt met **"Execute as: Me"**:
+- `getUserEmail()` in `submitAanvraag()` gebruikte `Session.getActiveUser()`
+- Dit gaf ALTIJD de publisher's email (rob.oversteyns@gmail.com)
+- ❌ Alle aanvragen hadden rob.oversteyns@gmail.com als requester
+- ❌ Autorisator zag altijd dezelfde afzender, ongeacht wie de aanvraag deed
+
+**De Oplossing:**
+Requester email wordt nu meegegeven vanuit de frontend (login username):
+```javascript
+// Frontend (JavaScript.html):
+.submitAanvraag(formData, selectedRows, userName, username);
+//                                                   ^^^^^^^^
+//                                    Login username (email)
+
+// Backend (Code.js):
+function submitAanvraag(formData, selectedRows, userName, requesterEmail) {
+  // requesterEmail komt nu van login, niet van Session.getActiveUser()
+  const aanvraagData = {
+    "Requester Email": requesterEmail,  // Correcte email!
+    ...
+  };
+}
+```
+
+**Email Template Verbetering:**
+Voorheen had de notification email twee aparte velden:
+```
+Aanvrager: Jan Smit
+Email: jan.smit@bedrijf.com
+```
+
+Nu gecombineerd in één regel:
+```
+Aanvrager: Jan Smit (jan.smit@bedrijf.com)
+```
+
+**Technical Changes:**
+- **Updated**: `submitAanvraag()` function signature - nieuwe parameter `requesterEmail` (Code.js:349)
+- **Updated**: `submitAanvraag()` call - stuurt nu `username` mee (JavaScript.html:747)
+- **Removed**: `getUserEmail()` call in `submitAanvraag()` (Code.js:361)
+- **Updated**: Email template - gecombineerd aanvrager + email in één veld (Code.js:741-742)
+- **Added**: Console logging van requester email voor debugging (Code.js:354)
+
+**Impact voor Gebruikers:**
+- ✅ Autorisators zien nu WIE daadwerkelijk de aanvraag heeft gedaan
+- ✅ Audit trail is correct - requester email matched de werkelijke gebruiker
+- ✅ Emails zijn overzichtelijker (één regel i.p.v. twee)
+
+**Voor Deployment:**
+Deze fix is essentieel voor correcte werking met **"Execute as: Me"** deployment:
+- Alle aanvragen krijgen nu de juiste requester email
+- Session.getActiveUser() wordt niet meer gebruikt voor requester identificatie
+- Login username is de single source of truth voor gebruikersidentificatie
+
+**Files Modified:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version bump
+- [JavaScript.html:747](JavaScript.html#L747) - Pass username to submitAanvraag
+- [Code.js:2](Code.js#L2) - Version bump
+- [Code.js:349](Code.js#L349) - Updated function signature
+- [Code.js:354](Code.js#L354) - Added requester email logging
+- [Code.js:361-362](Code.js#L361-L362) - Removed getUserEmail() call
+- [Code.js:741-743](Code.js#L741-L743) - Combined aanvrager + email in HTML template
+- [Readme.html:8](Readme.html#L8) - Version info & changelog
+
+### v2.13.1-USERNAME-FIX
 **Release Date**: November 2025
 
 **Bug Fix: Username Display met "Execute as: Me" Deployment 👤**

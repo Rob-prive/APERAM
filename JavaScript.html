@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.13.1-USERNAME-FIX";
+//version = "2.13.2-REQUESTER-EMAIL-FIX";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -744,7 +744,7 @@
           submitButton.disabled = false;
           submitButton.textContent = originalText;
         })
-        .submitAanvraag(formData, selectedRows, userName);
+        .submitAanvraag(formData, selectedRows, userName, username);
     };
 
     // ===== SUCCESS MODAL COMPONENT =====
