@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.13.2-REQUESTER-EMAIL-FIX
+// Version: 2.14.0-ROLE-BASED-FILTERING
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -1318,10 +1318,14 @@ function validateUser(username, password) {
         // SCENARIO 3: Database password exists, user entered something
         // → Validate the password
         if (dbPassword === inputPassword) {
+          // Get user role (A = user, B = authorizer, C = admin)
+          const userRole = user.ROLE || 'A'; // Default to 'A' if not set
+
           return {
             success: true,
             emptyPassword: false,
             firstLogin: false,
+            role: userRole,
             message: 'Login succesvol'
           };
         } else {

@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.13.2-REQUESTER-EMAIL-FIX";
+//version = "2.14.0-ROLE-BASED-FILTERING";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -14,6 +14,7 @@
     
     // User and data state
     const [userName, setUserName] = React.useState('');
+    const [userRole, setUserRole] = React.useState('C'); // A = user, B = authorizer, C = admin (default)
     const [tableData, setTableData] = React.useState({ headers: [], data: [] });
     const [filteredTableData, setFilteredTableData] = React.useState([]);
     const [showTable, setShowTable] = React.useState(false);
@@ -94,7 +95,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.13.2-REQUESTER-EMAIL-FIX";
+    const version = "2.14.0-ROLE-BASED-FILTERING";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -374,6 +375,34 @@
       
       return pages;
     };
+
+    // ===== ROLE-BASED FILTERING =====
+    // Filter aanvragen based on user role:
+    // Role A (user): See only own requests (Requester Email = username)
+    // Role B (authorizer): See only requests to approve (Approver Email = username)
+    // Role C (admin): See all requests
+    const filteredAanvragen = React.useMemo(() => {
+      if (!aanvragen || aanvragen.length === 0) return [];
+
+      if (userRole === 'C') {
+        // Admin sees all
+        return aanvragen;
+      } else if (userRole === 'B') {
+        // Authorizer sees only requests they need to approve
+        return aanvragen.filter(aanvraag =>
+          aanvraag['Approver Email'] === username
+        );
+      } else if (userRole === 'A') {
+        // Standard user sees only their own requests
+        return aanvragen.filter(aanvraag =>
+          aanvraag['Requester Email'] === username
+        );
+      }
+
+      // Default: no access
+      return [];
+    }, [aanvragen, userRole, username]);
+
 	// ===== EFFECTS =====
 
     React.useEffect(() => {
@@ -448,11 +477,13 @@
 
           // Check if result is an object (new format) or boolean (legacy)
           if (typeof result === 'object' && result !== null) {
-            // New format: { success: boolean, emptyPassword: boolean, message: string }
+            // New format: { success: boolean, emptyPassword: boolean, role: string, message: string }
             if (result.success) {
               setIsLoggedIn(true);
               // Set username from login (werkt ongeacht deployment setting)
               setUserName(username);
+              // Set user role (A = user, B = authorizer, C = admin)
+              setUserRole(result.role || 'C'); // Default to admin if not provided
               // Direct alle data laden (gebruikt prefetched data indien beschikbaar)
               loadAllTableData();
             } else if (result.emptyPassword) {
@@ -466,6 +497,7 @@
             // Legacy format: boolean true
             setIsLoggedIn(true);
             setUserName(username);
+            setUserRole('C'); // Default to admin for legacy format
             loadAllTableData();
           } else {
             // Legacy format: boolean false
@@ -2356,23 +2388,23 @@
                   }}>
                     <h3 style={{margin: 0, color: '#1a237e', fontSize: '14px'}}>Aanvragen</h3>
                     <p style={{margin: 0, color: '#666', fontSize: '12px'}}>
-                      {isLoadingAanvragen ? 'Laden...' : `${aanvragen.length} aanvragen`}
+                      {isLoadingAanvragen ? 'Laden...' : `${filteredAanvragen.length} aanvragen`}
                     </p>
                   </div>
-                  
+
                   {isLoadingAanvragen ? (
                     <div className="loading-spinner">
                       <div className="spinner"></div>
                       <p style={{fontSize: '12px'}}>Aanvragen laden...</p>
                     </div>
-                  ) : aanvragen.length > 0 ? (
+                  ) : filteredAanvragen.length > 0 ? (
                     <div style={{
                       flex: '1 1 auto',
                       overflow: 'auto',
                       margin: 0,
                       padding: 0
                     }}>
-                      <table key={`aanvragen-table-${aanvragen.length}`} style={{
+                      <table key={`aanvragen-table-${filteredAanvragen.length}`} style={{
                         width: '100%',
                         borderCollapse: 'collapse',
                         fontSize: '10px',
@@ -2457,7 +2489,7 @@
                           </tr>
                         </thead>
                         <tbody>
-                          {aanvragen.map((aanvraag, index) => {
+                          {filteredAanvragen.map((aanvraag, index) => {
                             const formData = parseFormData(aanvraag['Form Data'] || '{}');
                             const aanvragerNaam = getNameFromEmail(aanvraag['Requester Email']);
                             const datum = formatDate(aanvraag['Timestamp']);

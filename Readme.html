@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.13.2-REQUESTER-EMAIL-FIX
+- **JavaScript Versie**: 2.14.0-ROLE-BASED-FILTERING
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -822,7 +822,118 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.13.2-REQUESTER-EMAIL-FIX (Current)
+### v2.14.0-ROLE-BASED-FILTERING (Current)
+**Release Date**: November 2025
+
+**Feature: Role-Based Aanvragen Filtering 🔐**
+- ✅ **Role A (Standard User)**: Ziet alleen eigen aanvragen (Requester Email = login username)
+- ✅ **Role B (Authorizer)**: Ziet alleen aanvragen die hij moet goedkeuren (Approver Email = login username)
+- ✅ **Role C (Administrator)**: Ziet alle aanvragen (huidige standaard gedrag)
+- 🚀 **Performance**: Filtering met React.useMemo voor optimale snelheid
+
+**Het Probleem:**
+Voorheen zagen alle gebruikers alle aanvragen in de "Aanvragen" tabel. Dit was niet wenselijk omdat:
+- ❌ Standaard users (Role A) zagen aanvragen van anderen
+- ❌ Autorisatoren (Role B) zagen aanvragen die ze niet hoefden goed te keuren
+- ❌ Geen privacy/security filtering op basis van rol
+
+**De Oplossing:**
+Aanvragen worden nu gefilterd op basis van de gebruikersrol uit de Firebase database:
+
+```javascript
+// Backend (Code.js) - validateUser retourneert nu role:
+function validateUser(username, inputPassword) {
+  const userRole = user.ROLE || 'A'; // Default to 'A' if not set
+  return {
+    success: true,
+    role: userRole,  // ← Role wordt meegegeven naar frontend
+    message: 'Login succesvol'
+  };
+}
+
+// Frontend (JavaScript.html) - Role wordt opgeslagen bij login:
+if (result.success) {
+  setIsLoggedIn(true);
+  setUserName(username);
+  setUserRole(result.role || 'C'); // ← Role wordt opgeslagen in state
+  loadAllTableData();
+}
+
+// Frontend - Filtering logica met React.useMemo:
+const filteredAanvragen = React.useMemo(() => {
+  if (userRole === 'C') {
+    // Admin sees all
+    return aanvragen;
+  } else if (userRole === 'B') {
+    // Authorizer sees only requests they need to approve
+    return aanvragen.filter(aanvraag =>
+      aanvraag['Approver Email'] === username
+    );
+  } else if (userRole === 'A') {
+    // Standard user sees only their own requests
+    return aanvragen.filter(aanvraag =>
+      aanvraag['Requester Email'] === username
+    );
+  }
+  return []; // Default: no access
+}, [aanvragen, userRole, username]);
+```
+
+**Technische Details:**
+1. **Backend wijziging** ([Code.js:1321-1330](Code.js#L1321-L1330)):
+   - `validateUser()` retourneert nu ook `role` in response object
+   - Role wordt opgehaald uit Firebase `user.ROLE` veld
+
+2. **Frontend state** ([JavaScript.html:17](JavaScript.html#L17)):
+   - Nieuw state veld: `const [userRole, setUserRole] = React.useState('C')`
+   - Default naar 'C' (admin) voor backwards compatibility
+
+3. **Login handler** ([JavaScript.html:457-458](JavaScript.html#L457-L458)):
+   - Opgeslagen role bij succesvolle login: `setUserRole(result.role || 'C')`
+   - Ook voor legacy format (backwards compatible)
+
+4. **Filtering logica** ([JavaScript.html:384-404](JavaScript.html#L384-L404)):
+   - `React.useMemo` voor efficiënte filtering
+   - Dependencies: `[aanvragen, userRole, username]`
+   - Herberekent alleen wanneer deze waarden wijzigen
+
+5. **UI updates** ([JavaScript.html:2391-2492](JavaScript.html#L2391-L2492)):
+   - `aanvragen` vervangen door `filteredAanvragen` in render
+   - Teller toont correct aantal zichtbare aanvragen
+   - Tabel gebruikt gefilterde data
+
+**Impact voor Gebruikers:**
+- ✅ **Privacy**: Users zien alleen relevante aanvragen
+- ✅ **Security**: Role-based access control geïmplementeerd
+- ✅ **Usability**: Minder ruis in de aanvragen tabel
+- ✅ **Performance**: Efficiënte filtering met useMemo
+
+**Bestanden Gewijzigd:**
+- [Code.js:2](Code.js#L2) - Version naar 2.14.0
+- [Code.js:1321-1330](Code.js#L1321-L1330) - validateUser retourneert role
+- [JavaScript.html:2](JavaScript.html#L2) - Version comment naar 2.14.0
+- [JavaScript.html:17](JavaScript.html#L17) - userRole state toegevoegd
+- [JavaScript.html:98](JavaScript.html#L98) - const version naar 2.14.0
+- [JavaScript.html:457-458](JavaScript.html#L457-L458) - setUserRole bij login
+- [JavaScript.html:472](JavaScript.html#L472) - setUserRole voor legacy format
+- [JavaScript.html:384-404](JavaScript.html#L384-L404) - filteredAanvragen useMemo
+- [JavaScript.html:2391](JavaScript.html#L2391) - Teller gebruikt filteredAanvragen
+- [JavaScript.html:2400](JavaScript.html#L2400) - Conditie gebruikt filteredAanvragen
+- [JavaScript.html:2407](JavaScript.html#L2407) - Table key gebruikt filteredAanvragen.length
+- [JavaScript.html:2492](JavaScript.html#L2492) - Map gebruikt filteredAanvragen
+- [Readme.html:8](Readme.html#L8) - Version info naar 2.14.0
+
+**Voor Nieuwe Ontwikkelaars:**
+De `ROLE` velden in de Firebase 'users' database bepalen wat elke gebruiker ziet:
+- `ROLE: 'A'` = Standaard user (ziet alleen eigen aanvragen)
+- `ROLE: 'B'` = Autorisator (ziet alleen aanvragen om goed te keuren)
+- `ROLE: 'C'` = Administrator (ziet alle aanvragen)
+
+Als er geen ROLE veld is, defaultt de app naar 'A' (meest restrictieve optie).
+
+---
+
+### v2.13.2-REQUESTER-EMAIL-FIX
 **Release Date**: November 2025
 
 **Bug Fix: Requester Email bij "Execute as: Me" Deployment 📧**
