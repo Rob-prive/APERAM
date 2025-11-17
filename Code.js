@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.11.2-MODAL-FIX
+// Version: 2.13.0-SLIDER-PERFORMANCE
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -1007,21 +1007,225 @@ function testAanvraagEmail() {
 }
 
 /**
+ * Generates a random password of specified length
+ * @param {number} length - Password length (default: 8)
+ * @returns {string} Random password
+ */
+function generateRandomPassword(length = 8) {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  return password;
+}
+
+/**
+ * Updates user password in Firebase users database
+ * @param {string} firebaseKey - Firebase key of user record
+ * @param {string} newPassword - New password to set
+ * @returns {Object} { success: boolean, message: string }
+ */
+function updateUserPassword(firebaseKey, newPassword) {
+  try {
+    const url = `${FIREBASE_USERS_URL}/fire-data/${firebaseKey}.json?auth=${FIREBASE_USERS_SECRET}`;
+
+    const payload = {
+      PASSWORD: newPassword
+    };
+
+    const options = {
+      method: 'patch',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+
+    if (responseCode === 200) {
+      console.log('Password updated successfully for key:', firebaseKey);
+      return {
+        success: true,
+        message: 'Wachtwoord succesvol bijgewerkt'
+      };
+    } else {
+      console.error('Failed to update password:', responseCode, response.getContentText());
+      return {
+        success: false,
+        message: 'Fout bij bijwerken wachtwoord'
+      };
+    }
+  } catch (error) {
+    console.error('Error in updateUserPassword:', error);
+    return {
+      success: false,
+      message: 'Fout: ' + error.message
+    };
+  }
+}
+
+/**
+ * Sends welcome email with generated password to new user
+ * @param {string} userEmail - User email address
+ * @param {string} userName - User display name
+ * @param {string} generatedPassword - The generated password
+ * @returns {Object} { success: boolean, message: string }
+ */
+function sendWelcomePasswordEmail(userEmail, userName, generatedPassword) {
+  try {
+    const subject = 'Welkom bij Aanvragen Rimses - Uw Wachtwoord';
+
+    // HTML email body
+    const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 700; }
+    .content { padding: 30px; }
+    .password-box { background-color: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 20px 0; border-radius: 4px; }
+    .password { font-size: 24px; font-weight: 700; color: #667eea; letter-spacing: 2px; font-family: 'Courier New', monospace; }
+    .info-box { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+    .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #6c757d; }
+    .button { display: inline-block; padding: 12px 30px; background-color: #667eea; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+    ul { padding-left: 20px; }
+    li { margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welkom bij Aanvragen Rimses</h1>
+    </div>
+
+    <div class="content">
+      <h2>Hallo ${userName || userEmail},</h2>
+
+      <p>Welkom bij de Aanvragen Rimses applicatie! Dit is uw eerste login en we hebben automatisch een wachtwoord voor u aangemaakt.</p>
+
+      <div class="password-box">
+        <p style="margin: 0 0 10px 0; font-weight: 600;">Uw tijdelijke wachtwoord:</p>
+        <div class="password">${generatedPassword}</div>
+      </div>
+
+      <div class="info-box">
+        <strong>BELANGRIJK:</strong>
+        <ul style="margin: 10px 0;">
+          <li>Bewaar dit wachtwoord op een veilige plek</li>
+          <li>Log in met dit wachtwoord om toegang te krijgen tot de applicatie</li>
+          <li>U kunt dit wachtwoord blijven gebruiken voor toekomstige logins</li>
+        </ul>
+      </div>
+
+      <h3>Login Gegevens:</h3>
+      <p>
+        <strong>Gebruikersnaam:</strong> ${userEmail}<br>
+        <strong>Wachtwoord:</strong> <code>${generatedPassword}</code>
+      </p>
+
+      <h3>Hoe in te loggen:</h3>
+      <ol>
+        <li>Ga naar de Aanvragen Rimses applicatie</li>
+        <li>Voer uw gebruikersnaam (email) in</li>
+        <li>Voer het bovenstaande wachtwoord in</li>
+        <li>Klik op "Inloggen"</li>
+      </ol>
+
+      <p style="margin-top: 30px;">Heeft u vragen? Neem contact op met de beheerder.</p>
+    </div>
+
+    <div class="footer">
+      <p>Dit is een automatisch gegenereerde email van Aanvragen Rimses.</p>
+      <p style="margin: 5px 0;">Reageer niet op deze email.</p>
+      <p style="margin: 10px 0; color: #999;">Generated with Reliability CMMS</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    // Plain text fallback
+    const plainTextBody = `
+Welkom bij Aanvragen Rimses
+
+Hallo ${userName || userEmail},
+
+Dit is uw eerste login en we hebben automatisch een wachtwoord voor u aangemaakt.
+
+UW TIJDELIJKE WACHTWOORD: ${generatedPassword}
+
+Login Gegevens:
+- Gebruikersnaam: ${userEmail}
+- Wachtwoord: ${generatedPassword}
+
+BELANGRIJK:
+- Bewaar dit wachtwoord op een veilige plek
+- Log in met dit wachtwoord om toegang te krijgen tot de applicatie
+- U kunt dit wachtwoord blijven gebruiken voor toekomstige logins
+
+Hoe in te loggen:
+1. Ga naar de Aanvragen Rimses applicatie
+2. Voer uw gebruikersnaam (email) in
+3. Voer het bovenstaande wachtwoord in
+4. Klik op "Inloggen"
+
+Heeft u vragen? Neem contact op met de beheerder.
+
+---
+Dit is een automatisch gegenereerde email van Aanvragen Rimses.
+Reageer niet op deze email.
+    `;
+
+    // Send email via GmailApp
+    GmailApp.sendEmail(
+      userEmail,
+      subject,
+      plainTextBody,
+      {
+        from: 'reliabilitycmms@gmail.com',
+        name: 'Reliability CMMS - Aanvragen Rimses',
+        htmlBody: htmlBody
+      }
+    );
+
+    console.log('✓ Welcome password email sent to:', userEmail);
+
+    return {
+      success: true,
+      message: 'Welkom email succesvol verzonden naar ' + userEmail
+    };
+
+  } catch (error) {
+    console.error('Error sending welcome password email:', error);
+    return {
+      success: false,
+      message: 'Fout bij verzenden email: ' + error.message
+    };
+  }
+}
+
+/**
  * Validates user credentials against Firebase users database
- * New logic: Check database password first, then validate input
+ * NEW: Automatically generates and emails password on first login
  *
  * Flow:
  * 1. User tries to login (password input can be empty)
  * 2. Check if user exists in database
  * 3. Check if database password is empty
- *    - If DB password is empty → Show "password not set" modal (regardless of input)
+ *    - If DB password is empty → Generate password, save to DB, email user, show modal
  *    - If DB password is set AND input is empty → Show "please enter password" error
  *    - If DB password is set AND input is wrong → Show "incorrect password" error
  *    - If DB password is set AND input matches → Login success
  *
- * @param {string} username - Username to validate
+ * @param {string} username - Username (email address)
  * @param {string} password - Password to validate (can be empty)
- * @returns {Object} { success: boolean, emptyPassword: boolean, message: string }
+ * @returns {Object} { success: boolean, emptyPassword: boolean, firstLogin: boolean, message: string }
  */
 function validateUser(username, password) {
   try {
@@ -1038,6 +1242,7 @@ function validateUser(username, password) {
       return {
         success: false,
         emptyPassword: false,
+        firstLogin: false,
         message: 'Database connectie fout'
       };
     }
@@ -1049,6 +1254,7 @@ function validateUser(username, password) {
       return {
         success: false,
         emptyPassword: false,
+        firstLogin: false,
         message: 'Database data fout'
       };
     }
@@ -1063,13 +1269,47 @@ function validateUser(username, password) {
         const dbPassword = user.PASSWORD || '';
         const dbPasswordIsEmpty = !dbPassword || dbPassword.trim() === '';
 
-        // SCENARIO 1: Database password is empty
-        // → Show modal regardless of what user typed
+        // SCENARIO 1: Database password is empty - FIRST LOGIN
+        // → Generate password, save to DB, email user, show modal
         if (dbPasswordIsEmpty) {
+          console.log('🔐 First login detected for user:', username);
+
+          // Generate random password
+          const generatedPassword = generateRandomPassword(8);
+          console.log('Generated password for', username);
+
+          // Update password in Firebase
+          const updateResult = updateUserPassword(key, generatedPassword);
+
+          if (!updateResult.success) {
+            console.error('Failed to update password in Firebase');
+            return {
+              success: false,
+              emptyPassword: true,
+              firstLogin: true,
+              message: 'Fout bij aanmaken wachtwoord. Probeer opnieuw of neem contact op met de beheerder.'
+            };
+          }
+
+          console.log('✓ Password updated in Firebase');
+
+          // Send welcome email with password
+          const emailResult = sendWelcomePasswordEmail(username, user.DISPLAY_NAME || username, generatedPassword);
+
+          if (!emailResult.success) {
+            console.warn('⚠ Failed to send welcome email, but password was saved:', emailResult.message);
+            // Continue anyway - password is saved
+          } else {
+            console.log('✓ Welcome email sent successfully');
+          }
+
+          // Return first login response
           return {
             success: false,
             emptyPassword: true,
-            message: 'Uw wachtwoord is nog niet ingesteld. Neem contact op met de beheerder.'
+            firstLogin: true,
+            emailSent: emailResult.success,
+            message: 'Dit is uw eerste login. Een wachtwoord is aangemaakt en gemaild naar ' + username
           };
         }
 
@@ -1080,6 +1320,7 @@ function validateUser(username, password) {
           return {
             success: false,
             emptyPassword: false,
+            firstLogin: false,
             message: 'Voer uw wachtwoord in'
           };
         }
@@ -1090,12 +1331,14 @@ function validateUser(username, password) {
           return {
             success: true,
             emptyPassword: false,
+            firstLogin: false,
             message: 'Login succesvol'
           };
         } else {
           return {
             success: false,
             emptyPassword: false,
+            firstLogin: false,
             message: 'Onjuist wachtwoord'
           };
         }
@@ -1106,6 +1349,7 @@ function validateUser(username, password) {
     return {
       success: false,
       emptyPassword: false,
+      firstLogin: false,
       message: 'Gebruiker niet gevonden'
     };
 
@@ -1114,6 +1358,7 @@ function validateUser(username, password) {
     return {
       success: false,
       emptyPassword: false,
+      firstLogin: false,
       message: 'Fout bij validatie: ' + error.message
     };
   }

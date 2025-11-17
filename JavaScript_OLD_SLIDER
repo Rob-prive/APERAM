@@ -1,0 +1,43 @@
+// ===== BACKUP: Originele Centrale Slider Code (Pre-Performance Optimization) =====
+// Dit bestand bevat de originele slider implementatie voordat requestAnimationFrame throttling werd toegepast
+// Datum backup: November 2025
+// Versie: 2.12.1-CLEANUP
+
+// ===== CENTRALE SLIDER HANDLERS =====
+
+const handleCentralDragStart = (e) => {
+  e.preventDefault();
+  setIsDragging(true);
+  document.body.classList.add('dragging-central');
+};
+
+const handleCentralDrag = React.useCallback((e) => {
+  if (!isDragging) return;
+
+  const container = document.querySelector('.tables-grid');
+  if (!container) return;
+
+  const rect = container.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  const percentageX = (x / rect.width) * 100;
+  const percentageY = (y / rect.height) * 100;
+
+  if (percentageX >= 20 && percentageX <= 80) {
+    setColumnSplit(percentageX);
+  }
+  if (percentageY >= 20 && percentageY <= 80) {
+    setRowSplit(percentageY);
+  }
+}, [isDragging]);
+
+const handleCentralDragEnd = () => {
+  setIsDragging(false);
+  document.body.classList.remove('dragging-central');
+};
+
+// ===== PROBLEEM MET DEZE CODE =====
+// Bij elke mouse movement tijdens drag wordt setColumnSplit() en setRowSplit() aangeroepen.
+// Dit triggert een volledige React re-render van alle 4 tabellen, wat niet smooth is bij grote datasets.
+// Oplossing: requestAnimationFrame throttling om state updates te beperken tot max 60fps.

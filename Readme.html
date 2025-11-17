@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.11.2-MODAL-FIX
+- **JavaScript Versie**: 2.13.0-SLIDER-PERFORMANCE
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -822,7 +822,106 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.11.2-MODAL-FIX (Current)
+### v2.13.0-SLIDER-PERFORMANCE (Current)
+**Release Date**: November 2025
+
+**Performance Optimization: Slider Throttling met RequestAnimationFrame! 🚀**
+- ⚡ **Vloeiende slider beweging**: Centrale slider verplaatsing is nu veel soepeler en responsiever
+- 🎯 **RequestAnimationFrame throttling**: State updates beperkt tot max 60fps i.p.v. 100+ updates per seconde
+- 🔄 **Geen lag meer**: React re-renders worden nu gecontroleerd uitgevoerd tijdens drag
+- 💾 **Backup gemaakt**: Originele slider code opgeslagen in `JavaScript_OLD_SLIDER` en `Stylesheet_OLD_SLIDER`
+
+**Technical Implementation:**
+- **Nieuwe ref**: `sliderAnimationFrame` - Houdt animation frame ID bij voor cancellation
+- **Updated**: `handleCentralDrag()` - Gebruikt nu `requestAnimationFrame()` om updates te throttlen
+- **Updated**: `handleCentralDragEnd()` - Cancelt pending animation frames bij drag end
+- **Probleem opgelost**: Elke mouse move triggerde voorheen direct `setColumnSplit()` en `setRowSplit()`, wat resulteerde in 100+ re-renders per seconde van alle 4 tabellen
+
+**How It Works:**
+1. Mouse movement tijdens drag wordt gedetecteerd
+2. Eventuele pending animation frame wordt gecanceld met `cancelAnimationFrame()`
+3. Nieuwe animation frame wordt gescheduled met `requestAnimationFrame()`
+4. Browser voert update uit op volgende frame (max 60fps)
+5. React re-rendert alleen op animation frames, niet op elke mouse movement
+6. Resultaat: Vloeiende slider met minimale CPU usage
+
+**Rollback Instructions:**
+Indien de nieuwe implementatie problemen veroorzaakt:
+1. Open [JavaScript_OLD_SLIDER](JavaScript_OLD_SLIDER) voor originele handler code
+2. Open [Stylesheet_OLD_SLIDER](Stylesheet_OLD_SLIDER) voor originele CSS (geen wijzigingen)
+3. Verwijder `sliderAnimationFrame` ref (regel ~91)
+4. Vervang `handleCentralDrag()` met originele code (zonder requestAnimationFrame)
+5. Vervang `handleCentralDragEnd()` met originele code (zonder cancelAnimationFrame)
+6. Update versie terug naar 2.12.1-CLEANUP
+
+**Files Modified:**
+- [JavaScript.html:91](JavaScript.html#L91) - Added `sliderAnimationFrame` ref
+- [JavaScript.html:294-321](JavaScript.html#L294-L321) - Optimized `handleCentralDrag()` with RAF throttling
+- [JavaScript.html:323-332](JavaScript.html#L323-L332) - Updated `handleCentralDragEnd()` with cleanup
+- [Code.js:2](Code.js#L2) - Version bump
+- [Readme.html:8](Readme.html#L8) - Version info & changelog
+
+### v2.12.1-CLEANUP
+**Release Date**: November 2025
+
+**UI/UX Improvements:**
+- 🧹 **Modal opgeschoond**: Groene kader met checkmarks verwijderd uit "Eerste Login" modal
+- 📧 **Email zonder emoji's**: Alle emoji's verwijderd uit welcome email (was: "🔐 Welkom...", nu: "Welkom...")
+- ✨ **Cleaner look**: Eenvoudigere, professionelere weergave
+
+**Modal Changes:**
+- Verwijderd: Groen kader met "✓ Wachtwoord aangemaakt / ✓ Opgeslagen / ✓ Gemaild"
+- Toegevoegd: Directe tekst met username inline: "...gemaild naar **username**"
+- Resultaat: Korter, duidelijker bericht
+
+**Email Changes:**
+- Header: "🔐 Welkom bij..." → "Welkom bij..."
+- BELANGRIJK label: "⚠️ Belangrijk:" → "BELANGRIJK:"
+- Footer: "🤖 Generated with..." → "Generated with..."
+- Alle emoji's verwijderd voor betere email compatibiliteit
+
+### v2.12.0-AUTO-PASSWORD
+**Release Date**: November 2025
+
+**Major Feature: Automatische Wachtwoord Generatie! 🎉**
+- 🔐 **Auto-genereer wachtwoord bij eerste login**: Systeem maakt automatisch een random 8-karakter wachtwoord aan
+- 💾 **Opslaan in Firebase**: Wachtwoord wordt direct in database opgeslagen
+- 📧 **Email met wachtwoord**: Gebruiker krijgt professionele HTML email met login credentials
+- ✨ **Nieuwe modal**: "Eerste Login" modal met success bericht
+
+**Email Template:**
+- Mooie HTML email met purple gradient header
+- Duidelijk wachtwoord display met monospace font
+- Stap-voor-stap login instructies
+- Warning box met belangrijke informatie
+- Plain text fallback voor email clients zonder HTML support
+
+**Backend Changes:**
+- **Nieuwe functie**: `generateRandomPassword(length)` - Genereert random wachtwoord met letters, cijfers en speciale karakters
+- **Nieuwe functie**: `updateUserPassword(firebaseKey, newPassword)` - Update wachtwoord in Firebase via PATCH
+- **Nieuwe functie**: `sendWelcomePasswordEmail(userEmail, userName, password)` - Stuurt welcome email via GmailApp
+- **Updated**: `validateUser()` detecteert leeg wachtwoord en triggert auto-generatie flow
+- **Return object**: Nieuw `firstLogin` field om eerste login te identificeren
+
+**Frontend Changes:**
+- Modal header: Orange → Purple gradient (success kleuren)
+- Modal emoji: ⚠️ → 🔐 (security icon)
+- Modal titel: "Wachtwoord Niet Ingesteld" → "Eerste Login"
+- Modal content: Nieuwe tekst met success checklist
+- Button kleur: Orange → Purple (consistent met header)
+- Modal toont gebruikersnaam waarnaar email verzonden is
+
+**Security:**
+- Wachtwoord bevat: lowercase, uppercase, cijfers, speciale karakters (!@#$%)
+- 8 karakters lang (configureerbaar)
+- Cryptographically random via Math.random()
+
+**Error Handling:**
+- Als Firebase update faalt → Error modal
+- Als email faalt → Wachtwoord blijft opgeslagen, waarschuwing in logs
+- Graceful degradation: Wachtwoord opslaan heeft prioriteit boven email
+
+### v2.11.2-MODAL-FIX
 **Release Date**: November 2025
 
 **Bug Fix:**
