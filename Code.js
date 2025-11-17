@@ -672,7 +672,7 @@ Er is een nieuwe aanvraag voor een vergrendelgroep ingediend die uw goedkeuring 
 
 Aanvraag Nummer: ${requestId}
 Ingediend op: ${timestamp}
-Aanvrager: ${userName} (${requesterEmail})
+Aanvrager: ${requesterEmail}
 
 Installatie: ${formData.installatie || 'N/A'}
 Naam: ${formData.naam || 'N/A'}
@@ -739,7 +739,7 @@ Reliability CMMS
                       </tr>
                       <tr>
                         <td style="padding: 4px 0; color: #666; font-size: 13px; font-weight: 600;">Aanvrager:</td>
-                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${userName} (${requesterEmail})</td>
+                        <td style="padding: 4px 0; color: #333; font-size: 13px;">${requesterEmail}</td>
                       </tr>
                     </table>
                   </td>
