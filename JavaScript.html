@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.13.0-SLIDER-PERFORMANCE";
+//version = "2.13.1-USERNAME-FIX";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -387,15 +387,7 @@
     }, [filters, selectedInstallation]);
 
     // VERWIJDERD: Username prefetch voor installaties - niet meer nodig
-
-    React.useEffect(() => {
-      if (isLoggedIn) {
-        google.script.run
-          .withSuccessHandler(setUserName)
-          .withFailureHandler((error) => console.error('Error fetching user name:', error))
-          .getUserName();
-      }
-    }, [isLoggedIn]);
+    // VERWIJDERD: getUserName() call - gebruiken nu de login username direct
 
     // useEffect hooks voor installatie selectie verwijderd - data wordt nu direct bij login geladen
 
@@ -459,6 +451,8 @@
             // New format: { success: boolean, emptyPassword: boolean, message: string }
             if (result.success) {
               setIsLoggedIn(true);
+              // Set username from login (werkt ongeacht deployment setting)
+              setUserName(username);
               // Direct alle data laden (gebruikt prefetched data indien beschikbaar)
               loadAllTableData();
             } else if (result.emptyPassword) {
@@ -471,6 +465,7 @@
           } else if (result === true) {
             // Legacy format: boolean true
             setIsLoggedIn(true);
+            setUserName(username);
             loadAllTableData();
           } else {
             // Legacy format: boolean false

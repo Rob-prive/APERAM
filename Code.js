@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.13.0-SLIDER-PERFORMANCE
+// Version: 2.13.1-USERNAME-FIX
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -614,23 +614,16 @@ function include(filename) {
 // ===== USER AUTHENTICATION & INFO =====
 
 /**
- * Gets the current user's name from their email
+ * VERWIJDERD: getUserName() - niet meer nodig
+ * Username wordt nu direct uit login form gebruikt (werkt ongeacht deployment setting)
+ * Dit voorkomt problemen met "Execute as: Me" deployment waarbij Session.getActiveUser()
+ * altijd de publisher's email zou teruggeven i.p.v. de ingelogde gebruiker
  */
-function getUserName() {
-  const email = Session.getActiveUser().getEmail();
-  const parts = email.split('@')[0].split('.');
-  
-  if (parts.length >= 2) {
-    const surname = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-    const name = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
-    return surname + ' ' + name;
-  }
-  
-  return email;
-}
 
 /**
  * Gets the current user's email
+ * LET OP: Bij "Execute as: Me" deployment geeft dit de PUBLISHER's email,
+ * niet de daadwerkelijke gebruiker die de app gebruikt!
  */
 function getUserEmail() {
   return Session.getActiveUser().getEmail();

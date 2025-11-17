@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.13.0-SLIDER-PERFORMANCE
+- **JavaScript Versie**: 2.13.1-USERNAME-FIX
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -822,7 +822,101 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.13.0-SLIDER-PERFORMANCE (Current)
+### v2.13.1-USERNAME-FIX (Current)
+**Release Date**: November 2025
+
+**Bug Fix: Username Display met "Execute as: Me" Deployment 👤**
+- ✅ **Correcte username weergave**: Gebruikers zien nu hun eigen naam i.p.v. de publisher's naam
+- 🔧 **Deploy-agnostic**: Werkt correct ongeacht "Execute as" setting
+- 🚀 **Eenvoudiger**: Geen server call meer nodig voor username ophalen
+
+**Het Probleem:**
+Wanneer de app gepubliceerd wordt met **"Execute as: Me"** (aanbevolen voor email functionaliteit):
+- `Session.getActiveUser().getEmail()` geeft ALTIJD de publisher's email (rob.oversteyns@gmail.com)
+- `getUserName()` functie gebruikte `Session.getActiveUser()` → Iedereen zag "Rob Oversteyns"
+- ❌ Gebruikers zagen niet hun eigen naam in het welkom bericht
+
+**De Oplossing:**
+Username wordt nu direct uit het login formulier gehaald i.p.v. via server call:
+```javascript
+// Voorheen (na login):
+google.script.run.withSuccessHandler(setUserName).getUserName();
+// → Bij "Execute as: Me" geeft dit altijd publisher's naam
+
+// Nu (bij login success):
+setUserName(username);
+// → Gebruikt de username waarmee gebruiker inlogt (hun email)
+```
+
+**Technical Changes:**
+- **Verwijderd**: `getUserName()` useEffect call na login (JavaScript.html ~391-398)
+- **Updated**: `handleLogin()` success handler zet nu direct `setUserName(username)` (JavaScript.html ~454-455, 468)
+- **Verwijderd**: `getUserName()` functie uit Code.js (regel ~619-630)
+- **Toegevoegd**: Uitgebreide deployment documentatie in README
+
+**Deployment Settings Impact:**
+
+| Setting | Email Functionaliteit | Username Display | Aanbeveling |
+|---------|----------------------|------------------|-------------|
+| **Execute as: Me** | ✅ Werkt voor iedereen | ✅ Nu correct! | ✅ **AANBEVOLEN** |
+| **Execute as: User** | ❌ Werkt alleen met alias setup | ✅ Werkt | ❌ Niet aanbevolen |
+
+**Waarom "Execute as: Me" Aanbevolen Is:**
+1. ✅ Email quota: Publisher's quota (1500/dag Workspace, 100/dag Consumer)
+2. ✅ Consistente afzender: Alle emails komen van één account
+3. ✅ Firebase toegang: Scripts kunnen Firebase aanroepen met publisher's credentials
+4. ✅ Geen auth problemen: Gebruikers hoeven geen extra permissies te geven
+5. ⚠️ **Let op**: Alle acties gebeuren in naam van publisher (daarom logging belangrijk!)
+
+**Security & Best Practices bij "Execute as: Me":**
+1. **Quota Monitoring**:
+   - Consumer Gmail: Max 100 emails/dag
+   - Google Workspace: Max 1500 emails/dag
+   - Implementeer quota check: `MailApp.getRemainingDailyQuota()`
+
+2. **Toegangscontrole**:
+   - ✅ Publish met: "Who has access: Anyone with [bedrijf.com]" (Workspace domain)
+   - ❌ NIET: "Anyone on the internet" (publiek toegankelijk)
+
+3. **Audit Trail**:
+   - Log welke gebruiker welke actie uitvoert in Firebase
+   - Scripts draaien met publisher's rechten, maar track de echte gebruiker
+
+4. **Email Quota Voorbeeld:**
+   ```
+   20 gebruikers × 5 aanvragen/dag = 100 emails/dag
+   → Consumer Gmail quota bereikt!
+   → Gebruik Google Workspace account (1500/dag limit)
+   ```
+
+**Session.getActiveUser() Behavior:**
+
+```javascript
+// Deployment: "Execute as: Me"
+Session.getActiveUser().getEmail()
+// → ALTIJD: rob.oversteyns@gmail.com (publisher)
+
+// Deployment: "Execute as: User accessing the web app"
+Session.getActiveUser().getEmail()
+// → EMAIL van ingelogde gebruiker (maar emails werken niet!)
+```
+
+**Voor Nieuwe Ontwikkelaars:**
+Als je dit project voortzet en twijfelt over deployment settings:
+- **Voor productie**: Gebruik "Execute as: Me" + "Anyone with [domain.com]"
+- **Voor testing**: Beide settings werken nu correct voor username display
+- **Let op**: Email functionaliteit vereist ALTIJD "Execute as: Me"
+
+**Files Modified:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version bump
+- [JavaScript.html:390](JavaScript.html#L390) - Removed getUserName() useEffect
+- [JavaScript.html:454-455](JavaScript.html#L454-L455) - Set username from login (new format)
+- [JavaScript.html:468](JavaScript.html#L468) - Set username from login (legacy format)
+- [Code.js:2](Code.js#L2) - Version bump
+- [Code.js:617-621](Code.js#L617-L621) - Removed getUserName(), added deployment warning
+- [Readme.html:8](Readme.html#L8) - Version info & comprehensive deployment documentation
+
+### v2.13.0-SLIDER-PERFORMANCE
 **Release Date**: November 2025
 
 **Performance Optimization: Slider Throttling met RequestAnimationFrame! 🚀**
