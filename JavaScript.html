@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.16.3-AANVRAGEN-FILTERS-WORKING";
+//version = "2.17.0-APPROVE-BUTTON";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -103,7 +103,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.16.3-AANVRAGEN-FILTERS-WORKING";
+    const version = "2.17.0-APPROVE-BUTTON";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -2754,7 +2754,33 @@
                                         <circle cx="12" cy="12" r="3"></circle>
                                       </svg>
                                     </button>
-                                    <button 
+                                    {/* Approve button - only visible for Role B or C when status is Pending */}
+                                    {(userRole === 'B' || userRole === 'C') && aanvraag._status === 'Pending' && (
+                                      <button
+                                        className="btn-approve-aanvraag"
+                                        title="Goedkeuren"
+                                        onClick={() => {/* TODO: handleApproveAanvraag */}}
+                                        style={{
+                                          padding: '4px 8px',
+                                          border: 'none',
+                                          borderRadius: '3px',
+                                          fontSize: '16px',
+                                          cursor: 'pointer',
+                                          backgroundColor: '#4CAF50',
+                                          color: 'white',
+                                          transition: 'all 0.2s',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          minWidth: '28px',
+                                          height: '28px',
+                                          fontWeight: 'bold'
+                                        }}
+                                      >
+                                        ✓
+                                      </button>
+                                    )}
+                                    <button
                                       className="btn-delete-aanvraag"
                                       title="Verwijderen"
                                       onClick={() => handleOpenDeleteModal(aanvraag)}
