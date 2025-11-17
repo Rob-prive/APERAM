@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.15.2-DEBUG-CLEANUP";
+//version = "2.16.3-AANVRAGEN-FILTERS-WORKING";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -103,7 +103,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.15.2-DEBUG-CLEANUP";
+    const version = "2.16.3-AANVRAGEN-FILTERS-WORKING";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -392,32 +392,85 @@
     };
 
     // ===== ROLE-BASED FILTERING =====
+    // ===== PRE-COMPUTED CACHE FOR AANVRAGEN =====
+    // Parse JSON and format data ONCE instead of on every render
+    // This prevents performance issues when filtering
+    const processedAanvragen = React.useMemo(() => {
+      if (!aanvragen || aanvragen.length === 0) return [];
+
+      return aanvragen.map(aanvraag => {
+        const formData = parseFormData(aanvraag['Form Data'] || '{}');
+        return {
+          ...aanvraag,
+          _formData: formData,
+          _naam: formData.naam || '',
+          _installatie: formData.installatie || '',
+          _aanvragerNaam: getNameFromEmail(aanvraag['Requester Email']),
+          _datum: formatDate(aanvraag['Timestamp']),
+          _status: aanvraag['Status'] || 'Pending'
+        };
+      });
+    }, [aanvragen]);
+
     // Filter aanvragen based on user role:
     // Role A (user): See only own requests (Requester Email = username)
     // Role B (authorizer): See only requests to approve (Approver Email = username)
     // Role C (admin): See all requests
     const filteredAanvragen = React.useMemo(() => {
-      if (!aanvragen || aanvragen.length === 0) return [];
+      if (!processedAanvragen || processedAanvragen.length === 0) return [];
 
-      // Role-based filtering only
+      // Step 1: Role-based filtering
+      let filtered = processedAanvragen;
+
       if (userRole === 'C') {
         // Admin sees all
-        return aanvragen;
+        filtered = processedAanvragen;
       } else if (userRole === 'B') {
         // Authorizer sees only requests they need to approve
-        return aanvragen.filter(aanvraag =>
+        filtered = processedAanvragen.filter(aanvraag =>
           aanvraag['Approver Email'] === username
         );
       } else if (userRole === 'A') {
         // Standard user sees only their own requests
-        return aanvragen.filter(aanvraag =>
+        filtered = processedAanvragen.filter(aanvraag =>
           aanvraag['Requester Email'] === username
+        );
+      } else {
+        // Default: no access
+        return [];
+      }
+
+      // Step 2: Search filtering on cached data
+      if (aanvraagFilters.naam) {
+        const searchText = aanvraagFilters.naam.toLowerCase();
+        filtered = filtered.filter(aanvraag =>
+          aanvraag._naam.toLowerCase().includes(searchText)
         );
       }
 
-      // Default: no access
-      return [];
-    }, [aanvragen, userRole, username]);
+      if (aanvraagFilters.datum) {
+        const searchText = aanvraagFilters.datum.toLowerCase();
+        filtered = filtered.filter(aanvraag =>
+          aanvraag._datum.toLowerCase().includes(searchText)
+        );
+      }
+
+      if (aanvraagFilters.aanvrager) {
+        const searchText = aanvraagFilters.aanvrager.toLowerCase();
+        filtered = filtered.filter(aanvraag =>
+          aanvraag._aanvragerNaam.toLowerCase().includes(searchText)
+        );
+      }
+
+      if (aanvraagFilters.status) {
+        const searchText = aanvraagFilters.status.toLowerCase();
+        filtered = filtered.filter(aanvraag =>
+          aanvraag._status.toLowerCase().includes(searchText)
+        );
+      }
+
+      return filtered;
+    }, [processedAanvragen, userRole, username, aanvraagFilters.naam, aanvraagFilters.datum, aanvraagFilters.aanvrager, aanvraagFilters.status]);
 
 	// ===== EFFECTS =====
 
@@ -2415,7 +2468,7 @@
                       margin: 0,
                       padding: 0
                     }}>
-                      <table key={`aanvragen-table-${filteredAanvragen.length}`} style={{
+                      <table style={{
                         width: '100%',
                         borderCollapse: 'collapse',
                         fontSize: '10px',
@@ -2498,18 +2551,129 @@
                               zIndex: 10
                             }}>Acties</th>
                           </tr>
+                          <tr>
+                            <th style={{
+                              backgroundColor: '#e8eaf6',
+                              border: '1px solid #e0e0e0',
+                              padding: '6px',
+                              position: 'sticky',
+                              top: '41px',
+                              zIndex: 9
+                            }}>
+                              <input
+                                type="text"
+                                placeholder="Zoek..."
+                                value={aanvraagFilters.naam}
+                                onChange={(e) => handleAanvraagFilterChange('naam', e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  padding: '4px 6px',
+                                  fontSize: '10px',
+                                  border: '1px solid #c5cae9',
+                                  borderRadius: '3px',
+                                  outline: 'none'
+                                }}
+                              />
+                            </th>
+                            <th style={{
+                              backgroundColor: '#e8eaf6',
+                              border: '1px solid #e0e0e0',
+                              padding: '6px',
+                              position: 'sticky',
+                              top: '41px',
+                              zIndex: 9
+                            }}>
+                              {/* No filter for installatie */}
+                            </th>
+                            <th style={{
+                              backgroundColor: '#e8eaf6',
+                              border: '1px solid #e0e0e0',
+                              padding: '6px',
+                              position: 'sticky',
+                              top: '41px',
+                              zIndex: 9
+                            }}>
+                              <input
+                                type="text"
+                                placeholder="Zoek..."
+                                value={aanvraagFilters.aanvrager}
+                                onChange={(e) => handleAanvraagFilterChange('aanvrager', e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  padding: '4px 6px',
+                                  fontSize: '10px',
+                                  border: '1px solid #c5cae9',
+                                  borderRadius: '3px',
+                                  outline: 'none'
+                                }}
+                              />
+                            </th>
+                            <th style={{
+                              backgroundColor: '#e8eaf6',
+                              border: '1px solid #e0e0e0',
+                              padding: '6px',
+                              position: 'sticky',
+                              top: '41px',
+                              zIndex: 9
+                            }}>
+                              <input
+                                type="text"
+                                placeholder="Zoek..."
+                                value={aanvraagFilters.datum}
+                                onChange={(e) => handleAanvraagFilterChange('datum', e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  padding: '4px 6px',
+                                  fontSize: '10px',
+                                  border: '1px solid #c5cae9',
+                                  borderRadius: '3px',
+                                  outline: 'none'
+                                }}
+                              />
+                            </th>
+                            <th style={{
+                              backgroundColor: '#e8eaf6',
+                              border: '1px solid #e0e0e0',
+                              padding: '6px',
+                              position: 'sticky',
+                              top: '41px',
+                              zIndex: 9
+                            }}>
+                              <input
+                                type="text"
+                                placeholder="Zoek..."
+                                value={aanvraagFilters.status}
+                                onChange={(e) => handleAanvraagFilterChange('status', e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  padding: '4px 6px',
+                                  fontSize: '10px',
+                                  border: '1px solid #c5cae9',
+                                  borderRadius: '3px',
+                                  outline: 'none'
+                                }}
+                              />
+                            </th>
+                            <th style={{
+                              backgroundColor: '#e8eaf6',
+                              border: '1px solid #e0e0e0',
+                              padding: '6px',
+                              position: 'sticky',
+                              top: '41px',
+                              zIndex: 9
+                            }}>
+                              {/* No filter for actions */}
+                            </th>
+                          </tr>
                         </thead>
                         <tbody>
                           {filteredAanvragen.map((aanvraag, index) => {
-                            const formData = parseFormData(aanvraag['Form Data'] || '{}');
-                            const aanvragerNaam = getNameFromEmail(aanvraag['Requester Email']);
-                            const datum = formatDate(aanvraag['Timestamp']);
-                            
+                            // Use pre-computed cached values instead of parsing on every render
                             return (
                               <tr key={aanvraag.firebaseKey || index} style={{
                                 backgroundColor: index % 2 === 0 ? 'white' : '#fafafa'
                               }}>
-                                <td title={formData.naam || '-'} style={{
+                                <td title={aanvraag._naam || '-'} style={{
                                   border: '1px solid #e0e0e0',
                                   padding: '10px',
                                   textAlign: 'left',
@@ -2519,23 +2683,23 @@
                                   textOverflow: 'ellipsis',
                                   maxWidth: '200px'
                                 }}>
-                                  {formData.naam || '-'}
+                                  {aanvraag._naam || '-'}
                                 </td>
                                 <td style={{
                                   border: '1px solid #e0e0e0',
                                   padding: '10px',
                                   fontSize: '11px'
-                                }}>{formData.installatie || '-'}</td>
+                                }}>{aanvraag._installatie || '-'}</td>
                                 <td style={{
                                   border: '1px solid #e0e0e0',
                                   padding: '10px',
                                   fontSize: '11px'
-                                }}>{aanvragerNaam}</td>
+                                }}>{aanvraag._aanvragerNaam}</td>
                                 <td style={{
                                   border: '1px solid #e0e0e0',
                                   padding: '10px',
                                   fontSize: '11px'
-                                }}>{datum}</td>
+                                }}>{aanvraag._datum}</td>
                                 <td style={{
                                   border: '1px solid #e0e0e0',
                                   padding: '10px',

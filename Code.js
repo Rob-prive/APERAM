@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.15.2-DEBUG-CLEANUP
+// Version: 2.16.3-AANVRAGEN-FILTERS-WORKING
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
