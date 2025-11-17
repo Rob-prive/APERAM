@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.10.2-SYNC-UPDATE";
+//version = "2.11.2-MODAL-FIX";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -84,11 +84,14 @@
     const [isDebugPanelOpen, setIsDebugPanelOpen] = React.useState(false);
     const [debugOutput, setDebugOutput] = React.useState('');
 
+    // Empty password modal state
+    const [isEmptyPasswordModalOpen, setIsEmptyPasswordModalOpen] = React.useState(false);
+
     // Aanvragen data state
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.10.2-SYNC-UPDATE";
+    const version = "2.11.2-MODAL-FIX";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -421,16 +424,39 @@
 
     const handleLogin = () => {
       setError('');
+
+      // Validate username is not empty
+      if (!username || username.trim() === '') {
+        setError('Voer uw gebruikersnaam in');
+        return;
+      }
+
       setIsLoading(true);
 
       google.script.run
-        .withSuccessHandler((isValid) => {
+        .withSuccessHandler((result) => {
           setIsLoading(false);
-          if (isValid) {
+
+          // Check if result is an object (new format) or boolean (legacy)
+          if (typeof result === 'object' && result !== null) {
+            // New format: { success: boolean, emptyPassword: boolean, message: string }
+            if (result.success) {
+              setIsLoggedIn(true);
+              // Direct alle data laden (gebruikt prefetched data indien beschikbaar)
+              loadAllTableData();
+            } else if (result.emptyPassword) {
+              // Password is empty - show modal
+              setIsEmptyPasswordModalOpen(true);
+            } else {
+              // Other error (wrong password, user not found, etc.)
+              setError(result.message || 'Ongeldige gebruikersnaam of wachtwoord');
+            }
+          } else if (result === true) {
+            // Legacy format: boolean true
             setIsLoggedIn(true);
-            // Direct alle data laden (gebruikt prefetched data indien beschikbaar)
             loadAllTableData();
           } else {
+            // Legacy format: boolean false
             setError('Ongeldige gebruikersnaam of wachtwoord');
           }
         })
@@ -1182,6 +1208,129 @@
       );
     };
 
+    // ===== EMPTY PASSWORD MODAL COMPONENT =====
+
+    const EmptyPasswordModal = () => {
+      if (!isEmptyPasswordModalOpen) return null;
+
+      return (
+        <div
+          className="empty-password-modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onClick={() => setIsEmptyPasswordModalOpen(false)}
+        >
+          <div
+            className="empty-password-modal-container"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              maxWidth: '500px',
+              width: '100%',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+              overflow: 'hidden',
+              animation: 'slideDown 0.3s ease-out'
+            }}
+          >
+            {/* Header - Orange/Warning gradient */}
+            <div style={{
+              background: 'linear-gradient(135deg, #ff9800 0%, #ff5722 100%)',
+              padding: '25px',
+              textAlign: 'center',
+              color: 'white'
+            }}>
+              <div style={{
+                fontSize: '48px',
+                marginBottom: '10px',
+                animation: 'bounce 1s ease-in-out'
+              }}>
+                ⚠️
+              </div>
+              <h2 style={{
+                margin: 0,
+                fontSize: '24px',
+                fontWeight: '700'
+              }}>
+                Wachtwoord Niet Ingesteld
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '30px' }}>
+              <p style={{
+                fontSize: '16px',
+                lineHeight: '1.6',
+                color: '#333',
+                marginBottom: '20px',
+                textAlign: 'center'
+              }}>
+                Uw wachtwoord is nog niet ingesteld in het systeem.
+              </p>
+              <p style={{
+                fontSize: '16px',
+                lineHeight: '1.6',
+                color: '#666',
+                marginBottom: '25px',
+                textAlign: 'center'
+              }}>
+                Neem contact op met de beheerder om uw wachtwoord in te stellen.
+              </p>
+
+              {/* Button */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                marginTop: '25px'
+              }}>
+                <button
+                  onClick={() => setIsEmptyPasswordModalOpen(false)}
+                  style={{
+                    padding: '12px 40px',
+                    backgroundColor: '#ff9800',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '15px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    boxShadow: '0 4px 12px rgba(255, 152, 0, 0.3)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#f57c00';
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 16px rgba(255, 152, 0, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#ff9800';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(255, 152, 0, 0.3)';
+                  }}
+                >
+                  Begrepen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     // ===== DEBUG PANEL COMPONENT =====
 
     const DebugPanel = () => {
@@ -1757,37 +1906,41 @@
 
     if (!isLoggedIn) {
       return (
-        <div className="login-container">
-          <form onSubmit={handleSubmit}>
-            <h1>Login</h1>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Gebruikersnaam"
-              required
-              disabled={isLoading}
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Wachtwoord"
-              required
-              disabled={isLoading}
-            />
-            <button type="submit" disabled={isLoading}>
-              {isLoading ? 'Bezig met inloggen...' : 'Inloggen'}
-            </button>
-            {error && <p className="error">{error}</p>}
-            {isPrefetching && (
-              <p className="prefetch-info">⚡ Data wordt voorgeladen...</p>
-            )}
-            <div className="version-info">
-              <span className="version-badge">JS: {version} | CSS: {stylesheetVersion}</span>
-            </div>
-          </form>
-        </div>
+        <React.Fragment>
+          <div className="login-container">
+            <form onSubmit={handleSubmit}>
+              <h1>Login</h1>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Gebruikersnaam"
+                required
+                disabled={isLoading}
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Wachtwoord (optioneel)"
+                disabled={isLoading}
+              />
+              <button type="submit" disabled={isLoading}>
+                {isLoading ? 'Bezig met inloggen...' : 'Inloggen'}
+              </button>
+              {error && <p className="error">{error}</p>}
+              {isPrefetching && (
+                <p className="prefetch-info">⚡ Data wordt voorgeladen...</p>
+              )}
+              <div className="version-info">
+                <span className="version-badge">JS: {version} | CSS: {stylesheetVersion}</span>
+              </div>
+            </form>
+          </div>
+
+          {/* Empty Password Modal - also available on login screen */}
+          <EmptyPasswordModal />
+        </React.Fragment>
       );
     }
 
@@ -2863,6 +3016,9 @@
 
         {/* About Modal */}
         <AboutModal />
+
+        {/* Empty Password Modal */}
+        <EmptyPasswordModal />
 
         {/* Debug Panel */}
         <DebugPanel />

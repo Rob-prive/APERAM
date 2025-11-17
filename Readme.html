@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.10.2-SYNC-UPDATE
+- **JavaScript Versie**: 2.11.2-MODAL-FIX
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -822,7 +822,74 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.10.2-SYNC-UPDATE (Current)
+### v2.11.2-MODAL-FIX (Current)
+**Release Date**: November 2025
+
+**Bug Fix:**
+- 🐛 **Modal nu zichtbaar op login scherm**: EmptyPasswordModal wordt nu ook gerenderd in login state
+- ✅ Modal verschijnt direct bij gebruikers met leeg database wachtwoord (niet pas na login)
+
+**Technical Changes:**
+- Login screen return statement gebruikt nu `React.Fragment` om zowel login form als modal te renderen
+- `<EmptyPasswordModal />` toegevoegd aan login screen render
+- Modal component blijft ook beschikbaar in ingelogde state (beide schermen)
+
+### v2.11.1-EMPTY-PASSWORD-LOGIC
+**Release Date**: November 2025
+
+**Improved UX:**
+- 🔓 **Wachtwoord veld niet meer verplicht**: Gebruikers kunnen nu zonder wachtwoord proberen in te loggen
+- 🧠 **Slimme validatie logica**: Systeem controleert eerst database wachtwoord, dan user input
+
+**Login Flow (nieuwe logica):**
+1. **Gebruiker probeert in te loggen** (wachtwoord veld kan leeg zijn)
+2. **Systeem checkt database wachtwoord voor deze gebruiker**
+3. **Scenario A - DB wachtwoord is leeg:**
+   - ⚠️ Toont modal: "Uw wachtwoord is nog niet ingesteld"
+   - (Ongeacht wat gebruiker heeft ingetypt)
+4. **Scenario B - DB wachtwoord bestaat, maar user typte niets:**
+   - ❌ Error in login scherm: "Voer uw wachtwoord in"
+5. **Scenario C - DB wachtwoord bestaat, user typte verkeerd wachtwoord:**
+   - ❌ Error in login scherm: "Onjuist wachtwoord"
+6. **Scenario D - DB wachtwoord bestaat en matched:**
+   - ✅ Login succesvol
+
+**Backend Changes:**
+- `validateUser()` uitgebreide logica met 3 scenario's
+- Controleert eerst `dbPasswordIsEmpty`, dan `inputPassword`
+- Nieuwe error messages: "Voer uw wachtwoord in" vs "Onjuist wachtwoord"
+- Uitgebreide code commentaar met flow uitleg
+
+**Frontend Changes:**
+- Password veld: `required` attribuut verwijderd
+- Placeholder gewijzigd naar: "Wachtwoord (optioneel)"
+- Username validatie toegevoegd in `handleLogin()`
+- Alle error messages worden getoond in login scherm (behalve empty DB password → modal)
+
+### v2.11.0-EMPTY-PASSWORD-CHECK
+**Release Date**: November 2025
+
+**New Features:**
+- 🔐 **Wachtwoord Validatie**: Login controleert nu of wachtwoord ingesteld is in Firebase users database
+- ⚠️ **Empty Password Modal**: Gebruikers met leeg wachtwoord krijgen duidelijke melding
+- 🔄 **Firebase Authentication**: Volledig overschakeling van Google Sheets naar Firebase voor user validatie
+
+**Backend Changes:**
+- `validateUser()` functie herschreven om Firebase users database te gebruiken
+- Return waarde gewijzigd van `boolean` naar `object` met details:
+  - `success`: boolean - Login geslaagd
+  - `emptyPassword`: boolean - Wachtwoord niet ingesteld
+  - `message`: string - Foutmelding of succesbericht
+- Controleert `PASSWORD` field in Firebase `/fire-data` path
+- Alleen gebruiker 'Test' heeft wachtwoord ingesteld (voor testing)
+
+**Frontend Changes:**
+- `handleLogin()` aangepast om nieuwe response structuur te verwerken
+- Nieuwe modal component: `EmptyPasswordModal`
+- Orange warning gradient styling consistent met andere modals
+- Backward compatible met oude boolean response (legacy support)
+
+### v2.10.2-SYNC-UPDATE
 **Release Date**: November 2025
 
 **Changes:**

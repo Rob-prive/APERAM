@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.10.2-SYNC-UPDATE
+// Version: 2.11.2-MODAL-FIX
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -1007,19 +1007,116 @@ function testAanvraagEmail() {
 }
 
 /**
- * Validates user credentials against DATA sheet
+ * Validates user credentials against Firebase users database
+ * New logic: Check database password first, then validate input
+ *
+ * Flow:
+ * 1. User tries to login (password input can be empty)
+ * 2. Check if user exists in database
+ * 3. Check if database password is empty
+ *    - If DB password is empty → Show "password not set" modal (regardless of input)
+ *    - If DB password is set AND input is empty → Show "please enter password" error
+ *    - If DB password is set AND input is wrong → Show "incorrect password" error
+ *    - If DB password is set AND input matches → Login success
+ *
+ * @param {string} username - Username to validate
+ * @param {string} password - Password to validate (can be empty)
+ * @returns {Object} { success: boolean, emptyPassword: boolean, message: string }
  */
 function validateUser(username, password) {
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Data');
-  const data = sheet.getDataRange().getValues();
-  
-  for (let i = 0; i < data.length; i++) {
-    if (data[i][1] === username && data[i][2] === password) {
-      return true;
+  try {
+    // Fetch users from Firebase users database (fire-data path)
+    const url = `${FIREBASE_USERS_URL}/fire-data.json?auth=${FIREBASE_USERS_SECRET}`;
+    const response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    const responseCode = response.getResponseCode();
+    if (responseCode !== 200) {
+      console.error('Firebase users error:', responseCode, response.getContentText());
+      return {
+        success: false,
+        emptyPassword: false,
+        message: 'Database connectie fout'
+      };
     }
+
+    const data = JSON.parse(response.getContentText());
+
+    if (!data || typeof data !== 'object') {
+      console.error('Invalid Firebase users data structure');
+      return {
+        success: false,
+        emptyPassword: false,
+        message: 'Database data fout'
+      };
+    }
+
+    // Search for user in Firebase data
+    for (const key in data) {
+      const user = data[key];
+
+      // Check if this is the matching username
+      if (user.USER_NAME === username) {
+        // Get database password (can be empty)
+        const dbPassword = user.PASSWORD || '';
+        const dbPasswordIsEmpty = !dbPassword || dbPassword.trim() === '';
+
+        // SCENARIO 1: Database password is empty
+        // → Show modal regardless of what user typed
+        if (dbPasswordIsEmpty) {
+          return {
+            success: false,
+            emptyPassword: true,
+            message: 'Uw wachtwoord is nog niet ingesteld. Neem contact op met de beheerder.'
+          };
+        }
+
+        // SCENARIO 2: Database password exists, but user didn't enter anything
+        // → Show error asking to enter password
+        const inputPassword = password || '';
+        if (inputPassword.trim() === '') {
+          return {
+            success: false,
+            emptyPassword: false,
+            message: 'Voer uw wachtwoord in'
+          };
+        }
+
+        // SCENARIO 3: Database password exists, user entered something
+        // → Validate the password
+        if (dbPassword === inputPassword) {
+          return {
+            success: true,
+            emptyPassword: false,
+            message: 'Login succesvol'
+          };
+        } else {
+          return {
+            success: false,
+            emptyPassword: false,
+            message: 'Onjuist wachtwoord'
+          };
+        }
+      }
+    }
+
+    // User not found
+    return {
+      success: false,
+      emptyPassword: false,
+      message: 'Gebruiker niet gevonden'
+    };
+
+  } catch (error) {
+    console.error('Error in validateUser:', error);
+    return {
+      success: false,
+      emptyPassword: false,
+      message: 'Fout bij validatie: ' + error.message
+    };
   }
-  
-  return false;
 }
 
 // ===== GOOGLE SHEETS DATA (Installations & Autorisators) =====
