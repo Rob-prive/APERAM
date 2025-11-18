@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.17.0-APPROVE-BUTTON
+// Version: 2.18.0-APPROVE-FUNCTIONALITY
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -524,6 +524,65 @@ function deleteAanvraag(firebaseKey) {
     
   } catch (error) {
     console.error('Error deleting aanvraag:', error);
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * Update aanvraag decision (approve/reject) in Firebase Aanvragen database
+ * @param {Object} decisionData - Object containing firebaseKey, decision, authorizerRemark, decisionTimestamp
+ * @returns {Object} {success: boolean, message?: string, error?: string}
+ */
+function updateAanvraagDecision(decisionData) {
+  try {
+    console.log('Updating aanvraag decision:', decisionData);
+
+    if (!decisionData || !decisionData.firebaseKey || !decisionData.decision) {
+      return {
+        success: false,
+        error: 'Ongeldige decision data'
+      };
+    }
+
+    const { firebaseKey, decision, authorizerRemark, decisionTimestamp } = decisionData;
+
+    // Prepare update payload
+    const updatePayload = {
+      'Status': decision,
+      'Authorizer Remark': authorizerRemark || '',
+      'Decision Timestamp': decisionTimestamp
+    };
+
+    const url = `${FIREBASE_AANVRAGEN_URL}/uploadData/${firebaseKey}.json?auth=${FIREBASE_AANVRAGEN_SECRET}`;
+
+    const response = UrlFetchApp.fetch(url, {
+      method: 'patch',
+      contentType: 'application/json',
+      payload: JSON.stringify(updatePayload),
+      muteHttpExceptions: true
+    });
+
+    const responseCode = response.getResponseCode();
+
+    if (responseCode === 200) {
+      console.log('✓ Successfully updated aanvraag decision:', firebaseKey);
+      return {
+        success: true,
+        message: `Aanvraag ${decision === 'Approved' ? 'goedgekeurd' : 'afgekeurd'}`
+      };
+    } else {
+      console.error('Firebase update error:', responseCode, response.getContentText());
+      return {
+        success: false,
+        error: `HTTP ${responseCode}: ${response.getContentText()}`
+      };
+    }
+
+  } catch (error) {
+    console.error('Error updating aanvraag decision:', error);
     return {
       success: false,
       error: error.toString()
