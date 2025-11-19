@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.20.0-DECISION-MODAL";
+//version = "2.21.0-DUTCH-STATUS";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -111,11 +111,20 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.20.0-DECISION-MODAL";
+    const version = "2.21.0-DUTCH-STATUS";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
-    
+
+    const translateStatus = (status) => {
+      const statusTranslations = {
+        'Pending': 'In Behandeling',
+        'Approved': 'Goedgekeurd',
+        'Rejected': 'Afgekeurd'
+      };
+      return statusTranslations[status] || status;
+    };
+
     const getNameFromEmail = (email) => {
       if (!email || !email.includes('@')) return email || 'Onbekend';
       const parts = email.split('@')[0].split('.');
@@ -2897,12 +2906,12 @@
                                     borderRadius: '4px',
                                     fontSize: '11px',
                                     fontWeight: '600',
-                                    backgroundColor: aanvraag['Status'] === 'Pending' ? '#fff3cd' : 
+                                    backgroundColor: aanvraag['Status'] === 'Pending' ? '#fff3cd' :
                                                     aanvraag['Status'] === 'Approved' ? '#d4edda' : '#f8d7da',
-                                    color: aanvraag['Status'] === 'Pending' ? '#856404' : 
+                                    color: aanvraag['Status'] === 'Pending' ? '#856404' :
                                            aanvraag['Status'] === 'Approved' ? '#155724' : '#721c24'
                                   }}>
-                                    {aanvraag['Status'] || 'Pending'}
+                                    {translateStatus(aanvraag['Status'] || 'Pending')}
                                   </span>
                                 </td>
                                 <td style={{
@@ -3940,10 +3949,10 @@
                           <div style={{
                             fontSize: '18px',
                             fontWeight: '700',
-                            color: selectedAanvraag['Status'] === 'Pending' ? '#856404' : 
+                            color: selectedAanvraag['Status'] === 'Pending' ? '#856404' :
                                    selectedAanvraag['Status'] === 'Approved' ? '#155724' : '#721c24'
                           }}>
-                            {selectedAanvraag['Status'] || 'Pending'}
+                            {translateStatus(selectedAanvraag['Status'] || 'Pending')}
                           </div>
                         </div>
                         <div style={{textAlign: 'right'}}>
