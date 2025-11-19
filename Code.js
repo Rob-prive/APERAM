@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.19.0-APPROVE-IN-DETAIL
+// Version: 2.20.0-DECISION-MODAL
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====

@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.19.0-APPROVE-IN-DETAIL";
+//version = "2.20.0-DECISION-MODAL";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -100,6 +100,10 @@
     const [approverRemark, setApproverRemark] = React.useState('');
     const [isProcessingDecision, setIsProcessingDecision] = React.useState(false);
 
+    // Decision result modal state
+    const [isDecisionResultModalOpen, setIsDecisionResultModalOpen] = React.useState(false);
+    const [decisionResult, setDecisionResult] = React.useState(null); // {type: 'Approved'|'Rejected', success: boolean}
+
     // RequestAnimationFrame ref voor slider throttling
     const sliderAnimationFrame = React.useRef(null);
 
@@ -107,7 +111,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.19.0-APPROVE-IN-DETAIL";
+    const version = "2.20.0-DECISION-MODAL";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -727,15 +731,20 @@
             handleCloseDetailModal();
             setApproverRemark('');
 
-            // Show success message
-            alert(`Aanvraag ${decision === 'Approved' ? 'goedgekeurd' : 'afgekeurd'}!`);
+            // Show success modal
+            setDecisionResult({ type: decision, success: true });
+            setIsDecisionResultModalOpen(true);
           } else {
-            alert('Fout bij verwerken beslissing: ' + result.message);
+            // Show error modal
+            setDecisionResult({ type: decision, success: false, message: result.message });
+            setIsDecisionResultModalOpen(true);
           }
         })
         .withFailureHandler((error) => {
           setIsProcessingDecision(false);
-          alert('Fout bij verwerken beslissing: ' + error.message);
+          // Show error modal
+          setDecisionResult({ type: decision, success: false, message: error.message });
+          setIsDecisionResultModalOpen(true);
         })
         .updateAanvraagDecision(decisionData);
     };
@@ -1349,6 +1358,141 @@
                   boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
+                }}
+              >
+                Sluiten
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ===== DECISION RESULT MODAL COMPONENT =====
+
+    const DecisionResultModal = () => {
+      if (!isDecisionResultModalOpen || !decisionResult) return null;
+
+      const isApproved = decisionResult.type === 'Approved';
+      const isSuccess = decisionResult.success;
+
+      const gradient = isSuccess
+        ? (isApproved
+            ? 'linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%)' // Green for approved
+            : 'linear-gradient(135deg, #f44336 0%, #c62828 100%)') // Red for rejected
+        : 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)'; // Orange for error
+
+      const icon = isSuccess
+        ? (isApproved ? '✓' : '✕')
+        : '⚠';
+
+      const title = isSuccess
+        ? (isApproved ? 'Aanvraag Goedgekeurd' : 'Aanvraag Afgekeurd')
+        : 'Fout bij Verwerken';
+
+      const message = isSuccess
+        ? (isApproved
+            ? 'De aanvraag is succesvol goedgekeurd.'
+            : 'De aanvraag is succesvol afgekeurd.')
+        : `Fout bij verwerken beslissing: ${decisionResult.message || 'Onbekende fout'}`;
+
+      return (
+        <div
+          className="decision-result-modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            padding: '20px',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onClick={() => {
+            setIsDecisionResultModalOpen(false);
+            setDecisionResult(null);
+          }}
+        >
+          <div
+            className="decision-result-modal-container"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              maxWidth: '500px',
+              width: '100%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              overflow: 'hidden',
+              animation: 'slideDown 0.3s ease-out'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              background: gradient,
+              padding: '30px',
+              textAlign: 'center',
+              color: 'white'
+            }}>
+              <div style={{
+                fontSize: '64px',
+                marginBottom: '15px',
+                fontWeight: 'bold'
+              }}>
+                {icon}
+              </div>
+              <h2 style={{
+                margin: 0,
+                fontSize: '24px',
+                fontWeight: '700'
+              }}>
+                {title}
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '30px', textAlign: 'center' }}>
+              <p style={{
+                fontSize: '16px',
+                color: '#333',
+                marginBottom: '25px',
+                lineHeight: '1.6'
+              }}>
+                {message}
+              </p>
+
+              <button
+                onClick={() => {
+                  setIsDecisionResultModalOpen(false);
+                  setDecisionResult(null);
+                }}
+                style={{
+                  padding: '12px 30px',
+                  backgroundColor: isSuccess
+                    ? (isApproved ? '#4CAF50' : '#f44336')
+                    : '#ff9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  minWidth: '120px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.opacity = '0.9';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.opacity = '1';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
                 }}
               >
                 Sluiten
@@ -3278,6 +3422,9 @@
 
         {/* About Modal */}
         <AboutModal />
+
+        {/* Decision Result Modal */}
+        <DecisionResultModal />
 
         {/* Empty Password Modal */}
         <EmptyPasswordModal />
