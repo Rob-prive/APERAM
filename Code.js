@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.26.0-USERS-DELETE
+// Version: 2.26.1-USERS-DELETE-FIX
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -655,7 +655,7 @@ function deleteUser(userEmail) {
 
     // Encode email for URL (replace @ and . with safe characters)
     const encodedEmail = encodeURIComponent(userEmail);
-    const url = `${FIREBASE_USERS_URL}/${encodedEmail}.json?auth=${FIREBASE_USERS_SECRET}`;
+    const url = `${FIREBASE_USERS_URL}/fire-data/${encodedEmail}.json?auth=${FIREBASE_USERS_SECRET}`;
 
     // Delete from Firebase
     const response = UrlFetchApp.fetch(url, {

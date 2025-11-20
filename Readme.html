@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.26.0-USERS-DELETE
+- **JavaScript Versie**: 2.26.1-USERS-DELETE-FIX
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -1523,7 +1523,32 @@ Voor vragen of issues, raadpleeg de Google Apps Script logs of check de browser 
 
 ## 🔄 Laatste Updates & Context voor Volgende Sessie
 
-### v2.26.0-USERS-DELETE (November 2025) - HUIDIGE VERSIE
+### v2.26.1-USERS-DELETE-FIX (November 2025) - HUIDIGE VERSIE
+
+**Bug Fix: Firebase Path voor Delete Operatie**
+- 🐛 **Probleem**: deleteUser() functie gebruikte verkeerd Firebase pad
+- ✅ **Oplossing**: Toegevoegd `/fire-data/` pad aan delete URL
+- 🔧 **Fix**: URL aangepast van `/${encodedEmail}.json` naar `/fire-data/${encodedEmail}.json`
+
+**Het probleem:**
+- Gebruikers werden niet daadwerkelijk verwijderd uit Firebase
+- Flow verliep correct maar database werd niet aangepast
+- Firebase rules vereisen correct pad voor write/delete operaties
+
+**De oplossing:**
+- DeleteUser functie gebruikt nu `/fire-data/` pad (consistent met getUsers en updateUser)
+- URL: `${FIREBASE_USERS_URL}/fire-data/${encodedEmail}.json?auth=${FIREBASE_USERS_SECRET}`
+
+**Bestanden gewijzigd:**
+- [Code.js:2](Code.js#L2) - Version bump naar 2.26.1
+- [Code.js:658](Code.js#L658) - Firebase path fix in deleteUser()
+- [JavaScript.html:2](JavaScript.html#L2) - Version update
+- [JavaScript.html:133](JavaScript.html#L133) - const version update
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.26.0-USERS-DELETE (November 2025)
 
 **Feature: User DELETE Functionaliteit**
 - 🗑️ **Verwijder knop**: Rode knop toegevoegd in EditUserModal naast opslaan knop
