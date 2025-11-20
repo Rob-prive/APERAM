@@ -1523,6 +1523,34 @@ Voor vragen of issues, raadpleeg de Google Apps Script logs of check de browser 
 
 ## 🔄 Laatste Updates & Context voor Volgende Sessie
 
+### v2.23.1-USERS-READ-FIX (November 2025) - HUIDIGE VERSIE
+
+**Bug Fix:**
+- ✅ Email en Naam kolommen tonen nu correcte data (was: koppeltekens)
+- 🔧 Veldnamen aangepast om te matchen met Firebase database structuur
+
+**Het probleem:**
+- Email kolom: Gebruikte `user.EMAIL` maar dit veld bestaat niet in Firebase
+- Naam kolom: Gebruikte `user.NAME` maar database gebruikt `USER_NAME`
+
+**De fix:**
+- Email kolom: `user.EMAIL` → `user.firebaseKey` (email is de key in Firebase)
+- Naam kolom: `user.NAME` → `user.USER_NAME` (correcte veldnaam)
+
+**Werkelijke Firebase users velden:**
+- `ACTIVE` - Status van gebruiker
+- `DEPARTEMENT` - Afdeling
+- `PASSWORD` - Wachtwoord (encrypted)
+- `ROLE` - A/B/C (Gebruiker/Autorisator/Administrator)
+- `TITEL` - Functie titel
+- `USER_NAME` - Volledige naam
+
+**Git info:**
+- Commit: `ced5068`
+- Previous: `3dbd78e` (v2.23.0-USERS-READ)
+
+---
+
 ### v2.23.0-USERS-READ (November 2025)
 
 **Wat is er toegevoegd:**
