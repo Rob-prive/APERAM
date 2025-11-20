@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.21.0-DUTCH-STATUS
+// Version: 2.22.0-ADMIN-MENU
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====

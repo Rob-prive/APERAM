@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.21.0-DUTCH-STATUS";
+//version = "2.22.0-ADMIN-MENU";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -20,6 +20,9 @@
     const [showTable, setShowTable] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
     const [isLoadingTable, setIsLoadingTable] = React.useState(false);
+
+    // Admin menu state
+    const [isAdminMenuExpanded, setIsAdminMenuExpanded] = React.useState(false);
     
     // Filter state - Vergrendelpunten
     const [filters, setFilters] = React.useState({
@@ -111,7 +114,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.21.0-DUTCH-STATUS";
+    const version = "2.22.0-ADMIN-MENU";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -2312,15 +2315,62 @@
               </button>
             )}
 
-            {!isSidebarCollapsed && (
-              <button
-                className="nav-button"
-                onClick={handleToggleDebugPanel}
-                title="Toggle debug & test panel"
-              >
-                <span className="icon">🔧</span>
-                Debug & Test
-              </button>
+            {/* Admin menu - Only visible for Role C */}
+            {!isSidebarCollapsed && userRole === 'C' && (
+              <div className="admin-menu">
+                <button
+                  className="nav-button"
+                  onClick={() => setIsAdminMenuExpanded(!isAdminMenuExpanded)}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{display: 'flex', alignItems: 'center'}}>
+                    <span className="icon">⚙️</span>
+                    Admin
+                  </div>
+                  <span style={{
+                    transition: 'transform 0.2s',
+                    transform: isAdminMenuExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+                  }}>
+                    ›
+                  </span>
+                </button>
+
+                {isAdminMenuExpanded && (
+                  <div className="submenu" style={{
+                    paddingLeft: '20px',
+                    borderLeft: '2px solid rgba(102, 126, 234, 0.3)',
+                    marginLeft: '10px'
+                  }}>
+                    <button
+                      className="nav-button submenu-item"
+                      onClick={() => {/* Placeholder for Gebruikers functionality */}}
+                      style={{
+                        fontSize: '14px',
+                        padding: '8px 12px'
+                      }}
+                    >
+                      <span className="icon">👥</span>
+                      Gebruikers
+                    </button>
+                    <button
+                      className="nav-button submenu-item"
+                      onClick={handleToggleDebugPanel}
+                      title="Toggle debug & test panel"
+                      style={{
+                        fontSize: '14px',
+                        padding: '8px 12px'
+                      }}
+                    >
+                      <span className="icon">🔧</span>
+                      Debug & Test
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
             {!isSidebarCollapsed && (
