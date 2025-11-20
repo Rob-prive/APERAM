@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.24.1-USERS-UPDATE-FIX";
+//version = "2.25.0-DRAGGABLE-MODAL";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -48,6 +48,7 @@
       naam: '',
       datum: '',
       aanvrager: '',
+      autorisator: '',
       status: ''
     });
     
@@ -106,6 +107,9 @@
     const [isDebugPanelOpen, setIsDebugPanelOpen] = React.useState(false);
     const [debugOutput, setDebugOutput] = React.useState('');
 
+    // Draggable test modal state
+    const [isDraggableTestOpen, setIsDraggableTestOpen] = React.useState(false);
+
     // Empty password modal state
     const [isEmptyPasswordModalOpen, setIsEmptyPasswordModalOpen] = React.useState(false);
 
@@ -124,7 +128,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.24.1-USERS-UPDATE-FIX";
+    const version = "2.25.0-DRAGGABLE-MODAL";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -436,6 +440,7 @@
           _naam: formData.naam || '',
           _installatie: formData.installatie || '',
           _aanvragerNaam: getNameFromEmail(aanvraag['Requester Email']),
+          _autorisatorNaam: getNameFromEmail(aanvraag['Approver Email']),
           _datum: formatDate(aanvraag['Timestamp']),
           _status: aanvraag['Status'] || 'Pending'
         };
@@ -492,6 +497,13 @@
         );
       }
 
+      if (aanvraagFilters.autorisator) {
+        const searchText = aanvraagFilters.autorisator.toLowerCase();
+        filtered = filtered.filter(aanvraag =>
+          aanvraag._autorisatorNaam.toLowerCase().includes(searchText)
+        );
+      }
+
       if (aanvraagFilters.status) {
         const searchText = aanvraagFilters.status.toLowerCase();
         filtered = filtered.filter(aanvraag =>
@@ -500,7 +512,7 @@
       }
 
       return filtered;
-    }, [processedAanvragen, userRole, username, aanvraagFilters.naam, aanvraagFilters.datum, aanvraagFilters.aanvrager, aanvraagFilters.status]);
+    }, [processedAanvragen, userRole, username, aanvraagFilters.naam, aanvraagFilters.datum, aanvraagFilters.aanvrager, aanvraagFilters.autorisator, aanvraagFilters.status]);
 
 	// ===== EFFECTS =====
 
@@ -2211,6 +2223,242 @@
       );
     };
 
+    // ===== DRAGGABLE MODAL COMPONENT =====
+
+    const DraggableTestModal = () => {
+      const [position, setPosition] = React.useState({ x: 100, y: 100 });
+      const [isDragging, setIsDragging] = React.useState(false);
+      const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
+
+      const handleMouseDown = (e) => {
+        // Only start dragging if clicking on the header
+        if (e.target.closest('.draggable-header')) {
+          setIsDragging(true);
+          setDragOffset({
+            x: e.clientX - position.x,
+            y: e.clientY - position.y
+          });
+        }
+      };
+
+      const handleMouseMove = React.useCallback((e) => {
+        if (isDragging) {
+          setPosition({
+            x: e.clientX - dragOffset.x,
+            y: e.clientY - dragOffset.y
+          });
+        }
+      }, [isDragging, dragOffset]);
+
+      const handleMouseUp = () => {
+        setIsDragging(false);
+      };
+
+      React.useEffect(() => {
+        if (isDragging) {
+          window.addEventListener('mousemove', handleMouseMove);
+          window.addEventListener('mouseup', handleMouseUp);
+          return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+          };
+        }
+      }, [isDragging, handleMouseMove]);
+
+      if (!isDraggableTestOpen) return null;
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+          zIndex: 999998,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        onClick={() => setIsDraggableTestOpen(false)}
+        >
+          <div
+            style={{
+              position: 'fixed',
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              width: '600px',
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              boxShadow: isDragging ? '0 20px 60px rgba(0, 0, 0, 0.5)' : '0 10px 40px rgba(0, 0, 0, 0.3)',
+              overflow: 'hidden',
+              cursor: isDragging ? 'grabbing' : 'default',
+              transition: isDragging ? 'none' : 'box-shadow 0.3s'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={handleMouseDown}
+          >
+            {/* Draggable Header */}
+            <div
+              className="draggable-header"
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                padding: '20px 25px',
+                cursor: isDragging ? 'grabbing' : 'grab',
+                userSelect: 'none'
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <h2 style={{
+                    margin: '0 0 5px 0',
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    color: 'white'
+                  }}>
+                    Draggable Modal Test
+                  </h2>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '13px',
+                    color: 'rgba(255, 255, 255, 0.9)'
+                  }}>
+                    Sleep dit venster door de header te verslepen
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsDraggableTestOpen(false)}
+                  style={{
+                    width: '35px',
+                    height: '35px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div style={{
+              padding: '25px',
+              maxHeight: '500px',
+              overflowY: 'auto'
+            }}>
+              <div style={{
+                marginBottom: '20px',
+                padding: '15px',
+                backgroundColor: '#f0f4ff',
+                borderRadius: '8px',
+                border: '2px solid #667eea'
+              }}>
+                <h3 style={{
+                  margin: '0 0 10px 0',
+                  color: '#1a237e',
+                  fontSize: '16px'
+                }}>
+                  Hoe werkt het?
+                </h3>
+                <ul style={{
+                  margin: '0',
+                  paddingLeft: '20px',
+                  color: '#333',
+                  fontSize: '14px',
+                  lineHeight: '1.6'
+                }}>
+                  <li>Klik en sleep op de paarse header bovenaan om het venster te verplaatsen</li>
+                  <li>Het venster blijft binnen het scherm terwijl u sleept</li>
+                  <li>De cursor verandert naar een "grab" icoon als u over de header beweegt</li>
+                  <li>Klik op de ✕ knop of buiten het venster om te sluiten</li>
+                </ul>
+              </div>
+
+              <div style={{
+                padding: '15px',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '8px',
+                border: '1px solid #e0e0e0'
+              }}>
+                <h3 style={{
+                  margin: '0 0 10px 0',
+                  color: '#1a237e',
+                  fontSize: '16px'
+                }}>
+                  Huidige Positie
+                </h3>
+                <div style={{
+                  fontSize: '14px',
+                  color: '#333',
+                  fontFamily: 'monospace'
+                }}>
+                  <div>X: {Math.round(position.x)}px</div>
+                  <div>Y: {Math.round(position.y)}px</div>
+                  <div>Status: {isDragging ? 'Aan het slepen...' : 'Klaar'}</div>
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: '20px',
+                padding: '15px',
+                backgroundColor: '#fff3cd',
+                borderRadius: '8px',
+                border: '1px solid #ffc107'
+              }}>
+                <p style={{
+                  margin: 0,
+                  fontSize: '13px',
+                  color: '#856404'
+                }}>
+                  <strong>Opmerking:</strong> Deze functionaliteit kan toegepast worden op detail modals
+                  voor aanvragen om ze vrij te kunnen verplaatsen op het scherm.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '15px 25px',
+              backgroundColor: '#f9f9f9',
+              borderTop: '1px solid #e0e0e0',
+              display: 'flex',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => setIsDraggableTestOpen(false)}
+                style={{
+                  padding: '10px 30px',
+                  backgroundColor: '#667eea',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                Sluiten
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     // ===== DEBUG PANEL COMPONENT =====
 
     const DebugPanel = () => {
@@ -2565,6 +2813,25 @@
                     }}
                   >
                     ⟲ Reset Layout
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsDraggableTestOpen(true);
+                      console.log('✅ Opening draggable modal test');
+                    }}
+                    style={{
+                      padding: '12px',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🪟 Test Draggable Modal
                   </button>
 
                   <button
@@ -3346,6 +3613,18 @@
                               position: 'sticky',
                               top: 0,
                               zIndex: 10
+                            }}>Autorisator</th>
+                            <th style={{
+                              backgroundColor: '#f5f5f5',
+                              fontWeight: 600,
+                              color: '#333',
+                              border: '1px solid #e0e0e0',
+                              padding: '10px',
+                              textAlign: 'left',
+                              fontSize: '11px',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 10
                             }}>Aanvraag datum</th>
                             <th style={{
                               backgroundColor: '#f5f5f5',
@@ -3420,6 +3699,29 @@
                                 placeholder="Zoek..."
                                 value={aanvraagFilters.aanvrager}
                                 onChange={(e) => handleAanvraagFilterChange('aanvrager', e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  padding: '4px 6px',
+                                  fontSize: '10px',
+                                  border: '1px solid #c5cae9',
+                                  borderRadius: '3px',
+                                  outline: 'none'
+                                }}
+                              />
+                            </th>
+                            <th style={{
+                              backgroundColor: '#e8eaf6',
+                              border: '1px solid #e0e0e0',
+                              padding: '6px',
+                              position: 'sticky',
+                              top: '41px',
+                              zIndex: 9
+                            }}>
+                              <input
+                                type="text"
+                                placeholder="Zoek..."
+                                value={aanvraagFilters.autorisator}
+                                onChange={(e) => handleAanvraagFilterChange('autorisator', e.target.value)}
                                 style={{
                                   width: '100%',
                                   padding: '4px 6px',
@@ -3517,6 +3819,11 @@
                                   padding: '10px',
                                   fontSize: '11px'
                                 }}>{aanvraag._aanvragerNaam}</td>
+                                <td style={{
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  fontSize: '11px'
+                                }}>{aanvraag._autorisatorNaam}</td>
                                 <td style={{
                                   border: '1px solid #e0e0e0',
                                   padding: '10px',
@@ -4782,6 +5089,7 @@
                   const formData = parseFormData(selectedAanvraag['Form Data'] || '{}');
                   const aanvragerNaam = getNameFromEmail(selectedAanvraag['Requester Email']);
                   const datum = formatDate(selectedAanvraag['Timestamp']);
+                  const beslissingDatum = selectedAanvraag['Decision Timestamp'] ? formatDate(selectedAanvraag['Decision Timestamp']) : null;
                   
                   // Verzamelmandje Data - ensure it's always an array
                   let verzamelmandjeData = selectedAanvraag['Verzamelmandje Data'] || [];
@@ -4830,6 +5138,20 @@
                           <div style={{fontSize: '14px', fontWeight: '600', color: '#333'}}>
                             {datum}
                           </div>
+                          {beslissingDatum && selectedAanvraag['Status'] !== 'Pending' && (
+                            <React.Fragment>
+                              <div style={{fontSize: '12px', color: '#666', fontWeight: '600', marginTop: '12px', marginBottom: '4px'}}>
+                                {selectedAanvraag['Status'] === 'Approved' ? 'GOEDKEUR DATUM' : 'AFKEUR DATUM'}
+                              </div>
+                              <div style={{
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                color: selectedAanvraag['Status'] === 'Approved' ? '#155724' : '#721c24'
+                              }}>
+                                {beslissingDatum}
+                              </div>
+                            </React.Fragment>
+                          )}
                         </div>
                       </div>
 
@@ -5209,6 +5531,9 @@
             </div>
           </div>
         )}
+
+        {/* Draggable Test Modal */}
+        <DraggableTestModal />
       </React.Fragment>
     );
   }

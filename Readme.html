@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.24.1-USERS-UPDATE-FIX
+- **JavaScript Versie**: 2.25.0-DRAGGABLE-MODAL
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -1523,7 +1523,98 @@ Voor vragen of issues, raadpleeg de Google Apps Script logs of check de browser 
 
 ## 🔄 Laatste Updates & Context voor Volgende Sessie
 
-### v2.24.1-USERS-UPDATE-FIX (November 2025) - HUIDIGE VERSIE
+### v2.25.0-DRAGGABLE-MODAL (November 2025) - HUIDIGE VERSIE
+
+**Feature: Draggable Modal Test Component**
+- 🪟 **Draggable venster**: Nieuwe modal component die vrij versleept kan worden op het scherm
+- 🎯 **Test knop**: Toegevoegd in Debug Panel onder "Quick Actions"
+- 🖱️ **Drag & Drop**: Sleep de modal door de header vast te pakken
+- 📊 **Live positie**: Toont real-time X/Y coördinaten tijdens het slepen
+- 💡 **Prototype**: Kan toegepast worden op aanvraag detail modals voor betere gebruikservaring
+
+**Technische Details:**
+- React hooks voor positie state management (useState)
+- Mouse event handlers (onMouseDown, onMouseMove, onMouseUp)
+- useEffect voor global event listeners tijdens drag
+- useCallback voor performance optimalisatie
+- Cursor feedback (grab/grabbing)
+- Box-shadow verandering tijdens slepen voor visuele feedback
+
+**Bestanden gewijzigd:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version update naar 2.25.0-DRAGGABLE-MODAL
+- [JavaScript.html:111](JavaScript.html#L111) - Nieuwe state: isDraggableTestOpen
+- [JavaScript.html:2228-2460](JavaScript.html#L2228-L2460) - DraggableTestModal component
+- [JavaScript.html:2818-2835](JavaScript.html#L2818-L2835) - Test knop in Debug Panel
+- [JavaScript.html:5536](JavaScript.html#L5536) - Component render in App
+- [Code.js:2](Code.js#L2) - Version update
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.24.3-AANVRAGEN-BESLISSING-DATUM (November 2025)
+
+**Feature: Beslissing Datum in Aanvraag Detail**
+- 📅 **Goedkeur/Afkeur datum**: Toont beslissing datum wanneer aanvraag niet "In Behandeling" is
+- 🎨 **Kleurcodering**: Groen voor goedkeur datum, rood voor afkeur datum
+- 📊 **Conditionele weergave**: Alleen zichtbaar bij status "Goedgekeurd" of "Afgekeurd"
+
+**Implementatie:**
+- Database veld: `Decision Timestamp` (bijv. "2025-11-20T14:30:00.000Z")
+- Label: "GOEDKEUR DATUM" of "AFKEUR DATUM" (afhankelijk van status)
+- Positie: Onder aanvraag datum in detail modal
+- Gebruikt `formatDate()` voor consistente datum formatting
+
+**Display logica:**
+```javascript
+if (beslissingDatum && status !== 'Pending') {
+  // Toon beslissing datum met juiste label en kleur
+}
+```
+
+**Bestanden Gewijzigd:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version bump naar 2.24.3
+- [JavaScript.html:128](JavaScript.html#L128) - const version update
+- [JavaScript.html:4834](JavaScript.html#L4834) - beslissingDatum constante toegevoegd
+- [JavaScript.html:4883-4896](JavaScript.html#L4883-L4896) - Beslissing datum display logic
+- [Code.js:2](Code.js#L2) - Version bump naar 2.24.3
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.24.2-AANVRAGEN-AUTORISATOR (November 2025)
+
+**Feature: Autorisator Kolom in Aanvragen Tabel**
+- 👤 **Nieuwe kolom**: Autorisator toegevoegd aan aanvragen tabel
+- 🔍 **Filter functie**: Zoekfilter voor autorisator naam
+- 📧 **Naam extractie**: Gebruikt `getNameFromEmail()` voor Approver Email
+
+**Database mapping:**
+- Database veld: `Approver Email` (bijv. "kristof.vanspauwen@aperam.com")
+- Weergave: Autorisator naam (bijv. "Kristof Vanspauwen")
+- Positie: Tussen "Aanvrager" en "Aanvraag datum" kolommen
+
+**Implementatie:**
+- `_autorisatorNaam` computed property toegevoegd aan processedAanvragen
+- Filter state: `aanvraagFilters.autorisator`
+- Filter logica: Zoekt in `_autorisatorNaam.toLowerCase()`
+- Gebruikt bestaande `getNameFromEmail()` helper functie
+
+**Bestanden Gewijzigd:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version bump naar 2.24.2
+- [JavaScript.html:128](JavaScript.html#L128) - const version update
+- [JavaScript.html:47-53](JavaScript.html#L47-L53) - aanvraagFilters state (autorisator toegevoegd)
+- [JavaScript.html:439](JavaScript.html#L439) - _autorisatorNaam computed property
+- [JavaScript.html:497-502](JavaScript.html#L497-L502) - Autorisator filter logica
+- [JavaScript.html:512](JavaScript.html#L512) - useMemo dependency array update
+- [JavaScript.html:3338-3349](JavaScript.html#L3338-L3349) - Autorisator tabel header
+- [JavaScript.html:3446-3468](JavaScript.html#L3446-L3468) - Autorisator filter input
+- [JavaScript.html:3564-3568](JavaScript.html#L3564-L3568) - Autorisator tabel cell
+- [Code.js:2](Code.js#L2) - Version bump naar 2.24.2
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.24.1-USERS-UPDATE-FIX (November 2025)
 
 **Bug Fixes & UX Improvements:**
 - 🐛 **Email veld fix in Edit Modal**: Email veld toont nu USER_NAME i.p.v. firebaseKey (0-31)

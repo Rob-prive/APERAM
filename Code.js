@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.24.1-USERS-UPDATE-FIX
+// Version: 2.25.0-DRAGGABLE-MODAL
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
