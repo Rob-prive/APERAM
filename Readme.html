@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.22.0-ADMIN-MENU
+- **JavaScript Versie**: 2.23.0-USERS-READ
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -1518,6 +1518,81 @@ google.script.run
 **Last Updated**: November 2025
 
 Voor vragen of issues, raadpleeg de Google Apps Script logs of check de browser console voor error messages.
+
+---
+
+## 🔄 Laatste Updates & Context voor Volgende Sessie
+
+### v2.23.0-USERS-READ (November 2025)
+
+**Wat is er toegevoegd:**
+- **Users READ functionaliteit**: Gebruikers kunnen nu bekeken worden in Tabel 4 (Admin only)
+- **Nieuwe backend functie**: `getUsers()` in Code.js haalt gebruikers op van Firebase users database
+- **Nieuwe frontend handler**: `fetchUsers()` laadt gebruikers data
+- **Users tabel UI**: Tabel 4 toont gebruikers met kolommen: Email, Naam, Rol
+- **Gebruikers menu**: Klikken op "Gebruikers" in Admin menu laadt users in Tabel 4
+
+**Implementatie details:**
+- Backend (`Code.js` lines 487-528): `getUsers()` functie volgt zelfde patroon als `getAanvragen()`
+- Frontend handler (`JavaScript.html` lines 677-692): `fetchUsers()` met loading state
+- Users state (`JavaScript.html` lines 28-30): `users`, `isLoadingUsers`, `activeAdminView`
+- Users tabel UI (`JavaScript.html` lines 3063-3192): Volledige tabel met styling identiek aan Aanvragen
+- Menu handler (`JavaScript.html` lines 2372-2375): Click handler roept `fetchUsers()` aan en zet `activeAdminView`
+
+**Rol badges kleuren:**
+- Role C (Administrator): Blauw (`#e3f2fd` background, `#1565c0` text)
+- Role B (Autorisator): Geel (`#fff3cd` background, `#856404` text)
+- Role A (Gebruiker): Paars (`#f3e5f5` background, `#6a1b9a` text)
+
+**Database structuur (Firebase users):**
+```javascript
+{
+  "firebaseKey": "auto-generated-key",
+  "EMAIL": "user@example.com",
+  "NAME": "Gebruiker Naam",
+  "ROLE": "A|B|C",
+  "PASSWORD": "encrypted"
+}
+```
+
+**Wat nog NIET is geïmplementeerd:**
+- ✗ CREATE: Nieuwe gebruiker toevoegen
+- ✗ UPDATE: Bestaande gebruiker bewerken
+- ✗ DELETE: Gebruiker verwijderen
+- ✗ Password reset functionaliteit
+- ✗ Role assignment UI
+
+**Volgende stappen (voor volgende chat sessie):**
+1. **Users CREATE**: Modal om nieuwe gebruiker toe te voegen (email, naam, rol, wachtwoord)
+2. **Users UPDATE**: Bewerk knop per user row, modal om gegevens te wijzigen
+3. **Users DELETE**: Verwijder knop per user row met confirmation modal
+4. **Password management**: Reset wachtwoord functionaliteit
+5. **Role assignment**: Dropdown voor role selectie bij create/update
+
+**Git repository informatie:**
+- Repository: `Rob-prive/APERAM` (GitHub)
+- Current branch: `main`
+- Remote: `https://github.com/Rob-prive/APERAM.git`
+- Laatste commit vóór v2.23.0: `9662750` (v2.22.0-ADMIN-MENU)
+
+**Technische patronen gebruikt:**
+- State management met React.useState hooks
+- Google Apps Script backend calls met .withSuccessHandler/.withFailureHandler
+- Firebase REST API calls voor data fetching
+- Conditional rendering gebaseerd op `activeAdminView` state
+- Role-based visibility (Admin menu alleen voor Role C)
+- Consistente tabel styling met sticky headers en alternating row colors
+
+**Belangrijke bestanden deze sessie:**
+- `JavaScript.html`: Main React applicatie (4421 lines)
+- `Code.js`: Google Apps Script backend (700+ lines)
+- `Readme.html`: Deze documentatie (1543 lines)
+
+**Browser compatibility:**
+- Chrome: ✓ Volledig ondersteund
+- Firefox: ✓ Volledig ondersteund
+- Safari: ✓ Volledig ondersteund
+- Edge: ✓ Volledig ondersteund
 
 ---
 

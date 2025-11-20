@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.22.0-ADMIN-MENU";
+//version = "2.23.0-USERS-READ";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -23,7 +23,12 @@
 
     // Admin menu state
     const [isAdminMenuExpanded, setIsAdminMenuExpanded] = React.useState(false);
-    
+    const [activeAdminView, setActiveAdminView] = React.useState(null); // null, 'users', 'debug'
+
+    // Users management state
+    const [users, setUsers] = React.useState([]);
+    const [isLoadingUsers, setIsLoadingUsers] = React.useState(false);
+
     // Filter state - Vergrendelpunten
     const [filters, setFilters] = React.useState({
       code: '',
@@ -114,7 +119,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.22.0-ADMIN-MENU";
+    const version = "2.23.0-USERS-READ";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -654,7 +659,7 @@
     
     const fetchAanvragen = () => {
       setIsLoadingAanvragen(true);
-      
+
       google.script.run
         .withSuccessHandler((data) => {
           setIsLoadingAanvragen(false);
@@ -667,6 +672,23 @@
           setAanvragen([]);
         })
         .getAanvragen();
+    };
+
+    const fetchUsers = () => {
+      setIsLoadingUsers(true);
+
+      google.script.run
+        .withSuccessHandler((data) => {
+          setIsLoadingUsers(false);
+          setUsers(data || []);
+          console.log('✓ Users loaded:', data.length);
+        })
+        .withFailureHandler((error) => {
+          setIsLoadingUsers(false);
+          console.error('Error fetching users:', error);
+          setUsers([]);
+        })
+        .getUsers();
     };
 
     const handleLogout = () => {
@@ -2347,7 +2369,10 @@
                   }}>
                     <button
                       className="nav-button submenu-item"
-                      onClick={() => {/* Placeholder for Gebruikers functionality */}}
+                      onClick={() => {
+                        setActiveAdminView('users');
+                        fetchUsers();
+                      }}
                       style={{
                         fontSize: '14px',
                         padding: '8px 12px'
@@ -3038,12 +3063,135 @@
                   )}
                 </div>
                 
-                {/* TABEL 4 - BOTTOM RIGHT - Placeholder */}
-                <div 
-                  className="table-container bottom-right-table empty"
-                  style={{ gridColumn: 2, gridRow: 2 }}
+                {/* TABEL 4 - BOTTOM RIGHT - Users (Admin only) */}
+                <div
+                  className="table-container bottom-right-table"
+                  style={{ gridColumn: 2, gridRow: 2, padding: '8px' }}
                 >
-                  <p>Tabel 4 - Beschikbaar voor toekomstige data</p>
+                  {activeAdminView === 'users' ? (
+                    <React.Fragment>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '6px',
+                        paddingBottom: '6px',
+                        borderBottom: '2px solid #e0e0e0'
+                      }}>
+                        <h3 style={{margin: 0, color: '#1a237e', fontSize: '14px'}}>Gebruikers</h3>
+                        <p style={{margin: 0, color: '#666', fontSize: '12px'}}>
+                          {isLoadingUsers ? 'Laden...' : `${users.length} gebruikers`}
+                        </p>
+                      </div>
+
+                      {isLoadingUsers ? (
+                        <div className="loading-spinner">
+                          <div className="spinner"></div>
+                          <p style={{fontSize: '12px'}}>Gebruikers laden...</p>
+                        </div>
+                      ) : users.length > 0 ? (
+                        <div style={{
+                          flex: '1 1 auto',
+                          overflow: 'auto',
+                          margin: 0,
+                          padding: 0
+                        }}>
+                          <table style={{
+                            width: '100%',
+                            borderCollapse: 'collapse',
+                            fontSize: '10px',
+                            margin: 0,
+                            padding: 0
+                          }}>
+                            <thead>
+                              <tr>
+                                <th style={{
+                                  backgroundColor: '#f5f5f5',
+                                  fontWeight: 600,
+                                  color: '#333',
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'left',
+                                  fontSize: '11px',
+                                  position: 'sticky',
+                                  top: 0,
+                                  zIndex: 10
+                                }}>Email</th>
+                                <th style={{
+                                  backgroundColor: '#f5f5f5',
+                                  fontWeight: 600,
+                                  color: '#333',
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'left',
+                                  fontSize: '11px',
+                                  position: 'sticky',
+                                  top: 0,
+                                  zIndex: 10
+                                }}>Naam</th>
+                                <th style={{
+                                  backgroundColor: '#f5f5f5',
+                                  fontWeight: 600,
+                                  color: '#333',
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'left',
+                                  fontSize: '11px',
+                                  position: 'sticky',
+                                  top: 0,
+                                  zIndex: 10
+                                }}>Rol</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {users.map((user, index) => (
+                                <tr key={user.firebaseKey || index} style={{
+                                  backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
+                                  transition: 'background-color 0.2s'
+                                }}>
+                                  <td style={{
+                                    border: '1px solid #e0e0e0',
+                                    padding: '10px',
+                                    fontSize: '11px'
+                                  }}>{user.EMAIL || '-'}</td>
+                                  <td style={{
+                                    border: '1px solid #e0e0e0',
+                                    padding: '10px',
+                                    fontSize: '11px'
+                                  }}>{user.NAME || '-'}</td>
+                                  <td style={{
+                                    border: '1px solid #e0e0e0',
+                                    padding: '10px',
+                                    fontSize: '11px'
+                                  }}>
+                                    <span style={{
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '11px',
+                                      fontWeight: '600',
+                                      backgroundColor: user.ROLE === 'C' ? '#e3f2fd' :
+                                                      user.ROLE === 'B' ? '#fff3cd' : '#f3e5f5',
+                                      color: user.ROLE === 'C' ? '#1565c0' :
+                                             user.ROLE === 'B' ? '#856404' : '#6a1b9a'
+                                    }}>
+                                      {user.ROLE === 'C' ? 'Administrator' :
+                                       user.ROLE === 'B' ? 'Autorisator' : 'Gebruiker'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p style={{fontSize: '12px', color: '#666', textAlign: 'center', marginTop: '20px'}}>
+                          Geen gebruikers gevonden
+                        </p>
+                      )}
+                    </React.Fragment>
+                  ) : (
+                    <p>Tabel 4 - Beschikbaar voor toekomstige data</p>
+                  )}
                 </div>
                 
                 {/* CENTRALE SLIDER */}

@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.22.0-ADMIN-MENU
+// Version: 2.23.0-USERS-READ
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -480,6 +480,49 @@ function getAanvragen() {
     
   } catch (error) {
     console.error('Error fetching aanvragen:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all users from Firebase Users database
+ * @returns {Array} Array of user objects
+ */
+function getUsers() {
+  try {
+    console.log('Fetching users from Firebase...');
+
+    const url = `${FIREBASE_USERS_URL}/fire-data.json?auth=${FIREBASE_USERS_SECRET}`;
+    const response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    const responseCode = response.getResponseCode();
+    if (responseCode !== 200) {
+      console.error('Firebase error:', responseCode, response.getContentText());
+      return [];
+    }
+
+    const data = JSON.parse(response.getContentText());
+
+    if (!data) {
+      console.log('No users found');
+      return [];
+    }
+
+    // Convert Firebase object to array with keys
+    const users = Object.keys(data).map(key => ({
+      firebaseKey: key,
+      ...data[key]
+    }));
+
+    console.log(`✓ Loaded ${users.length} users from Firebase`);
+
+    return users;
+
+  } catch (error) {
+    console.error('Error fetching users:', error);
     return [];
   }
 }
