@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.23.2-USERS-TABLE-COLUMNS
+// Version: 2.24.1-USERS-UPDATE-FIX
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -524,6 +524,116 @@ function getUsers() {
   } catch (error) {
     console.error('Error fetching users:', error);
     return [];
+  }
+}
+
+/**
+ * Update user in Firebase Users database
+ * @param {Object} userData - User data to update
+ * @returns {Object} {success: boolean, message: string}
+ */
+function updateUser(userData) {
+  try {
+    console.log('Updating user:', userData.firebaseKey);
+
+    // Prepare update data (exclude firebaseKey and newEmail from update object)
+    const updateData = {
+      ROLE: userData.ROLE,
+      DEPARTEMENT: userData.DEPARTEMENT || '',
+      TITEL: userData.TITEL || '',
+      ACTIVE: userData.ACTIVE,
+      USER_NAME: userData.USER_NAME
+    };
+
+    // Only include password if it's being updated
+    if (userData.PASSWORD && userData.PASSWORD.trim() !== '') {
+      updateData.PASSWORD = userData.PASSWORD;
+    }
+
+    // If email is changing, we need to delete old entry and create new one
+    if (userData.newEmail && userData.newEmail !== userData.firebaseKey) {
+      console.log('Email is changing from', userData.firebaseKey, 'to', userData.newEmail);
+
+      // First, get the current user data to preserve PASSWORD if not updating
+      const getCurrentUrl = `${FIREBASE_USERS_URL}/fire-data/${userData.firebaseKey}.json?auth=${FIREBASE_USERS_SECRET}`;
+      const currentResponse = UrlFetchApp.fetch(getCurrentUrl, {
+        method: 'get',
+        muteHttpExceptions: true
+      });
+
+      const currentData = JSON.parse(currentResponse.getContentText());
+
+      // Preserve password if not updating
+      if (!updateData.PASSWORD && currentData.PASSWORD) {
+        updateData.PASSWORD = currentData.PASSWORD;
+      }
+
+      // Create new entry with new email as key
+      const createUrl = `${FIREBASE_USERS_URL}/fire-data/${userData.newEmail}.json?auth=${FIREBASE_USERS_SECRET}`;
+      UrlFetchApp.fetch(createUrl, {
+        method: 'put',
+        contentType: 'application/json',
+        payload: JSON.stringify(updateData),
+        muteHttpExceptions: true
+      });
+
+      // Delete old entry
+      const deleteUrl = `${FIREBASE_USERS_URL}/fire-data/${userData.firebaseKey}.json?auth=${FIREBASE_USERS_SECRET}`;
+      UrlFetchApp.fetch(deleteUrl, {
+        method: 'delete',
+        muteHttpExceptions: true
+      });
+
+      console.log('✓ User email updated successfully');
+      return {
+        success: true,
+        message: 'Gebruiker succesvol bijgewerkt (email gewijzigd)'
+      };
+    } else {
+      // Email not changing, just update existing entry
+      // First get current password if we're not updating it
+      if (!updateData.PASSWORD) {
+        const getCurrentUrl = `${FIREBASE_USERS_URL}/fire-data/${userData.firebaseKey}.json?auth=${FIREBASE_USERS_SECRET}`;
+        const currentResponse = UrlFetchApp.fetch(getCurrentUrl, {
+          method: 'get',
+          muteHttpExceptions: true
+        });
+        const currentData = JSON.parse(currentResponse.getContentText());
+        if (currentData.PASSWORD) {
+          updateData.PASSWORD = currentData.PASSWORD;
+        }
+      }
+
+      const url = `${FIREBASE_USERS_URL}/fire-data/${userData.firebaseKey}.json?auth=${FIREBASE_USERS_SECRET}`;
+      const response = UrlFetchApp.fetch(url, {
+        method: 'patch',
+        contentType: 'application/json',
+        payload: JSON.stringify(updateData),
+        muteHttpExceptions: true
+      });
+
+      const responseCode = response.getResponseCode();
+      if (responseCode !== 200) {
+        console.error('Firebase error:', responseCode, response.getContentText());
+        return {
+          success: false,
+          message: 'Fout bij bijwerken gebruiker in database'
+        };
+      }
+
+      console.log('✓ User updated successfully');
+      return {
+        success: true,
+        message: 'Gebruiker succesvol bijgewerkt'
+      };
+    }
+
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return {
+      success: false,
+      message: 'Fout bij bijwerken: ' + error.toString()
+    };
   }
 }
 

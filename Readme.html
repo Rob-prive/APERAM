@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.23.2-USERS-TABLE-COLUMNS
+- **JavaScript Versie**: 2.24.1-USERS-UPDATE-FIX
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -1523,7 +1523,94 @@ Voor vragen of issues, raadpleeg de Google Apps Script logs of check de browser 
 
 ## 🔄 Laatste Updates & Context voor Volgende Sessie
 
-### v2.23.2-USERS-TABLE-COLUMNS (November 2025) - HUIDIGE VERSIE
+### v2.24.1-USERS-UPDATE-FIX (November 2025) - HUIDIGE VERSIE
+
+**Bug Fixes & UX Improvements:**
+- 🐛 **Email veld fix in Edit Modal**: Email veld toont nu USER_NAME i.p.v. firebaseKey (0-31)
+- ✨ **Modals i.p.v. Alerts**: Alle lelijke browser alerts vervangen door professionele modals
+- 🎨 **Success Modal**: Groene gradient met checkmark voor succesvolle updates
+- 🎨 **Error Modal**: Rode gradient met waarschuwing voor errors
+
+**Het probleem:**
+- Edit gebruiker modal toonde firebaseKey (0-31) in email veld i.p.v. echte email
+- Alle feedback (success/error) werd getoond via lelijke browser alerts
+- Email vergelijking gebruikte verkeerde veld voor change detection
+
+**De oplossing:**
+- Email veld gebruikt nu `editingUser.USER_NAME` i.p.v. `editingUser.firebaseKey`
+- Email change vergelijking: `formData.email !== editingUser.USER_NAME`
+- Nieuwe modals: `UserSuccessModal` en `UserErrorModal`
+- State toegevoegd: `isUserSuccessModalOpen`, `isUserErrorModalOpen`, `userModalMessage`
+- Alle `alert()` calls vervangen door modal state updates
+
+**Bestanden Gewijzigd:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version bump naar 2.24.1
+- [JavaScript.html:127](JavaScript.html#L127) - const version update
+- [JavaScript.html:33-35](JavaScript.html#L33-L35) - Nieuwe modal state
+- [JavaScript.html:1703](JavaScript.html#L1703) - Email formData fix
+- [JavaScript.html:1728](JavaScript.html#L1728) - Email vergelijking fix
+- [JavaScript.html:710-731](JavaScript.html#L710-L731) - handleUpdateUser met modals
+- [JavaScript.html:2017-2212](JavaScript.html#L2017-L2212) - UserSuccessModal en UserErrorModal components
+- [JavaScript.html:4303-4307](JavaScript.html#L4303-L4307) - Modals gerenderd
+- [Code.js:2](Code.js#L2) - Version bump naar 2.24.1
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.24.0-USERS-UPDATE (November 2025)
+
+**Major Feature: User UPDATE Functionaliteit! ✏️**
+- ✅ **Edit knop per gebruiker**: Paars SVG potlood icoon in Acties kolom
+- ✅ **Edit User Modal**: Volledig formulier met alle velden
+- ✅ **Backend updateUser()**: Ondersteunt email wijziging en field updates
+- ✅ **Wachtwoord optioneel**: Laat leeg om huidige wachtwoord te behouden
+
+**Nieuwe Functionaliteit:**
+1. **Frontend - EditUserModal Component**:
+   - Formulier met: Email, Rol, Departement, Titel, Actief, Wachtwoord
+   - Purple gradient header (consistent met app styling)
+   - Email validatie (moet @ bevatten)
+   - Wachtwoord veld optioneel (behoud huidig als leeg)
+   - Vooraf ingevulde data uit geselecteerde gebruiker
+
+2. **Frontend - Tabel Updates**:
+   - Nieuwe "Acties" kolom toegevoegd aan gebruikerstabel
+   - SVG edit icoon (potlood) per gebruiker
+   - Paarse knop styling (consistent met theme)
+   - Tooltip "Bewerken" bij hover
+
+3. **Backend - updateUser() Functie**:
+   - Ondersteunt email wijziging (verwijdert oude key, maakt nieuwe aan)
+   - Behoudt wachtwoord automatisch als niet gewijzigd
+   - Update velden: ROLE, DEPARTEMENT, TITEL, ACTIVE, USER_NAME, PASSWORD
+   - Returns `{success: boolean, message: string}`
+   - Uitgebreide error handling en logging
+
+**State Management:**
+- `isEditUserModalOpen` - Modal zichtbaarheid
+- `editingUser` - Huidige gebruiker die bewerkt wordt
+
+**Handler Functies:**
+- `handleOpenEditUserModal(user)` - Opent modal met user data
+- `handleCloseEditUserModal()` - Sluit modal en reset state
+- `handleUpdateUser(updatedUserData)` - Verstuurt update naar backend
+
+**Bestanden Gewijzigd:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version bump naar 2.24.0
+- [JavaScript.html:124](JavaScript.html#L124) - const version update
+- [JavaScript.html:31-32](JavaScript.html#L31-L32) - Edit modal state
+- [JavaScript.html:697-726](JavaScript.html#L697-L726) - Edit handlers
+- [JavaScript.html:1697-2015](JavaScript.html#L1697-L2015) - EditUserModal component
+- [JavaScript.html:3528-3539](JavaScript.html#L3528-L3539) - Acties kolom header
+- [JavaScript.html:3608-3638](JavaScript.html#L3608-L3638) - Edit knop per rij
+- [JavaScript.html:4301](JavaScript.html#L4301) - EditUserModal render
+- [Code.js:2](Code.js#L2) - Version bump naar 2.24.0
+- [Code.js:530-638](Code.js#L530-L638) - updateUser() functie
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.23.2-USERS-TABLE-COLUMNS (November 2025)
 
 **UI Improvement:**
 - ✅ Uitgebreide Gebruikers tabel met alle Firebase velden

@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.23.2-USERS-TABLE-COLUMNS";
+//version = "2.24.1-USERS-UPDATE-FIX";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -28,6 +28,11 @@
     // Users management state
     const [users, setUsers] = React.useState([]);
     const [isLoadingUsers, setIsLoadingUsers] = React.useState(false);
+    const [isEditUserModalOpen, setIsEditUserModalOpen] = React.useState(false);
+    const [editingUser, setEditingUser] = React.useState(null);
+    const [isUserSuccessModalOpen, setIsUserSuccessModalOpen] = React.useState(false);
+    const [isUserErrorModalOpen, setIsUserErrorModalOpen] = React.useState(false);
+    const [userModalMessage, setUserModalMessage] = React.useState('');
 
     // Filter state - Vergrendelpunten
     const [filters, setFilters] = React.useState({
@@ -119,7 +124,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.23.2-USERS-TABLE-COLUMNS";
+    const version = "2.24.1-USERS-UPDATE-FIX";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -689,6 +694,40 @@
           setUsers([]);
         })
         .getUsers();
+    };
+
+    // User edit handlers
+    const handleOpenEditUserModal = (user) => {
+      setEditingUser(user);
+      setIsEditUserModalOpen(true);
+    };
+
+    const handleCloseEditUserModal = () => {
+      setIsEditUserModalOpen(false);
+      setEditingUser(null);
+    };
+
+    const handleUpdateUser = (updatedUserData) => {
+      console.log('Updating user:', updatedUserData);
+
+      google.script.run
+        .withSuccessHandler((result) => {
+          if (result.success) {
+            setUserModalMessage(result.message);
+            setIsUserSuccessModalOpen(true);
+            handleCloseEditUserModal();
+            fetchUsers(); // Refresh de lijst
+          } else {
+            setUserModalMessage(result.message);
+            setIsUserErrorModalOpen(true);
+          }
+        })
+        .withFailureHandler((error) => {
+          console.error('Error updating user:', error);
+          setUserModalMessage('Fout bij bijwerken gebruiker: ' + error.message);
+          setIsUserErrorModalOpen(true);
+        })
+        .updateUser(updatedUserData);
     };
 
     const handleLogout = () => {
@@ -1654,6 +1693,518 @@
                   Begrepen
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ===== EDIT USER MODAL COMPONENT =====
+
+    const EditUserModal = () => {
+      if (!isEditUserModalOpen || !editingUser) return null;
+
+      const [formData, setFormData] = React.useState({
+        email: editingUser.USER_NAME || '',
+        role: editingUser.ROLE || 'A',
+        departement: editingUser.DEPARTEMENT || '',
+        titel: editingUser.TITEL || '',
+        active: editingUser.ACTIVE || 0,
+        password: '' // Laat leeg om huidige wachtwoord te behouden
+      });
+
+      const handleInputChange = (field, value) => {
+        setFormData(prev => ({
+          ...prev,
+          [field]: value
+        }));
+      };
+
+      const handleSubmit = () => {
+        // Validatie
+        if (!formData.email || !formData.email.includes('@')) {
+          setUserModalMessage('Voer een geldig email adres in');
+          setIsUserErrorModalOpen(true);
+          return;
+        }
+
+        // Prepare update data
+        const updateData = {
+          firebaseKey: editingUser.firebaseKey, // Original key
+          newEmail: formData.email !== editingUser.USER_NAME ? formData.email : null,
+          ROLE: formData.role,
+          DEPARTEMENT: formData.departement,
+          TITEL: formData.titel,
+          ACTIVE: formData.active,
+          USER_NAME: formData.email
+        };
+
+        // Only include password if it's been changed
+        if (formData.password && formData.password.trim() !== '') {
+          updateData.PASSWORD = formData.password;
+        }
+
+        handleUpdateUser(updateData);
+      };
+
+      return (
+        <div
+          className="edit-user-modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            padding: '20px',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onClick={handleCloseEditUserModal}
+        >
+          <div
+            className="edit-user-modal-container"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              animation: 'slideUp 0.4s ease-out'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              padding: '30px 25px',
+              position: 'relative'
+            }}>
+              <h2 style={{
+                margin: 0,
+                color: 'white',
+                fontSize: '24px',
+                fontWeight: '700',
+                textAlign: 'center'
+              }}>
+                Gebruiker Bewerken
+              </h2>
+            </div>
+
+            {/* Form Content */}
+            <div style={{ padding: '30px 25px' }}>
+              {/* Email */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="gebruiker@example.com"
+                />
+              </div>
+
+              {/* Rol */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Rol *
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => handleInputChange('role', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="A">Gebruiker (A)</option>
+                  <option value="B">Autorisator (B)</option>
+                  <option value="C">Administrator (C)</option>
+                </select>
+              </div>
+
+              {/* Departement */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Departement
+                </label>
+                <input
+                  type="text"
+                  value={formData.departement}
+                  onChange={(e) => handleInputChange('departement', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="bijv. REL"
+                />
+              </div>
+
+              {/* Titel */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Titel
+                </label>
+                <input
+                  type="text"
+                  value={formData.titel}
+                  onChange={(e) => handleInputChange('titel', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="bijv. CMMS"
+                />
+              </div>
+
+              {/* Actief */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Status
+                </label>
+                <select
+                  value={formData.active}
+                  onChange={(e) => handleInputChange('active', parseInt(e.target.value))}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value={1}>Actief</option>
+                  <option value={0}>Inactief</option>
+                </select>
+              </div>
+
+              {/* Wachtwoord */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Nieuw Wachtwoord (optioneel)
+                </label>
+                <input
+                  type="text"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="Laat leeg om huidige wachtwoord te behouden"
+                />
+                <small style={{ color: '#666', fontSize: '12px' }}>
+                  Laat dit veld leeg als u het wachtwoord niet wilt wijzigen
+                </small>
+              </div>
+
+              {/* Buttons */}
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '30px'
+              }}>
+                <button
+                  onClick={handleCloseEditUserModal}
+                  style={{
+                    flex: 1,
+                    padding: '12px 24px',
+                    backgroundColor: '#f5f5f5',
+                    color: '#333',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Annuleren
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  style={{
+                    flex: 1,
+                    padding: '12px 24px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Opslaan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ===== USER SUCCESS MODAL COMPONENT =====
+
+    const UserSuccessModal = () => {
+      if (!isUserSuccessModalOpen) return null;
+
+      return (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onClick={() => setIsUserSuccessModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              maxWidth: '500px',
+              width: '100%',
+              overflow: 'hidden',
+              animation: 'slideUp 0.4s ease-out'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+              padding: '30px 25px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                width: '60px',
+                height: '60px',
+                margin: '0 auto 15px',
+                backgroundColor: 'white',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '30px'
+              }}>
+                ✓
+              </div>
+              <h2 style={{
+                margin: 0,
+                color: 'white',
+                fontSize: '24px',
+                fontWeight: '700'
+              }}>
+                Succes!
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '30px 25px', textAlign: 'center' }}>
+              <p style={{
+                fontSize: '16px',
+                lineHeight: '1.6',
+                color: '#333',
+                margin: 0
+              }}>
+                {userModalMessage}
+              </p>
+
+              {/* Button */}
+              <button
+                onClick={() => setIsUserSuccessModalOpen(false)}
+                style={{
+                  marginTop: '25px',
+                  padding: '12px 40px',
+                  background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ===== USER ERROR MODAL COMPONENT =====
+
+    const UserErrorModal = () => {
+      if (!isUserErrorModalOpen) return null;
+
+      return (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onClick={() => setIsUserErrorModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              maxWidth: '500px',
+              width: '100%',
+              overflow: 'hidden',
+              animation: 'slideUp 0.4s ease-out'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+              padding: '30px 25px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                width: '60px',
+                height: '60px',
+                margin: '0 auto 15px',
+                backgroundColor: 'white',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '30px',
+                color: '#f44336'
+              }}>
+                ⚠
+              </div>
+              <h2 style={{
+                margin: 0,
+                color: 'white',
+                fontSize: '24px',
+                fontWeight: '700'
+              }}>
+                Fout
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '30px 25px', textAlign: 'center' }}>
+              <p style={{
+                fontSize: '16px',
+                lineHeight: '1.6',
+                color: '#333',
+                margin: 0
+              }}>
+                {userModalMessage}
+              </p>
+
+              {/* Button */}
+              <button
+                onClick={() => setIsUserErrorModalOpen(false)}
+                style={{
+                  marginTop: '25px',
+                  padding: '12px 40px',
+                  background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>
@@ -3177,6 +3728,18 @@
                                   top: 0,
                                   zIndex: 10
                                 }}>Wachtwoord</th>
+                                <th style={{
+                                  backgroundColor: '#f5f5f5',
+                                  fontWeight: 600,
+                                  color: '#333',
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'center',
+                                  fontSize: '11px',
+                                  position: 'sticky',
+                                  top: 0,
+                                  zIndex: 10
+                                }}>Acties</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3244,6 +3807,37 @@
                                     fontFamily: 'monospace'
                                   }}>
                                     {user.PASSWORD ? '••••••••' : '-'}
+                                  </td>
+                                  <td style={{
+                                    border: '1px solid #e0e0e0',
+                                    padding: '10px',
+                                    textAlign: 'center'
+                                  }}>
+                                    <button
+                                      title="Bewerken"
+                                      onClick={() => handleOpenEditUserModal(user)}
+                                      style={{
+                                        padding: '4px 8px',
+                                        border: 'none',
+                                        borderRadius: '3px',
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        backgroundColor: '#667eea',
+                                        color: 'white',
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        minWidth: '28px',
+                                        height: '28px',
+                                        margin: '0 auto'
+                                      }}
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                      </svg>
+                                    </button>
                                   </td>
                                 </tr>
                               ))}
@@ -3702,6 +4296,15 @@
 
         {/* Empty Password Modal */}
         <EmptyPasswordModal />
+
+        {/* Edit User Modal */}
+        <EditUserModal />
+
+        {/* User Success Modal */}
+        <UserSuccessModal />
+
+        {/* User Error Modal */}
+        <UserErrorModal />
 
         {/* Debug Panel */}
         <DebugPanel />
