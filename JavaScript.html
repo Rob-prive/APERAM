@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.23.1-USERS-READ-FIX";
+//version = "2.23.2-USERS-TABLE-COLUMNS";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -119,7 +119,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.23.1-USERS-READ-FIX";
+    const version = "2.23.2-USERS-TABLE-COLUMNS";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -2351,7 +2351,7 @@
                 >
                   <div style={{display: 'flex', alignItems: 'center'}}>
                     <span className="icon">⚙️</span>
-                    Admin
+                    Admin 
                   </div>
                   <span style={{
                     transition: 'transform 0.2s',
@@ -3128,7 +3128,7 @@
                                   position: 'sticky',
                                   top: 0,
                                   zIndex: 10
-                                }}>Naam</th>
+                                }}>Rol</th>
                                 <th style={{
                                   backgroundColor: '#f5f5f5',
                                   fontWeight: 600,
@@ -3140,7 +3140,43 @@
                                   position: 'sticky',
                                   top: 0,
                                   zIndex: 10
-                                }}>Rol</th>
+                                }}>Departement</th>
+                                <th style={{
+                                  backgroundColor: '#f5f5f5',
+                                  fontWeight: 600,
+                                  color: '#333',
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'left',
+                                  fontSize: '11px',
+                                  position: 'sticky',
+                                  top: 0,
+                                  zIndex: 10
+                                }}>Titel</th>
+                                <th style={{
+                                  backgroundColor: '#f5f5f5',
+                                  fontWeight: 600,
+                                  color: '#333',
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'center',
+                                  fontSize: '11px',
+                                  position: 'sticky',
+                                  top: 0,
+                                  zIndex: 10
+                                }}>Actief</th>
+                                <th style={{
+                                  backgroundColor: '#f5f5f5',
+                                  fontWeight: 600,
+                                  color: '#333',
+                                  border: '1px solid #e0e0e0',
+                                  padding: '10px',
+                                  textAlign: 'center',
+                                  fontSize: '11px',
+                                  position: 'sticky',
+                                  top: 0,
+                                  zIndex: 10
+                                }}>Wachtwoord</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3149,11 +3185,6 @@
                                   backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
                                   transition: 'background-color 0.2s'
                                 }}>
-                                  <td style={{
-                                    border: '1px solid #e0e0e0',
-                                    padding: '10px',
-                                    fontSize: '11px'
-                                  }}>{user.firebaseKey || '-'}</td>
                                   <td style={{
                                     border: '1px solid #e0e0e0',
                                     padding: '10px',
@@ -3177,6 +3208,42 @@
                                       {user.ROLE === 'C' ? 'Administrator' :
                                        user.ROLE === 'B' ? 'Autorisator' : 'Gebruiker'}
                                     </span>
+                                  </td>
+                                  <td style={{
+                                    border: '1px solid #e0e0e0',
+                                    padding: '10px',
+                                    fontSize: '11px'
+                                  }}>{user.DEPARTEMENT || '-'}</td>
+                                  <td style={{
+                                    border: '1px solid #e0e0e0',
+                                    padding: '10px',
+                                    fontSize: '11px'
+                                  }}>{user.TITEL || '-'}</td>
+                                  <td style={{
+                                    border: '1px solid #e0e0e0',
+                                    padding: '10px',
+                                    fontSize: '11px',
+                                    textAlign: 'center'
+                                  }}>
+                                    <span style={{
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '11px',
+                                      fontWeight: '600',
+                                      backgroundColor: user.ACTIVE === 1 ? '#d4edda' : '#f8d7da',
+                                      color: user.ACTIVE === 1 ? '#155724' : '#721c24'
+                                    }}>
+                                      {user.ACTIVE === 1 ? 'Ja' : 'Nee'}
+                                    </span>
+                                  </td>
+                                  <td style={{
+                                    border: '1px solid #e0e0e0',
+                                    padding: '10px',
+                                    fontSize: '11px',
+                                    textAlign: 'center',
+                                    fontFamily: 'monospace'
+                                  }}>
+                                    {user.PASSWORD ? '••••••••' : '-'}
                                   </td>
                                 </tr>
                               ))}

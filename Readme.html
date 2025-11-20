@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.23.1-USERS-READ-FIX
+- **JavaScript Versie**: 2.23.2-USERS-TABLE-COLUMNS
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -1523,7 +1523,57 @@ Voor vragen of issues, raadpleeg de Google Apps Script logs of check de browser 
 
 ## 🔄 Laatste Updates & Context voor Volgende Sessie
 
-### v2.23.1-USERS-READ-FIX (November 2025) - HUIDIGE VERSIE
+### v2.23.2-USERS-TABLE-COLUMNS (November 2025) - HUIDIGE VERSIE
+
+**UI Improvement:**
+- ✅ Uitgebreide Gebruikers tabel met alle Firebase velden
+- 🔧 Nieuwe kolommen toegevoegd: Departement, Titel, Actief, Wachtwoord
+
+**Het probleem:**
+- Tabel toonde alleen Email, Naam en Rol
+- Database bevat meer velden: DEPARTEMENT, TITEL, ACTIVE, PASSWORD
+- Gebruiker wilde alle beschikbare data kunnen zien
+
+**De oplossing:**
+Tabel uitgebreid met alle Firebase database velden:
+- **Email**: `user.firebaseKey` (email is de key in Firebase)
+- **Naam**: `user.USER_NAME`
+- **Rol**: `user.ROLE` (A/B/C met kleur-gecodeerde badges)
+- **Departement**: `user.DEPARTEMENT` (bijv. "REL")
+- **Titel**: `user.TITEL` (bijv. "CMMS")
+- **Actief**: `user.ACTIVE` (1 = Ja/groen, 0 = Nee/rood badge)
+- **Wachtwoord**: `user.PASSWORD` (gemaskeerd als ••••••••)
+
+**Visuele verbeteringen:**
+- Actief kolom: Groen badge voor actieve gebruikers, rood voor inactieve
+- Wachtwoord kolom: Gemaskeerd met bullets voor security, monospace font
+- Centered alignment voor Actief en Wachtwoord kolommen
+- Consistente styling met andere tabellen
+
+**Database structuur (Firebase users):**
+```javascript
+{
+  "firebaseKey": "user@example.com",  // Email is de key
+  "ACTIVE": 1,                         // 1 = actief, 0 = inactief
+  "DEPARTEMENT": "REL",                // Afdeling
+  "PASSWORD": "encrypted_password",    // Wachtwoord
+  "ROLE": "A",                         // A/B/C (Gebruiker/Autorisator/Admin)
+  "TITEL": "CMMS",                     // Functie titel
+  "USER_NAME": "user@example.com"      // Volledige naam/email
+}
+```
+
+**Bestanden Gewijzigd:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version bump naar 2.23.2
+- [JavaScript.html:122](JavaScript.html#L122) - const version update
+- [JavaScript.html:3107-3192](JavaScript.html#L3107-L3192) - Uitgebreide table headers
+- [JavaScript.html:3194-3267](JavaScript.html#L3194-L3267) - Uitgebreide table body met alle velden
+- [Code.js:2](Code.js#L2) - Version bump naar 2.23.2
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.23.1-USERS-READ-FIX (November 2025)
 
 **Bug Fix:**
 - ✅ Email en Naam kolommen tonen nu correcte data (was: koppeltekens)
