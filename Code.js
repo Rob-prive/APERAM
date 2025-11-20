@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.25.0-DRAGGABLE-MODAL
+// Version: 2.26.0-USERS-DELETE
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -633,6 +633,57 @@ function updateUser(userData) {
     return {
       success: false,
       message: 'Fout bij bijwerken: ' + error.toString()
+    };
+  }
+}
+
+/**
+ * Delete user from Firebase Users database
+ * @param {string} userEmail - Email (firebaseKey) of the user to delete
+ * @returns {Object} {success: boolean, message: string}
+ */
+function deleteUser(userEmail) {
+  try {
+    console.log('Deleting user:', userEmail);
+
+    if (!userEmail) {
+      return {
+        success: false,
+        message: 'Geen email opgegeven'
+      };
+    }
+
+    // Encode email for URL (replace @ and . with safe characters)
+    const encodedEmail = encodeURIComponent(userEmail);
+    const url = `${FIREBASE_USERS_URL}/${encodedEmail}.json?auth=${FIREBASE_USERS_SECRET}`;
+
+    // Delete from Firebase
+    const response = UrlFetchApp.fetch(url, {
+      method: 'delete',
+      muteHttpExceptions: true
+    });
+
+    const responseCode = response.getResponseCode();
+
+    if (responseCode === 200) {
+      console.log('✓ Successfully deleted user:', userEmail);
+      return {
+        success: true,
+        message: 'Gebruiker succesvol verwijderd'
+      };
+    } else {
+      console.error('Firebase delete error:', responseCode, response.getContentText());
+      return {
+        success: false,
+        message: `Fout bij verwijderen: HTTP ${responseCode}`
+      };
+    }
+
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return {
+      success: false,
+      message: 'Fout bij verwijderen: ' + error.toString()
     };
   }
 }

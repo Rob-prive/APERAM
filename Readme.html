@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.25.0-DRAGGABLE-MODAL
+- **JavaScript Versie**: 2.26.0-USERS-DELETE
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -1523,7 +1523,60 @@ Voor vragen of issues, raadpleeg de Google Apps Script logs of check de browser 
 
 ## 🔄 Laatste Updates & Context voor Volgende Sessie
 
-### v2.25.0-DRAGGABLE-MODAL (November 2025) - HUIDIGE VERSIE
+### v2.26.0-USERS-DELETE (November 2025) - HUIDIGE VERSIE
+
+**Feature: User DELETE Functionaliteit**
+- 🗑️ **Verwijder knop**: Rode knop toegevoegd in EditUserModal naast opslaan knop
+- ⚠️ **Confirmation modal**: Veiligheidscheck voordat gebruiker permanent verwijderd wordt
+- 🔒 **Backend deleteUser()**: Firebase delete met volledige error handling
+- ✅ **Success/Error feedback**: Gebruikt bestaande UserSuccessModal en UserErrorModal
+- 🔄 **Auto-refresh**: Gebruikerslijst wordt automatisch ververst na verwijderen
+
+**Implementatie Details:**
+- **Frontend - Verwijder Knop**: Rode gradient knop in EditUserModal footer
+- **Frontend - DeleteUserConfirmationModal**:
+  - Waarschuwing met gebruikersnaam
+  - Geel waarschuwingsvak met "Let op" bericht
+  - Disabled state tijdens verwijderen
+  - Loading tekst: "Verwijderen..."
+- **Backend - deleteUser(userEmail)**:
+  - Firebase DELETE request naar users database
+  - Email URL encoding voor veilige Firebase key
+  - Returns `{success: boolean, message: string}`
+  - Volledige error handling en logging
+
+**State Management:**
+- `isDeleteUserModalOpen` - Confirmation modal zichtbaarheid
+- `isDeletingUser` - Loading state tijdens delete operatie
+
+**Handler Functies:**
+- `handleOpenDeleteUserModal()` - Opent confirmation modal
+- `handleCloseDeleteUserModal()` - Sluit confirmation modal
+- `handleDeleteUser()` - Verstuurt delete naar backend en verwerkt response
+
+**Bestanden gewijzigd:**
+- [JavaScript.html:2](JavaScript.html#L2) - Version update naar 2.26.0-USERS-DELETE
+- [JavaScript.html:133](JavaScript.html#L133) - const version update
+- [JavaScript.html:36-37](JavaScript.html#L36-L37) - Delete modal state
+- [JavaScript.html:747-785](JavaScript.html#L747-L785) - Delete handlers
+- [JavaScript.html:2047-2063](JavaScript.html#L2047-L2063) - Verwijder knop in EditUserModal
+- [JavaScript.html:2287-2417](JavaScript.html#L2287-L2417) - DeleteUserConfirmationModal component
+- [JavaScript.html:4803-4804](JavaScript.html#L4803-L4804) - Modal render in App
+- [Code.js:2](Code.js#L2) - Version update
+- [Code.js:640-689](Code.js#L640-L689) - deleteUser() functie
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+**User Flow:**
+1. Admin klikt op edit icoon bij gebruiker → EditUserModal opent
+2. Admin klikt op rode "Verwijderen" knop → DeleteUserConfirmationModal opent
+3. Waarschuwing toont gebruikersnaam en waarschuwing
+4. Admin klikt "Ja, Verwijderen" → Backend deleteUser() wordt aangeroepen
+5. Firebase verwijdert gebruiker uit users database
+6. Success modal toont bevestiging → Gebruikerslijst wordt ververst
+
+---
+
+### v2.25.0-DRAGGABLE-MODAL (November 2025)
 
 **Feature: Draggable Modal Test Component**
 - 🪟 **Draggable venster**: Nieuwe modal component die vrij versleept kan worden op het scherm
