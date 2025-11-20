@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.23.0-USERS-READ
+// Version: 2.23.1-USERS-READ-FIX
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====

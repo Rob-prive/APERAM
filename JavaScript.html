@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.23.0-USERS-READ";
+//version = "2.23.1-USERS-READ-FIX";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -119,7 +119,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.23.0-USERS-READ";
+    const version = "2.23.1-USERS-READ-FIX";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -3153,12 +3153,12 @@
                                     border: '1px solid #e0e0e0',
                                     padding: '10px',
                                     fontSize: '11px'
-                                  }}>{user.EMAIL || '-'}</td>
+                                  }}>{user.firebaseKey || '-'}</td>
                                   <td style={{
                                     border: '1px solid #e0e0e0',
                                     padding: '10px',
                                     fontSize: '11px'
-                                  }}>{user.NAME || '-'}</td>
+                                  }}>{user.USER_NAME || '-'}</td>
                                   <td style={{
                                     border: '1px solid #e0e0e0',
                                     padding: '10px',
