@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.26.1-USERS-DELETE-FIX";
+//version = "2.31.0-BLUE-LAVENDER-GRADIENTS";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -14,7 +14,7 @@
     
     // User and data state
     const [userName, setUserName] = React.useState('');
-    const [userRole, setUserRole] = React.useState('C'); // A = user, B = authorizer, C = admin (default)
+    const [userRole, setUserRole] = React.useState('A'); // A = user (default for security), B = authorizer, C = admin
     const [tableData, setTableData] = React.useState({ headers: [], data: [] });
     const [filteredTableData, setFilteredTableData] = React.useState([]);
     const [showTable, setShowTable] = React.useState(false);
@@ -35,6 +35,7 @@
     const [userModalMessage, setUserModalMessage] = React.useState('');
     const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = React.useState(false);
     const [isDeletingUser, setIsDeletingUser] = React.useState(false);
+    const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
 
     // Filter state - Vergrendelpunten
     const [filters, setFilters] = React.useState({
@@ -130,7 +131,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.26.1-USERS-DELETE-FIX";
+    const version = "2.31.0-BLUE-LAVENDER-GRADIENTS";
     const stylesheetVersion = "1.2.0";
 
     // ===== HELPER FUNCTIONS =====
@@ -596,7 +597,7 @@
               // Set username from login (werkt ongeacht deployment setting)
               setUserName(username);
               // Set user role (A = user, B = authorizer, C = admin)
-              setUserRole(result.role || 'C'); // Default to admin if not provided
+              setUserRole(result.role || 'A'); // Default to user if role not provided
               // Direct alle data laden (gebruikt prefetched data indien beschikbaar)
               loadAllTableData();
             } else if (result.emptyPassword) {
@@ -610,7 +611,7 @@
             // Legacy format: boolean true
             setIsLoggedIn(true);
             setUserName(username);
-            setUserRole('C'); // Default to admin for legacy format
+            setUserRole('A'); // Default to user for legacy format (security)
             loadAllTableData();
           } else {
             // Legacy format: boolean false
@@ -784,6 +785,38 @@
         .deleteUser(editingUser.firebaseKey);
     };
 
+    // User create handlers
+    const handleOpenAddUserModal = () => {
+      setIsAddUserModalOpen(true);
+    };
+
+    const handleCloseAddUserModal = () => {
+      setIsAddUserModalOpen(false);
+    };
+
+    const handleCreateUser = (newUserData) => {
+      console.log('Creating user:', newUserData);
+
+      google.script.run
+        .withSuccessHandler((result) => {
+          if (result.success) {
+            setUserModalMessage(result.message);
+            setIsUserSuccessModalOpen(true);
+            handleCloseAddUserModal();
+            fetchUsers(); // Refresh de lijst
+          } else {
+            setUserModalMessage(result.message);
+            setIsUserErrorModalOpen(true);
+          }
+        })
+        .withFailureHandler((error) => {
+          console.error('Error creating user:', error);
+          setUserModalMessage('Fout bij aanmaken gebruiker: ' + error.message);
+          setIsUserErrorModalOpen(true);
+        })
+        .createUser(newUserData);
+    };
+
     const handleLogout = () => {
       setIsLoggedIn(false);
       // hasSelectedInstallation wordt niet meer gereset (altijd true)
@@ -791,6 +824,8 @@
       setUsername('');
       setPassword('');
       setError('');
+      setUserRole('A'); // Reset to most restrictive role (user)
+      setActiveAdminView(null); // Close admin views
       setTableData({ headers: [], data: [] });
       setFilteredTableData([]);
       setShowTable(false);
@@ -799,6 +834,7 @@
       setPrefetchedData(null); // Clear prefetched data bij logout
       setSelectedRows([]);
       setAanvragen([]);
+      setUsers([]); // Clear users list
       setFilters({
         code: '',
         type: '',
@@ -2085,6 +2121,324 @@
       );
     };
 
+    // ===== ADD USER MODAL COMPONENT =====
+
+    const AddUserModal = () => {
+      const [formData, setFormData] = React.useState({
+        email: '',
+        role: 'A',
+        departement: '',
+        titel: '',
+        active: 1,
+        password: ''
+      });
+
+      const handleInputChange = (field, value) => {
+        setFormData(prev => ({
+          ...prev,
+          [field]: value
+        }));
+      };
+
+      const handleSubmit = () => {
+        // Validatie
+        if (!formData.email || !formData.email.includes('@')) {
+          setUserModalMessage('Vul een geldig email adres in');
+          setIsUserErrorModalOpen(true);
+          return;
+        }
+
+        if (!formData.password || formData.password.trim() === '') {
+          setUserModalMessage('Wachtwoord is verplicht');
+          setIsUserErrorModalOpen(true);
+          return;
+        }
+
+        // Prepare data voor backend
+        const newUserData = {
+          email: formData.email,
+          ROLE: formData.role,
+          DEPARTEMENT: formData.departement,
+          TITEL: formData.titel,
+          ACTIVE: formData.active,
+          USER_NAME: formData.email,
+          PASSWORD: formData.password
+        };
+
+        handleCreateUser(newUserData);
+      };
+
+      if (!isAddUserModalOpen) return null;
+
+      return (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+          onClick={handleCloseAddUserModal}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              width: '500px',
+              maxWidth: '90%',
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+              padding: '25px',
+              color: 'white'
+            }}>
+              <h2 style={{
+                margin: '0 0 8px 0',
+                fontSize: '24px',
+                fontWeight: '700'
+              }}>
+                Nieuwe Gebruiker
+              </h2>
+              <p style={{
+                margin: 0,
+                fontSize: '14px',
+                opacity: 0.95
+              }}>
+                Vul de gegevens in voor de nieuwe gebruiker
+              </p>
+            </div>
+
+            {/* Content */}
+            <div style={{
+              padding: '25px',
+              maxHeight: 'calc(90vh - 200px)',
+              overflowY: 'auto'
+            }}>
+              {/* Email */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Email (verplicht)
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="gebruiker@example.com"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {/* Rol */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Rol
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => handleInputChange('role', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="A">A - Gebruiker</option>
+                  <option value="B">B - Autorisator</option>
+                  <option value="C">C - Admin</option>
+                </select>
+              </div>
+
+              {/* Departement */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Departement
+                </label>
+                <input
+                  type="text"
+                  value={formData.departement}
+                  onChange={(e) => handleInputChange('departement', e.target.value)}
+                  placeholder="bijv. REL"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {/* Titel */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Titel
+                </label>
+                <input
+                  type="text"
+                  value={formData.titel}
+                  onChange={(e) => handleInputChange('titel', e.target.value)}
+                  placeholder="bijv. CMMS"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {/* Actief */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Actief
+                </label>
+                <select
+                  value={formData.active}
+                  onChange={(e) => handleInputChange('active', parseInt(e.target.value))}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="1">Ja</option>
+                  <option value="0">Nee</option>
+                </select>
+              </div>
+
+              {/* Wachtwoord */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '8px',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  Wachtwoord (verplicht)
+                </label>
+                <input
+                  type="text"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  placeholder="Voer wachtwoord in"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {/* Buttons */}
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '30px'
+              }}>
+                <button
+                  onClick={handleCloseAddUserModal}
+                  style={{
+                    flex: 1,
+                    padding: '12px 24px',
+                    backgroundColor: '#f5f5f5',
+                    color: '#333',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Annuleren
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  style={{
+                    flex: 1,
+                    padding: '12px 24px',
+                    background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Toevoegen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     // ===== USER SUCCESS MODAL COMPONENT =====
 
     const UserSuccessModal = () => {
@@ -3353,7 +3707,14 @@
               <div className="admin-menu">
                 <button
                   className="nav-button"
-                  onClick={() => setIsAdminMenuExpanded(!isAdminMenuExpanded)}
+                  onClick={() => {
+                    const newExpandedState = !isAdminMenuExpanded;
+                    setIsAdminMenuExpanded(newExpandedState);
+                    // Reset active admin view when closing menu
+                    if (!newExpandedState) {
+                      setActiveAdminView(null);
+                    }
+                  }}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -3361,12 +3722,12 @@
                   }}
                 >
                   <div style={{display: 'flex', alignItems: 'center'}}>
-                    <span className="icon">⚙️</span>
-                    Admin 
+                    Admin
                   </div>
                   <span style={{
                     transition: 'transform 0.2s',
-                    transform: isAdminMenuExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+                    transform: isAdminMenuExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                    marginLeft: '12px'
                   }}>
                     ›
                   </span>
@@ -3389,7 +3750,6 @@
                         padding: '8px 12px'
                       }}
                     >
-                      <span className="icon">👥</span>
                       Gebruikers
                     </button>
                     <button
@@ -3401,7 +3761,6 @@
                         padding: '8px 12px'
                       }}
                     >
-                      <span className="icon">🔧</span>
                       Debug & Test
                     </button>
                   </div>
@@ -3632,9 +3991,15 @@
                   )}
                 </div>
 {/* TABEL 2 - TOP RIGHT - Geselecteerde rijen */}
-                <div 
+                <div
                   className={`table-container side-table ${selectedRows.length === 0 ? 'empty' : ''}`}
-                  style={{ gridColumn: 2, gridRow: 1 }}
+                  style={{
+                    gridColumn: 2,
+                    gridRow: 1,
+                    padding: selectedRows.length === 0 ? '0' : '8px',
+                    background: 'transparent',
+                    position: 'relative'
+                  }}
                 >
                   {selectedRows.length > 0 ? (
                     <div className="selected-table">
@@ -3715,10 +4080,18 @@
                       </div>
                     </div>
                   ) : (
-                    <p>Tabel 2 - Geselecteerde vergrendelpunten verschijnen hier</p>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%)',
+                      height: '100%',
+                      width: '100%',
+                      borderRadius: '8px',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0
+                    }}></div>
                   )}
                 </div>
-                
+
                 {/* TABEL 3 - BOTTOM LEFT - Aanvragen */}
                 <div 
                   className="table-container bottom-left-table" 
@@ -4108,8 +4481,20 @@
                       </table>
                     </div>
                   ) : (
-                    <div className="no-data">
-                      <p>Geen aanvragen gevonden</p>
+                    <div className="no-data" style={{
+                      background: 'linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{
+                        color: '#5b21b6',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        margin: 0
+                      }}>Geen aanvragen gevonden</p>
                     </div>
                   )}
                 </div>
@@ -4129,7 +4514,38 @@
                         paddingBottom: '6px',
                         borderBottom: '2px solid #e0e0e0'
                       }}>
-                        <h3 style={{margin: 0, color: '#1a237e', fontSize: '14px'}}>Gebruikers</h3>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                          <h3 style={{margin: 0, color: '#1a237e', fontSize: '14px'}}>Gebruikers</h3>
+                          <button
+                            onClick={() => setIsAddUserModalOpen(true)}
+                            title="Nieuwe gebruiker toevoegen"
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              backgroundColor: 'white',
+                              border: '2px solid #e0e0e0',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s',
+                              padding: 0
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f5f5f5';
+                              e.currentTarget.style.borderColor = '#667eea';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.backgroundColor = 'white';
+                              e.currentTarget.style.borderColor = '#e0e0e0';
+                            }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M8 3V13M3 8H13" stroke="#FFC107" strokeWidth="2.5" strokeLinecap="round"/>
+                            </svg>
+                          </button>
+                        </div>
                         <p style={{margin: 0, color: '#666', fontSize: '12px'}}>
                           {isLoadingUsers ? 'Laden...' : `${users.length} gebruikers`}
                         </p>
@@ -4345,16 +4761,35 @@
                           </table>
                         </div>
                       ) : (
-                        <p style={{fontSize: '12px', color: '#666', textAlign: 'center', marginTop: '20px'}}>
-                          Geen gebruikers gevonden
-                        </p>
+                        <div style={{
+                          background: 'linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: 'calc(100% - 60px)',
+                          borderRadius: '8px',
+                          marginTop: '8px'
+                        }}>
+                          <p style={{
+                            fontSize: '14px',
+                            color: '#5b21b6',
+                            fontWeight: '500',
+                            margin: 0
+                          }}>
+                            Geen gebruikers gevonden
+                          </p>
+                        </div>
                       )}
                     </React.Fragment>
                   ) : (
-                    <p>Tabel 4 - Beschikbaar voor toekomstige data</p>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%)',
+                      height: '100%',
+                      borderRadius: '8px'
+                    }}></div>
                   )}
                 </div>
-                
+
                 {/* CENTRALE SLIDER */}
                 <div 
                   onMouseDown={handleCentralDragStart}
@@ -4799,6 +5234,9 @@
 
         {/* Edit User Modal */}
         <EditUserModal />
+
+        {/* Add User Modal */}
+        <AddUserModal />
 
         {/* Delete User Confirmation Modal */}
         <DeleteUserConfirmationModal />

@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.26.1-USERS-DELETE-FIX
+// Version: 2.31.0-BLUE-LAVENDER-GRADIENTS
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -18,6 +18,43 @@ const FIREBASE_AANVRAGEN_SECRET = 'Cv5y8Dk4hPEGbjAiilKeReRvijqECnUu89qSY2TZ';
 // Firebase for Users database
 const FIREBASE_USERS_URL = 'https://users-6e913.firebaseio.com';
 const FIREBASE_USERS_SECRET = 'BBcmkVVW6jrsfA3GSJI0f7NovJNJ8yN8lKOQRzrK';
+
+// ===== HELPER FUNCTIONS =====
+
+/**
+ * Encode email address for Firebase-safe key
+ * Firebase doesn't allow . $ # [ ] / in keys, so we replace them
+ * @param {string} email - Email address to encode
+ * @returns {string} Firebase-safe key
+ */
+function encodeEmailForFirebase(email) {
+  if (!email) return '';
+  return email
+    .replace(/\./g, '_DOT_')
+    .replace(/@/g, '_AT_')
+    .replace(/\$/g, '_DOLLAR_')
+    .replace(/#/g, '_HASH_')
+    .replace(/\[/g, '_LBRACKET_')
+    .replace(/\]/g, '_RBRACKET_')
+    .replace(/\//g, '_SLASH_');
+}
+
+/**
+ * Decode Firebase key back to email address
+ * @param {string} key - Firebase key to decode
+ * @returns {string} Original email address
+ */
+function decodeEmailFromFirebase(key) {
+  if (!key) return '';
+  return key
+    .replace(/_DOT_/g, '.')
+    .replace(/_AT_/g, '@')
+    .replace(/_DOLLAR_/g, '$')
+    .replace(/_HASH_/g, '#')
+    .replace(/_LBRACKET_/g, '[')
+    .replace(/_RBRACKET_/g, ']')
+    .replace(/_SLASH_/g, '/');
+}
 
 // ===== FIREBASE DATA FETCHING =====
 
@@ -653,8 +690,8 @@ function deleteUser(userEmail) {
       };
     }
 
-    // Encode email for URL (replace @ and . with safe characters)
-    const encodedEmail = encodeURIComponent(userEmail);
+    // Encode email for Firebase-safe key
+    const encodedEmail = encodeEmailForFirebase(userEmail);
     const url = `${FIREBASE_USERS_URL}/fire-data/${encodedEmail}.json?auth=${FIREBASE_USERS_SECRET}`;
 
     // Delete from Firebase
@@ -684,6 +721,145 @@ function deleteUser(userEmail) {
     return {
       success: false,
       message: 'Fout bij verwijderen: ' + error.toString()
+    };
+  }
+}
+
+/**
+ * Create new user in Firebase Users database
+ * @param {Object} userData - User data for new user
+ * @returns {Object} {success: boolean, message: string}
+ */
+function createUser(userData) {
+  try {
+    console.log('Creating user:', userData.email);
+
+    if (!userData.email) {
+      return {
+        success: false,
+        message: 'Email is verplicht'
+      };
+    }
+
+    if (!userData.PASSWORD) {
+      return {
+        success: false,
+        message: 'Wachtwoord is verplicht'
+      };
+    }
+
+    // Check if user already exists - use multiple strategies like login
+    const encodedEmail = encodeEmailForFirebase(userData.email);
+
+    // Strategy 1: Check with encoded email (Firebase-safe encoding)
+    const checkUrl = `${FIREBASE_USERS_URL}/fire-data/${encodedEmail}.json?auth=${FIREBASE_USERS_SECRET}`;
+    const checkResponse = UrlFetchApp.fetch(checkUrl, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    const responseCode = checkResponse.getResponseCode();
+    const responseText = checkResponse.getContentText();
+
+    console.log('🔍 Create user duplicate check for:', userData.email);
+    console.log('🔍 Encoded email:', encodedEmail);
+    console.log('🔍 Check URL:', checkUrl);
+    console.log('🔍 Response code:', responseCode);
+    console.log('🔍 Response text LENGTH:', responseText.length);
+    console.log('🔍 Response text:', responseText);
+    console.log('🔍 Response text type:', typeof responseText);
+    console.log('🔍 Response text === "null":', responseText === 'null');
+    console.log('🔍 Response text.trim() === "null":', responseText.trim() === 'null');
+
+    // TEMPORARY: Skip duplicate check for debugging
+    const SKIP_DUPLICATE_CHECK = false; // Set to true to bypass check
+
+    if (!SKIP_DUPLICATE_CHECK) {
+      // Firebase returns the string "null" when path doesn't exist
+      // Anything else means the user exists
+      if (responseText.trim() !== 'null' && responseText.trim() !== '') {
+        console.log('❌ User already exists (encoded email check)');
+        console.log('❌ Actual response was:', JSON.stringify(responseText));
+        return {
+          success: false,
+          message: 'Gebruiker met dit email adres bestaat al (encoded: ' + encodedEmail + ')'
+        };
+      }
+
+      // Strategy 2: Also check with plain email (legacy users)
+      // Only do this if email doesn't contain Firebase-invalid characters
+      const hasInvalidChars = /@|\.|\$|#|\[|\]|\//.test(userData.email);
+
+      if (!hasInvalidChars) {
+        const plainCheckUrl = `${FIREBASE_USERS_URL}/fire-data/${userData.email}.json?auth=${FIREBASE_USERS_SECRET}`;
+        const plainCheckResponse = UrlFetchApp.fetch(plainCheckUrl, {
+          method: 'get',
+          muteHttpExceptions: true
+        });
+
+        const plainResponseCode = plainCheckResponse.getResponseCode();
+        const plainResponseText = plainCheckResponse.getContentText();
+        console.log('🔍 Plain email check response code:', plainResponseCode);
+        console.log('🔍 Plain email check response:', plainResponseText);
+
+        // Only check if request was successful (not a Firebase error)
+        if (plainResponseCode === 200 && plainResponseText.trim() !== 'null' && plainResponseText.trim() !== '') {
+          console.log('❌ User already exists (plain email check)');
+          return {
+            success: false,
+            message: 'Gebruiker met dit email adres bestaat al (plain: ' + userData.email + ')'
+          };
+        }
+      } else {
+        console.log('⚠️ Skipping plain email check - email contains Firebase-invalid characters');
+      }
+    } else {
+      console.log('⚠️ SKIPPING duplicate check for debugging');
+    }
+
+    console.log('✓ User does not exist, proceeding with creation');
+
+    // Prepare user data
+    const newUserData = {
+      ROLE: userData.ROLE || 'A',
+      DEPARTEMENT: userData.DEPARTEMENT || '',
+      TITEL: userData.TITEL || '',
+      ACTIVE: userData.ACTIVE !== undefined ? userData.ACTIVE : 1,
+      USER_NAME: userData.USER_NAME || userData.email,
+      PASSWORD: userData.PASSWORD
+    };
+
+    // Create new user in Firebase
+    const createUrl = `${FIREBASE_USERS_URL}/fire-data/${encodedEmail}.json?auth=${FIREBASE_USERS_SECRET}`;
+
+    const createResponse = UrlFetchApp.fetch(createUrl, {
+      method: 'put',
+      contentType: 'application/json',
+      payload: JSON.stringify(newUserData),
+      muteHttpExceptions: true
+    });
+
+    const createResponseCode = createResponse.getResponseCode();
+
+    if (createResponseCode === 200) {
+      console.log('✓ Successfully created user:', userData.email);
+      return {
+        success: true,
+        message: 'Gebruiker succesvol aangemaakt'
+      };
+    } else {
+      console.error('Firebase create error:', createResponseCode, createResponse.getContentText());
+      return {
+        success: false,
+        message: `Fout bij aanmaken: HTTP ${createResponseCode}`
+      };
+    }
+
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return {
+      success: false,
+      message: 'Fout bij aanmaken: ' + error.toString()
     };
   }
 }
@@ -1513,11 +1689,44 @@ function validateUser(username, password) {
     }
 
     // Search for user in Firebase data
-    for (const key in data) {
-      const user = data[key];
+    // Try multiple strategies to find the user:
+    // 1. Direct lookup with encoded email (new users)
+    // 2. Direct lookup with plain email (some legacy users)
+    // 3. Search through all users matching USER_NAME field (legacy users)
 
-      // Check if this is the matching username
-      if (user.USER_NAME === username) {
+    let user = null;
+    let userKey = null;
+
+    // Strategy 1: Try Firebase-safe encoded email as key
+    const encodedUsername = encodeEmailForFirebase(username);
+    if (data[encodedUsername]) {
+      user = data[encodedUsername];
+      userKey = encodedUsername;
+      console.log('✓ Found user via encoded email key');
+    }
+
+    // Strategy 2: Try plain email as key (some legacy data)
+    if (!user && data[username]) {
+      user = data[username];
+      userKey = username;
+      console.log('✓ Found user via plain email key');
+    }
+
+    // Strategy 3: Search by USER_NAME field (legacy users where key != email)
+    if (!user) {
+      for (const key in data) {
+        const currentUser = data[key];
+        // Check if currentUser is valid object and has USER_NAME field
+        if (currentUser && typeof currentUser === 'object' && currentUser.USER_NAME === username) {
+          user = currentUser;
+          userKey = key;
+          console.log('✓ Found user via USER_NAME field search, key:', key);
+          break;
+        }
+      }
+    }
+
+    if (user) {
         // Get database password (can be empty)
         const dbPassword = user.PASSWORD || '';
         const dbPasswordIsEmpty = !dbPassword || dbPassword.trim() === '';
@@ -1531,8 +1740,8 @@ function validateUser(username, password) {
           const generatedPassword = generateRandomPassword(8);
           console.log('Generated password for', username);
 
-          // Update password in Firebase
-          const updateResult = updateUserPassword(key, generatedPassword);
+          // Update password in Firebase (use the actual key we found)
+          const updateResult = updateUserPassword(userKey, generatedPassword);
 
           if (!updateResult.success) {
             console.error('Failed to update password in Firebase');
@@ -1599,10 +1808,11 @@ function validateUser(username, password) {
             message: 'Onjuist wachtwoord'
           };
         }
-      }
     }
 
-    // User not found
+    // User not found with any strategy
+    console.error('❌ User not found. Searched for:', username);
+    console.error('Available keys:', Object.keys(data).join(', '));
     return {
       success: false,
       emptyPassword: false,

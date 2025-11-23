@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.26.1-USERS-DELETE-FIX
+- **JavaScript Versie**: 2.27.2-LOGIN-FALLBACK-FIX
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -822,7 +822,296 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.14.0-ROLE-BASED-FILTERING (Current)
+### v2.27.2-LOGIN-FALLBACK-FIX (Current)
+**Release Date**: November 2025
+
+**Critical Bug Fix: Login Broken for All Users 🚨**
+- ✅ **Fixed login**: Alle gebruikers kunnen nu weer inloggen
+- 🔧 **3-staps fallback strategie**: Ondersteunt multiple Firebase key formaten
+- 🛡️ **Backwards compatible**: Werkt met zowel nieuwe als legacy users
+
+**Het Probleem:**
+Na v2.27.1 kon **niemand** meer inloggen, zelfs niet met correcte credentials:
+- Error: "Gebruiker niet gevonden"
+- ❌ v2.27.1 zocht alleen naar `encodedEmail` als Firebase key
+- ❌ Bestaande users in database hadden verschillende key formaten (plain email, andere keys)
+- ❌ Te restrictieve implementatie zonder fallback voor legacy data
+
+**De Oplossing - 3-Staps Fallback Strategie:**
+```javascript
+// Strategy 1: Try encoded email as key (nieuwe users via createUser)
+const encodedUsername = encodeURIComponent(username);
+if (data[encodedUsername]) {
+  user = data[encodedUsername];
+  userKey = encodedUsername;
+}
+
+// Strategy 2: Try plain email as key (legacy users)
+if (!user && data[username]) {
+  user = data[username];
+  userKey = username;
+}
+
+// Strategy 3: Search by USER_NAME field (oude users waar key != email)
+if (!user) {
+  for (const key in data) {
+    if (data[key].USER_NAME === username) {
+      user = data[key];
+      userKey = key;
+      break;
+    }
+  }
+}
+```
+
+**Technische Details:**
+1. **Fallback strategie** ([Code.js:1604-1638](Code.js#L1604-L1638)):
+   - Eerst: Direct lookup met encoded email (snelst, voor nieuwe users)
+   - Dan: Direct lookup met plain email (voor sommige legacy users)
+   - Laatste: Loop door alle users op USER_NAME match (voor oude users)
+
+2. **Correct userKey gebruik** ([Code.js:1655](Code.js#L1655)):
+   - `updateUserPassword()` gebruikt nu de gevonden `userKey` i.p.v. altijd `encodedUsername`
+   - Voorkomt dat password updates falen voor legacy users
+
+3. **Debug logging** ([Code.js:1725-1726](Code.js#L1725-L1726)):
+   - Bij login failure worden alle beschikbare keys gelogd
+   - Helpt bij troubleshooting van toekomstige key format issues
+
+**Impact voor Gebruikers:**
+- ✅ **Alle users kunnen weer inloggen**: Nieuwe én legacy users
+- ✅ **Geen data migratie nodig**: Ondersteunt multiple key formaten tegelijk
+- ✅ **Backwards compatible**: Oude users blijven werken
+- ✅ **Forward compatible**: Nieuwe users (via createUser) gebruiken encoded email
+
+**Bestanden Gewijzigd:**
+- [Code.js:2](Code.js#L2) - Version naar 2.27.2-LOGIN-FALLBACK-FIX
+- [Code.js:1604-1638](Code.js#L1604-L1638) - 3-staps fallback strategie
+- [Code.js:1655](Code.js#L1655) - Gebruik userKey i.p.v. encodedUsername
+- [Code.js:1725-1726](Code.js#L1725-L1726) - Debug logging voor not found
+- [JavaScript.html:2](JavaScript.html#L2) - Version comment naar 2.27.2
+- [JavaScript.html:134](JavaScript.html#L134) - Version constant naar 2.27.2
+- [Readme.html:8](Readme.html#L8) - Version info naar 2.27.2
+
+---
+
+### v2.27.1-LOGIN-CREATE-FIX
+**Release Date**: November 2025
+
+**Bug Fixes: Login Validation & User Creation 🐛**
+- ✅ **Fixed login validation**: Users kunnen nu correct inloggen ongeacht USER_NAME waarde
+- ✅ **Fixed duplicate check**: Nieuwe gebruikers kunnen nu correct aangemaakt worden
+- 🔧 **Performance improvement**: Direct key lookup i.p.v. loop iteratie
+
+**Het Probleem:**
+
+**Bug 1 - Login Validation Failure:**
+- Sommige gebruikers konden niet inloggen, bijvoorbeeld een user met `USER_NAME: "Test2"`
+- Error: "Cannot read properties of null (reading 'USER_NAME')"
+- ❌ `validateUser()` gebruikte een loop om `USER_NAME` te vergelijken met login username
+- ❌ Firebase gebruikt het email adres als firebaseKey, niet het USER_NAME veld
+- ❌ Inefficiënte loop door alle gebruikers
+
+**Bug 2 - Create User False Positive:**
+- Nieuwe gebruikers konden niet aangemaakt worden met unieke email adressen
+- Error: "Gebruiker met dit email adres bestaat al"
+- ❌ Firebase retourneert `null` (valid JSON) voor niet-bestaande paths
+- ❌ Check `existingUser !== null` behandelde null incorrectly als bestaande gebruiker
+
+**De Oplossing:**
+
+**Fix 1 - Direct Key Lookup:**
+```javascript
+// OLD (BROKEN): Loop met USER_NAME vergelijking
+for (const key in data) {
+  const user = data[key];
+  if (user.USER_NAME === username) { /* ... */ }
+}
+
+// NEW (FIXED): Direct lookup met email als key
+const encodedUsername = encodeURIComponent(username);
+const user = data[encodedUsername];
+if (user) {
+  // Validate password en return role
+}
+```
+
+**Fix 2 - Proper Null Handling:**
+```javascript
+// Firebase returns null when path doesn't exist
+const responseText = checkResponse.getContentText();
+const existingUser = responseText ? JSON.parse(responseText) : null;
+
+// Only block if actual user object exists
+if (existingUser && typeof existingUser === 'object' && Object.keys(existingUser).length > 0) {
+  return { success: false, message: 'Gebruiker met dit email adres bestaat al' };
+}
+```
+
+**Technische Details:**
+1. **validateUser() refactor** ([Code.js:1600-1687](Code.js#L1600-L1687)):
+   - Verwijderd: `for (const key in data)` loop
+   - Toegevoegd: `const user = data[encodedUsername]` direct lookup
+   - Performance: O(n) → O(1) complexity
+   - Correctheid: Email is de single source of truth voor user identificatie
+
+2. **createUser() null handling** ([Code.js:696-774](Code.js#L696-L774)):
+   - Toegevoegd: Proper JSON parsing met fallback naar null
+   - Toegevoegd: Object type en keys check
+   - Firebase null response wordt correct geïnterpreteerd als "user bestaat niet"
+
+**Impact voor Gebruikers:**
+- ✅ Alle gebruikers kunnen nu correct inloggen (ongeacht USER_NAME waarde)
+- ✅ Nieuwe gebruikers kunnen aangemaakt worden met unieke email adressen
+- ✅ Snellere login validatie door direct key lookup
+- ✅ Correcte error messages bij ongeldige credentials
+
+**Bestanden Gewijzigd:**
+- [Code.js:2](Code.js#L2) - Version naar 2.27.1-LOGIN-CREATE-FIX
+- [Code.js:696-774](Code.js#L696-L774) - createUser() null handling fix
+- [Code.js:1600-1687](Code.js#L1600-L1687) - validateUser() direct lookup refactor
+- [JavaScript.html:2](JavaScript.html#L2) - Version comment naar 2.27.1
+- [Readme.html:8](Readme.html#L8) - Version info naar 2.27.1
+
+---
+
+### v2.27.0-USERS-CREATE
+**Release Date**: November 2025
+
+**Feature: CREATE Functionality voor Gebruikers - CRUD Complete! ✅**
+- ✅ **Add User button**: Witte knop met geel '+' SVG symbool naast "Gebruikers" header
+- ✅ **AddUserModal**: Volledig formulier voor nieuwe gebruikers aanmaken
+- ✅ **createUser()**: Backend functie met duplicate email check
+- 🎉 **CRUD Complete**: CREATE, READ, UPDATE, DELETE volledig geïmplementeerd!
+
+**Het Probleem:**
+Users tabel had READ, UPDATE en DELETE functionaliteit, maar CREATE ontbrak nog:
+- ❌ Geen mogelijkheid om nieuwe gebruikers toe te voegen via de UI
+- ❌ CRUD operaties waren niet compleet
+- ❌ Admin moest direct in Firebase database werken om users aan te maken
+
+**De Oplossing:**
+
+**1. Add User Button in Tabel Header:**
+```javascript
+<button
+  onClick={() => setIsAddUserModalOpen(true)}
+  title="Nieuwe gebruiker toevoegen"
+  style={{
+    width: '28px',
+    height: '28px',
+    backgroundColor: 'white',
+    border: '2px solid #e0e0e0',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
+    padding: 0
+  }}
+>
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M8 3V13M3 8H13" stroke="#FFC107" strokeWidth="2.5" strokeLinecap="round"/>
+  </svg>
+</button>
+```
+
+**2. AddUserModal Component:**
+- **Header**: Groene gradient (consistent met andere success modals)
+- **Formulier velden**:
+  - Email (verplicht, text input)
+  - Rol (dropdown: A/B/C, default 'A')
+  - Departement (text input, optioneel)
+  - Titel (text input, optioneel)
+  - Actief (dropdown: Ja/Nee, default Ja)
+  - Wachtwoord (verplicht, password input)
+- **Knoppen**: "Annuleren" (grijs) en "Aanmaken" (groen)
+
+**3. Backend createUser() Functie:**
+```javascript
+function createUser(userData) {
+  // Validate required fields
+  if (!userData.email || !userData.PASSWORD) {
+    return { success: false, message: 'Email en wachtwoord zijn verplicht' };
+  }
+
+  // Check for duplicate email
+  const encodedEmail = encodeURIComponent(userData.email);
+  const checkUrl = `${FIREBASE_USERS_URL}/fire-data/${encodedEmail}.json`;
+  const existingUser = /* ... Firebase GET check ... */;
+
+  if (existingUser !== null) {
+    return { success: false, message: 'Gebruiker met dit email adres bestaat al' };
+  }
+
+  // Create new user with PUT request
+  const newUserData = {
+    ROLE: userData.ROLE || 'A',
+    DEPARTEMENT: userData.DEPARTEMENT || '',
+    TITEL: userData.TITEL || '',
+    ACTIVE: userData.ACTIVE !== undefined ? userData.ACTIVE : 1,
+    USER_NAME: userData.USER_NAME || userData.email,
+    PASSWORD: userData.PASSWORD
+  };
+
+  const createUrl = `${FIREBASE_USERS_URL}/fire-data/${encodedEmail}.json`;
+  // PUT request to create user...
+}
+```
+
+**Technische Details:**
+1. **Frontend state** ([JavaScript.html:38](JavaScript.html#L38)):
+   - Nieuw state: `const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false)`
+
+2. **Add button** ([JavaScript.html:4133-4168](JavaScript.html#L4133-L4168)):
+   - Witte achtergrond met gele '+' SVG icon
+   - Geplaatst naast "Gebruikers" header met 10px margin-left
+   - Hover effect met shadow en scale transform
+
+3. **Handlers** ([JavaScript.html:788-818](JavaScript.html#L788-L818)):
+   - `handleOpenAddUserModal()`: Opens de modal
+   - `handleCloseAddUserModal()`: Sluit de modal
+   - `handleCreateUser(newUserData)`: Roept backend aan, toont success/error modal, refresht users lijst
+
+4. **AddUserModal component** ([JavaScript.html:2121-2437](JavaScript.html#L2121-L2437)):
+   - Groene gradient header: `linear-gradient(135deg, #43a047 0%, #66bb6a 100%)`
+   - Form validatie in component
+   - Controlled inputs met lokale state
+   - Success/error handling via parent callbacks
+
+5. **Backend createUser()** ([Code.js:696-774](Code.js#L696-L774)):
+   - Duplicate check met Firebase GET request
+   - URL encoding voor special characters in email
+   - PUT request naar `/fire-data/{encodedEmail}.json`
+   - Comprehensive error handling
+
+**Impact voor Gebruikers:**
+- ✅ **CRUD Complete**: Volledige gebruikersbeheer functionaliteit
+- ✅ **Intuïtieve UI**: Duidelijke '+' knop in tabel header
+- ✅ **Validatie**: Duplicate email check voorkomt conflicten
+- ✅ **Consistency**: Formulier stijl matched andere modals (EditUserModal, DeleteUserConfirmationModal)
+
+**Bestanden Gewijzigd:**
+- [Code.js:2](Code.js#L2) - Version naar 2.27.0-USERS-CREATE
+- [Code.js:696-774](Code.js#L696-L774) - createUser() function toegevoegd
+- [JavaScript.html:2](JavaScript.html#L2) - Version comment naar 2.27.0
+- [JavaScript.html:38](JavaScript.html#L38) - isAddUserModalOpen state
+- [JavaScript.html:788-818](JavaScript.html#L788-L818) - Create user handlers
+- [JavaScript.html:2121-2437](JavaScript.html#L2121-L2437) - AddUserModal component
+- [JavaScript.html:4133-4168](JavaScript.html#L4133-L4168) - Add button in header
+- [JavaScript.html:5186](JavaScript.html#L5186) - AddUserModal rendered
+- [Readme.html:8](Readme.html#L8) - Version info naar 2.27.0
+
+**CRUD Overzicht:**
+- ✅ **CREATE**: AddUserModal + createUser() (v2.27.0)
+- ✅ **READ**: Users tabel + getUsers() (v2.23.0)
+- ✅ **UPDATE**: EditUserModal + updateUser() (v2.24.0)
+- ✅ **DELETE**: DeleteUserConfirmationModal + deleteUser() (v2.26.0)
+
+---
+
+### v2.14.0-ROLE-BASED-FILTERING
 **Release Date**: November 2025
 
 **Feature: Role-Based Aanvragen Filtering 🔐**
