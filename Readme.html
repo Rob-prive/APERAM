@@ -5,7 +5,7 @@
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.27.2-LOGIN-FALLBACK-FIX
+- **JavaScript Versie**: 2.33.2-EMAIL-LOCKED-POINTS
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -822,7 +822,231 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.31.0-BLUE-LAVENDER-GRADIENTS (Current)
+### v2.33.2-EMAIL-LOCKED-POINTS (Current)
+**Release Date**: November 23, 2025
+
+**Bug Fix: Vergrendelpunten Tabel in Beslissing Email 📧**
+- ✅ **Probleem opgelost**: Vergrendelpunten tabel was leeg in goedkeurings/afkeurings emails
+- ✅ **Gestructureerde data**: Vergrendelpunten worden nu als JSON objecten opgeslagen
+- ✅ **Volledige email**: Beslissing emails bevatten nu alle informatie
+
+**Het Probleem**:
+- Vergrendelpunten werden opgeslagen als simpele comma-separated strings
+- Email code zocht naar gestructureerde data in `"Locked Points"` veld
+- Resultaat: Lege tabel in email
+
+**De Oplossing**:
+1. **Gestructureerde opslag** ([Code.js:410-421](Code.js#L410-L421)):
+   ```javascript
+   const lockedPoints = selectedRows.map(row => ({
+     code: rowData[0],
+     type: rowData[1],
+     sleutelbox: rowData[2],
+     naam: rowData[3],
+     geografisch: rowData[4]
+   }));
+   ```
+
+2. **Firebase veld toegevoegd** ([Code.js:438](Code.js#L438)):
+   - `"Locked Points": JSON.stringify(lockedPoints)`
+   - Backwards compatible: `"Verzamelmandje Data"` behouden
+
+3. **Debug logging** ([Code.js:1613-1615](Code.js#L1613-L1615)):
+   - Console logs voor troubleshooting
+
+**Bestanden Gewijzigd**:
+- [Code.js:2](Code.js#L2) - Version naar 2.33.2
+- [Code.js:410-424](Code.js#L410-L424) - Gestructureerde vergrendelpunten data
+- [Code.js:438](Code.js#L438) - Locked Points veld toegevoegd
+- [Code.js:1613-1615](Code.js#L1613-L1615) - Debug logging
+- [JavaScript.html:2+134](JavaScript.html#L2) - Version updates
+
+---
+
+### v2.33.1-EMAIL-FORMDATA-FIX
+**Release Date**: November 23, 2025
+
+**Bug Fix: Formulier Data in Beslissing Email 📧**
+- ✅ **Probleem opgelost**: Formulier gegevens waren leeg in goedkeurings/afkeurings emails
+- ✅ **Data parsing**: Form Data JSON string wordt nu correct geparsed
+- ✅ **Volledige info**: Alle formulier velden tonen nu in beslissing email
+
+**Het Probleem**:
+- Form Data wordt opgeslagen als JSON string in Firebase
+- Email template probeerde niet-bestaande velden te lezen (`aanvraagData['Installation']`)
+- Resultaat: Lege formulier sectie in email
+
+**De Oplossing**:
+1. **Parse Form Data** ([Code.js:1587-1601](Code.js#L1587-L1601)):
+   ```javascript
+   let formData = {};
+   try {
+     formData = JSON.parse(aanvraagData['Form Data'] || '{}');
+   } catch (e) {
+     // Fallback naar N/A waarden
+   }
+   ```
+
+2. **Gebruik correcte velden** ([Code.js:1639-1759](Code.js#L1639-L1759)):
+   - `formData.installatie`
+   - `formData.naam`
+   - `formData.interneOpmerking`
+   - `formData.externeOpmerking`
+   - `formData.opmerkingen`
+
+**Bestanden Gewijzigd**:
+- [Code.js:2](Code.js#L2) - Version naar 2.33.1
+- [Code.js:1587-1601](Code.js#L1587-L1601) - Form Data parsing
+- [Code.js:1639-1759](Code.js#L1639-L1759) - Formulier velden in email
+- [JavaScript.html:2+134](JavaScript.html#L2) - Version updates
+
+---
+
+### v2.33.0-EMAIL-NOTIFICATIONS
+**Release Date**: November 23, 2025
+
+**Feature: Complete Email Notificatie Systeem 📧**
+- ✅ **Bevestiging voor aanvrager**: Email bij nieuwe aanvraag
+- ✅ **Beslissing notificatie**: Email bij goedkeuring/afkeuring
+- 📧 **Professioneel design**: HTML emails met gradient headers
+- 🎨 **Kleur-gecodeerd**: Blauw voor bevestiging, groen/rood voor beslissing
+
+**Nieuwe Email Functionaliteit**:
+
+**1. Bevestigingsemail voor Aanvrager** ([Code.js:1296-1537](Code.js#L1296-L1537)):
+- **Functie**: `sendRequesterConfirmation()`
+- **Wanneer**: Direct na indienen nieuwe aanvraag
+- **Inhoud**:
+  - Aanvraag nummer en tijdstip
+  - Autorisator naam
+  - Alle formulier gegevens
+  - Tabel met geselecteerde vergrendelpunten
+  - Info dat aanvraag wordt beoordeeld
+
+**2. Beslissingsemail voor Aanvrager** ([Code.js:1547-1800](Code.js#L1547-L1800)):
+- **Functie**: `sendDecisionNotification()`
+- **Wanneer**: Na goedkeuring of afkeuring door autorisator
+- **Inhoud**:
+  - Status (Goedgekeurd ✓ of Afgekeurd ✗)
+  - Beslissing datum
+  - Autorisator naam en opmerking
+  - Alle aanvraag details
+  - Tabel met vergrendelpunten
+
+**Integraties**:
+
+**Bij nieuwe aanvraag** ([Code.js:445-465](Code.js#L445-L465)):
+1. Email naar autorisator (bestaand)
+2. **NIEUW**: Email naar aanvrager (bevestiging)
+
+**Bij beslissing** ([Code.js:936-962](Code.js#L936-L962)):
+1. Update status in Firebase
+2. **NIEUW**: Haal complete aanvraag data op
+3. **NIEUW**: Email naar aanvrager (beslissing)
+
+**Email Design**:
+- Professionele HTML emails met gradient headers
+- Kleur-gecodeerd:
+  - Blauw (#1976d2) voor bevestiging
+  - Groen (#4caf50) voor goedkeuring
+  - Rood (#f44336) voor afkeuring
+- Responsive design (750px breed)
+- Plain text fallback
+- Verzonden via `reliabilitycmms@gmail.com`
+
+**Bestanden Gewijzigd**:
+- [Code.js:2](Code.js#L2) - Version naar 2.33.0
+- [Code.js:1296-1537](Code.js#L1296-L1537) - sendRequesterConfirmation()
+- [Code.js:1547-1800](Code.js#L1547-L1800) - sendDecisionNotification()
+- [Code.js:456-465](Code.js#L456-L465) - Bevestiging email call
+- [Code.js:936-962](Code.js#L936-L962) - Beslissing email call
+- [JavaScript.html:2+134](JavaScript.html#L2) - Version updates
+
+---
+
+### v2.32.0-NUMERIC-USER-KEYS
+**Release Date**: November 23, 2025
+
+**Feature: Numerieke User Keys + Verbeterde Duplicate Check 🔢**
+- ✅ **Consistente keys**: Nieuwe users krijgen numerieke keys (31, 32, 33, ...)
+- ✅ **Betere duplicate check**: Controleert USER_NAME in plaats van encoded email
+- ✅ **Auto-increment**: Vindt automatisch hoogste nummer en verhoogt
+- 🔧 **Backwards compatible**: Bestaande users blijven werken
+
+**Het Probleem**:
+- Nieuwe users kregen encoded email als key (`Test4_AT_t_DOT_be`)
+- Bestaande users hebben numerieke keys (29, 30)
+- Inconsistentie kan problemen veroorzaken
+
+**De Oplossing**:
+
+**1. Numerieke Key Generatie** ([Code.js:780-796](Code.js#L780-L796)):
+```javascript
+// Find highest numeric key
+let nextKey = 0;
+Object.keys(allUsersData).forEach(key => {
+  const numKey = parseInt(key);
+  if (!isNaN(numKey) && numKey > nextKey) {
+    nextKey = numKey;
+  }
+});
+nextKey = nextKey + 1; // Use next number
+```
+
+**2. Verbeterde Duplicate Check** ([Code.js:751-776](Code.js#L751-L776)):
+- Controleert nu `USER_NAME` in alle users
+- Case-insensitive vergelijking
+- Eenvoudiger en betrouwbaarder
+
+**3. Optimalisatie**:
+- Hergebruikt data voor duplicate check én key-generatie
+- Voorkomt dubbele Firebase calls
+
+**Bestanden Gewijzigd**:
+- [Code.js:2](Code.js#L2) - Version naar 2.32.0
+- [Code.js:751-776](Code.js#L751-L776) - Nieuwe duplicate check
+- [Code.js:780-796](Code.js#L780-L796) - Numerieke key generatie
+- [JavaScript.html:2+134](JavaScript.html#L2) - Version updates
+
+---
+
+### v2.31.4-AUTORISATOR-OBJECT-FIX
+**Release Date**: November 23, 2025
+
+**Bug Fix: Autorisatoren Lijst Leeg 🔧**
+- ✅ **Probleem opgelost**: Autorisatoren dropdown was leeg in aanvraag formulier
+- ✅ **Object → Array**: Firebase data wordt nu correct geconverteerd
+- 🔍 **Debug logging**: Toegevoegd voor troubleshooting
+
+**Het Probleem**:
+- `getAutorisators()` verwachtte een array van Firebase
+- Firebase retourneert een **object**, geen array
+- Code stopte bij `!Array.isArray(data)` check
+- Resultaat: Lege autorisatoren lijst
+
+**De Oplossing** ([Code.js:1923-1927](Code.js#L1923-L1927)):
+```javascript
+// Convert Firebase object to array (same as getUsers function)
+const users = Object.keys(data).map(key => ({
+  firebaseKey: key,
+  ...data[key]
+}));
+```
+
+**Gebruik zelfde aanpak als werkende `getUsers()` functie**:
+- Converteer object naar array met `Object.keys().map()`
+- Filter op `ROLE === 'B' || ROLE === 'C'`
+- Alleen actieve users (`ACTIVE === 1`)
+
+**Bestanden Gewijzigd**:
+- [Code.js:2](Code.js#L2) - Version naar 2.31.4
+- [Code.js:1923-1927](Code.js#L1923-L1927) - Object to Array conversie
+- [Code.js:1929](Code.js#L1929) - Debug logging
+- [JavaScript.html:2+134](JavaScript.html#L2) - Version updates
+
+---
+
+### v2.31.0-BLUE-LAVENDER-GRADIENTS
 **Release Date**: November 2025
 
 **Feature: Blue Lavender Gradients 💙💜**
