@@ -822,7 +822,223 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.27.2-LOGIN-FALLBACK-FIX (Current)
+### v2.31.0-BLUE-LAVENDER-GRADIENTS (Current)
+**Release Date**: November 2025
+
+**Feature: Blue Lavender Gradients 💙💜**
+- ✅ **Peachy → Blue Lavender**: Alle gradients nu gebaseerd op menu balk kleuren
+- ✅ **Consistente styling**: Alle lege states hebben dezelfde gradient
+- 🎨 **Nieuwe kleuren**: `#c7d2fe` → `#ddd6fe` (licht lavendel)
+
+**Gradient Kleuren**:
+- Menu balk: `linear-gradient(135deg, #667eea 0%, #764ba2 100%)`
+- Lege states: `linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%)`
+- Tekst kleur: `#5b21b6` (diep paars voor contrast)
+
+**Toegepast op**:
+- Tabel 2: Geselecteerde Vergrendelpunten (leeg)
+- Tabel 3: Aanvragen "Geen aanvragen gevonden"
+- Tabel 4: Gebruikers "Geen gebruikers gevonden"
+- Tabel 4: Fallback state (geen admin view)
+
+**Bestanden Gewijzigd**:
+- [Code.js:2](Code.js#L2) - Version naar 2.31.0
+- [JavaScript.html:2+134](JavaScript.html#L2) - Version updates
+- [JavaScript.html:4084](JavaScript.html#L4084) - Tabel 2 gradient
+- [JavaScript.html:4485+4493](JavaScript.html#L4485) - Tabel 3 gradient + text
+- [JavaScript.html:4765+4775](JavaScript.html#L4765) - Tabel 4 gradient + text
+- [JavaScript.html:4786](JavaScript.html#L4786) - Tabel 4 fallback gradient
+
+---
+
+### v2.30.1-GRADIENT-FIX-MENU-CLEANUP
+**Release Date**: November 2025
+
+**Bug Fixes & UI Improvements 🎨**
+- ✅ **Gradient fix**: Tabel 2 gradient werkt nu correct
+- ✅ **Tandwiel weg**: Admin menu icoon verwijderd
+- ✅ **Betere spacing**: Inklap pijl heeft meer ruimte
+
+**De Fixes**:
+
+**1. Gradient Tabel 2 Fix**:
+- Container: `position: relative`
+- Gradient div: `position: absolute` + `width: 100%`
+- Nu vult gradient de hele container
+
+**2. Admin Menu Cleanup**:
+- Verwijderd: ⚙️ tandwiel icoon
+- Toegevoegd: `marginLeft: '12px'` voor › pijl
+
+**Bestanden Gewijzigd**:
+- [Code.js:2](Code.js#L2) - Version naar 2.30.1
+- [JavaScript.html:3994-4002](JavaScript.html#L3994-L4002) - Container position fix
+- [JavaScript.html:4082-4090](JavaScript.html#L4082-L4090) - Gradient absolute positioning
+- [JavaScript.html:3725](JavaScript.html#L3725) - Tandwiel verwijderd
+- [JavaScript.html:3730](JavaScript.html#L3730) - Pijl spacing
+
+---
+
+### v2.30.0-ADMIN-MENU-IMPROVEMENTS
+**Release Date**: November 2025
+
+**Feature: Admin Menu Improvements 🎯**
+- ✅ **Icon cleanup**: Submenu iconen verwijderd
+- ✅ **Auto-close**: Admin views sluiten bij menu collapse
+- ✅ **Gradient placeholders**: Peachy gradients voor lege states
+
+**Admin Menu**:
+- Verwijderd: 👥 en 🔧 iconen uit submenu items
+- Toegevoegd: Reset `activeAdminView` bij menu collapse
+
+**Gradients**:
+- Tabel 2: Peachy gradient voor lege selecties
+- Tabel 3: Peachy gradient "Geen aanvragen"
+- Tabel 4: Peachy gradient voor users
+
+**Bestanden Gewijzigd**:
+- [JavaScript.html:3710-3717](JavaScript.html#L3710-L3717) - Admin collapse reset
+- [JavaScript.html:3746+3757](JavaScript.html#L3746) - Iconen verwijderd
+- [JavaScript.html:4072-4076](JavaScript.html#L4072-L4076) - Tabel 2 gradient
+
+---
+
+### v2.29.2-UNIFIED-PEACHY-GRADIENTS
+**Release Date**: November 2025
+
+**Feature: Unified Peachy Gradients 🍑**
+- ✅ **Consistente kleuren**: Alle gradients nu peachy oranje
+- ✅ **Purple → Peachy**: Tabel 4 gradients aangepast
+
+**Gradient**: `linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)`
+**Tekst**: `#8b5a3c` (warme bruine tint)
+
+---
+
+### v2.29.1-CLEAN-GRADIENTS
+**Release Date**: November 2025
+
+**Feature: Clean Gradients without Text 🎨**
+- ✅ **Tabel 2**: Gradient zonder placeholder tekst
+- ✅ **Tabel 4**: Gradient zonder "Beschikbaar voor toekomstige data"
+
+---
+
+### v2.29.0-GRADIENT-EMPTY-STATES
+**Release Date**: November 2025
+
+**Feature: Gradient Backgrounds voor Lege States 🎨**
+- ✅ **Peachy gradient**: `#ffecd2` → `#fcb69f`
+- ✅ **Purple gradient**: `#d299c2` → `#fef9d7`
+
+---
+
+### v2.28.2-LOGOUT-ADMINVIEW-RESET
+**Release Date**: November 2025
+
+**Security Fix: Admin View Reset bij Logout 🔒**
+- ✅ **activeAdminView reset**: Admin views sluiten bij logout
+- ✅ **Users list cleared**: Gebruikers data gewist bij logout
+
+**Het Probleem**:
+Admin logt uit → gewone user logt in → ziet nog steeds Gebruikers header + '+' knop
+
+**De Oplossing**:
+```javascript
+const handleLogout = () => {
+  setActiveAdminView(null); // Close admin views
+  setUsers([]); // Clear users list
+  // ... rest
+};
+```
+
+---
+
+### v2.28.1-LOGOUT-ROLE-RESET
+**Release Date**: November 2025
+
+**Security Fix: User Role Reset bij Logout 🔒**
+- ✅ **userRole reset**: Naar 'A' (meest restrictief)
+- ✅ **Default role**: 'A' i.p.v. 'C' voor betere security
+- ✅ **Users cleared**: Users lijst gewist bij logout
+
+**Het Probleem**:
+Admin logt in → ziet Gebruikers tabel → logt uit → gewone user logt in → ziet NOG STEEDS Gebruikers tabel!
+
+**De Oplossing**:
+```javascript
+const handleLogout = () => {
+  setUserRole('A'); // Reset to most restrictive role
+  setUsers([]); // Clear users list
+  // ...
+};
+```
+
+**Security Improvements**:
+- Initial state: `useState('A')` i.p.v. `'C'`
+- Login fallback: `result.role || 'A'`
+- Legacy login: `setUserRole('A')`
+
+---
+
+### v2.28.0-FIREBASE-SAFE-ENCODING
+**Release Date**: November 2025
+
+**Feature: Firebase-Safe Email Encoding 🔧**
+- ✅ **Encoding fix**: `test@example.com` → `test_AT_example_DOT_com`
+- ✅ **No more errors**: Geen "Invalid path: Invalid token in path"
+- ✅ **Backwards compatible**: 3-staps fallback voor legacy users
+
+**Het Probleem**:
+Firebase error: `"Invalid path: Invalid token in path"` omdat `%40` (encoded `@`) niet toegestaan is in Firebase paths.
+
+**De Oplossing**:
+```javascript
+function encodeEmailForFirebase(email) {
+  return email
+    .replace(/\./g, '_DOT_')
+    .replace(/@/g, '_AT_')
+    .replace(/\$/g, '_DOLLAR_')
+    .replace(/\[/g, '_LBRACKET_')
+    .replace(/\]/g, '_RBRACKET_')
+    .replace(/\//g, '_SLASH_');
+}
+```
+
+**Helper Functions**:
+- `encodeEmailForFirebase()` - Email naar Firebase key
+- `decodeEmailFromFirebase()` - Key terug naar email
+
+**Login Fallback**:
+1. Try Firebase-safe encoded email
+2. Try plain email (legacy)
+3. Search by USER_NAME field
+
+---
+
+### v2.27.3-NULL-SAFETY-DEBUG
+**Release Date**: November 2025
+
+**Bug Fix: Null Safety + Debug Logging 🐛**
+- ✅ **Null safety**: Check voor valid object in Strategy 3
+- ✅ **Debug logging**: Uitgebreide logs voor troubleshooting
+- ✅ **Plain email skip**: Skip check als email Firebase-invalid chars bevat
+
+**Fixes**:
+```javascript
+// Strategy 3: Null safety
+const currentUser = data[key];
+if (currentUser && typeof currentUser === 'object' && currentUser.USER_NAME === username) {
+  // ...
+}
+
+// Skip plain email check if invalid chars
+const hasInvalidChars = /@|\.|\$|#|\[|\]|\//.test(userData.email);
+```
+
+---
+
+### v2.27.2-LOGIN-FALLBACK-FIX
 **Release Date**: November 2025
 
 **Critical Bug Fix: Login Broken for All Users 🚨**
