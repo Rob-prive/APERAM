@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.37.1-CRITICALITEIT-DATE-FORMAT-TABLE-HEADERS
+// Version: 2.37.2-CRITICALITEIT-STICKY-HEADER-FIX
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
