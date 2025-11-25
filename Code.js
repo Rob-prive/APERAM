@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.36.2-CRITICALITEIT-SIMPLIFIED-COLUMNS
+// Version: 2.37.1-CRITICALITEIT-DATE-FORMAT-TABLE-HEADERS
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
