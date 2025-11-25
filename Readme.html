@@ -4,8 +4,12 @@
 
 **Aanvragen Rimses** is een webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties. De applicatie biedt een intuïtieve interface met vier dynamisch aanpasbare tabellen en een centrale slider voor layout-aanpassing.
 
+> 📖 **Voor eindgebruikers**: Bekijk de [Gebruikershandleiding (Handleiding.html)](Handleiding.html) voor stap-voor-stap instructies over hoe de applicatie te gebruiken.
+>
+> 🔧 **Voor developers en IT**: Deze Readme bevat technische documentatie, architectuur en ontwikkelingsgeschiedenis.
+
 ### Versie Informatie
-- **JavaScript Versie**: 2.33.2-EMAIL-LOCKED-POINTS
+- **JavaScript Versie**: 2.34.3-FIX-BABEL-SYNTAX
 - **CSS Versie**: 1.2.0
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (3 databases)
@@ -32,17 +36,21 @@
 
 ```
 aanvragen-rimses/
-├── README.md                    # Dit bestand
-├── index.html                   # Main HTML bestand
-├── javascript/
-│   ├── JavaScript.html          # Werkende versie (v2.6.0)
-│   └── Javascript_TEST.html     # Test versie met centrale slider (v2.7.3)
-├── css/
-│   └── styles.css              # Stylesheet
-└── docs/
-    ├── CHANGELOG.md            # Versie geschiedenis
-    └── ARCHITECTURE.md         # Gedetailleerde architectuur
+├── Readme.html                  # Technische documentatie (dit bestand)
+├── Handleiding.html             # Gebruikershandleiding (nieuw!)
+├── Index.html                   # Main HTML bestand
+├── JavaScript.html              # React applicatie code (v2.34.3)
+├── Stylesheet.html              # CSS styles (v1.2.0)
+├── debug.html                   # Debug & test panel (alleen voor Super Users)
+└── Code.js                      # Google Apps Script backend (v2.8.9)
 ```
+
+**Belangrijke Bestanden:**
+- **Readme.html**: Technische documentatie voor developers en IT
+- **Handleiding.html**: Gebruiksvriendelijke handleiding voor eindgebruikers
+- **JavaScript.html**: Volledige React applicatie met alle functionaliteit
+- **Stylesheet.html**: Alle CSS styling en animaties
+- **Code.js**: Backend logica (Google Apps Script)
 
 ---
 
@@ -822,7 +830,218 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### v2.33.2-EMAIL-LOCKED-POINTS (Current)
+### 🎯 Sessie Overzicht: November 25, 2025
+
+Deze ontwikkelsessie (v2.34.0 → v2.34.3) bevatte belangrijke updates:
+
+**Nieuwe Features:**
+- ✅ **Super User Rol (D)** toegevoegd met exclusieve toegang tot Debug & Test
+- ✅ **Admin Menu Gear Icon** voor betere visuele herkenning
+- ✅ **Gebruikershandleiding** (Handleiding.html) gemaakt voor eindgebruikers
+
+**Bug Fixes:**
+- ✅ **Lege gebruikersrijen** gefilterd (verwijderde Firebase keys)
+- ✅ **Babel syntax error** opgelost (optional chaining vervangen)
+
+**Security Improvements:**
+- 🔐 **Rol D privilege escalation** voorkomen (niet meer selecteerbaar in Add/Edit User)
+- 🔐 **Menu segregation** - Debug & Test alleen voor Super Users
+
+**Documentatie:**
+- 📖 **Handleiding.html** - Volledige gebruikershandleiding (9 hoofdstukken)
+- 📖 **Readme.html** - Bijgewerkt met project structuur en referenties
+
+---
+
+### v2.34.3-FIX-BABEL-SYNTAX (Current)
+**Release Date**: November 25, 2025
+
+**Bug Fix: Babel Standalone 6 Syntax Error 🔧**
+- ✅ **Probleem opgelost**: App startte niet door optional chaining operator
+- 🔄 **Syntax fix**: `data?.length` vervangen door `(data && data.length)`
+- ✅ **Compatibiliteit**: Code werkt nu met Babel Standalone 6
+
+**Het Probleem:**
+- Babel Standalone 6 ondersteunt GEEN optional chaining operator (`?.`)
+- Console.log gebruikte `data?.length` syntax
+- Resultaat: `SyntaxError: Unexpected token` op regel 708
+
+**Error:**
+```
+Uncaught SyntaxError: Inline Babel script: Unexpected token (708:83)
+> 708 | console.log('✓ Users loaded:', validUsers.length, '(filtered from', data?.length || 0, 'total)');
+                                                                                    ^
+```
+
+**De Oplossing** ([JavaScript.html:708](JavaScript.html#L708)):
+```javascript
+// VOOR (niet compatibel):
+console.log('✓ Users loaded:', validUsers.length, '(filtered from', data?.length || 0, 'total)');
+
+// NA (Babel 6 compatibel):
+console.log('✓ Users loaded:', validUsers.length, '(filtered from', (data && data.length) || 0, 'total)');
+```
+
+**Babel 6 Beperkingen:**
+- ❌ Optional chaining: `obj?.prop`
+- ❌ Nullish coalescing: `value ?? default`
+- ✅ Logical AND: `obj && obj.prop`
+- ✅ Logical OR: `value || default`
+
+**Bestanden Gewijzigd**:
+- [JavaScript.html:2](JavaScript.html#L2) - Version naar 2.34.3
+- [JavaScript.html:134](JavaScript.html#L134) - Version constant update
+- [JavaScript.html:708](JavaScript.html#L708) - Optional chaining verwijderd
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.34.2-FILTER-EMPTY-USERS
+**Release Date**: November 25, 2025
+
+**Bug Fix: Lege Gebruikersrijen Gefilterd 🔍**
+- ✅ **Probleem opgelost**: Lege rijen in gebruikerstabel door verwijderde gebruikers
+- 🧹 **Data filtering**: Ongeldige gebruikers worden nu uitgefilterd
+- 📊 **Schonere tabel**: Alleen geldige gebruikers met USER_NAME worden getoond
+
+**Het Probleem:**
+- Firebase gebruikt numerieke keys (30, 31, 32, 33, etc.)
+- Wanneer gebruiker 31 wordt verwijderd, blijft er een "gat" in de nummering
+- Backend retourneert lege objecten voor verwijderde keys
+- Resultaat: Lege rij tussen twee geldige gebruikers
+
+**Voorbeeld Database:**
+```
+30: { USER_NAME: "Test2", ROLE: "D", ... }
+31: (deleted - no data)
+32: { USER_NAME: "rob.oversteyns@gmail.com", ROLE: "C", ... }
+```
+
+**Oude Weergave:**
+```
+Test2          | Super User
+-              | Gebruiker  <- Lege rij van #31
+rob.oversteyns | Admin
+```
+
+**Nieuwe Weergave:**
+```
+Test2          | Super User
+rob.oversteyns | Admin
+```
+
+**De Oplossing** ([JavaScript.html:703-708](JavaScript.html#L703-L708)):
+```javascript
+// Filter out empty/invalid users
+const validUsers = (data || []).filter(user =>
+  user && user.USER_NAME && user.USER_NAME.trim() !== ''
+);
+setUsers(validUsers);
+```
+
+**Filter Logica:**
+- Controleert of `user` object bestaat
+- Controleert of `USER_NAME` veld bestaat
+- Controleert of `USER_NAME` niet leeg is (na trimmen)
+- Alleen geldige gebruikers worden getoond in tabel
+
+**Bestanden Gewijzigd**:
+- [JavaScript.html:2](JavaScript.html#L2) - Version naar 2.34.2
+- [JavaScript.html:134](JavaScript.html#L134) - Version constant update
+- [JavaScript.html:703-708](JavaScript.html#L703-L708) - User filtering logic
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.34.1-ADMIN-GEAR-ICON
+**Release Date**: November 25, 2025
+
+**UI Enhancement: Admin Menu Gear Icon ⚙️**
+- ✅ **Visual verbetering**: Tandwiel/gear icon toegevoegd aan Admin menu
+- 🎨 **Betere UX**: Direct herkenbaar admin menu icoon
+- 📐 **Consistent design**: Icoon past bij andere menu items
+
+**Wijzigingen:**
+
+**1. Admin Menu Button** ([JavaScript.html:3733-3738](JavaScript.html#L3733-L3738)):
+- SVG gear/cog icon toegevoegd voor "Admin" menu item
+- Icon gebruikt modern settings/tandwiel design
+- Consistent met andere menu iconen (home icon voor Vergrendelpunten)
+
+**2. Security Updates** ([JavaScript.html:1948-1950, 2284-2285](JavaScript.html#L1948-L1950)):
+- **Add User Modal**: Rol D (Super User) verwijderd uit dropdown
+  - Voorkomt dat admins zichzelf upgraden naar Super User
+  - Super User rol kan alleen via database toegekend worden
+- **Edit User Modal**: Rol D alleen zichtbaar als gebruiker al rol D heeft
+  - Voorkomt privilege escalation
+  - Toont "Super User (D) - Alleen Database" label
+
+**Bestanden Gewijzigd**:
+- [JavaScript.html:2](JavaScript.html#L2) - Version naar 2.34.1
+- [JavaScript.html:134](JavaScript.html#L134) - Version constant update
+- [JavaScript.html:1948-1950](JavaScript.html#L1948-L1950) - Edit User modal security
+- [JavaScript.html:2284-2285](JavaScript.html#L2284-L2285) - Add User modal security
+- [JavaScript.html:3733-3738](JavaScript.html#L3733-L3738) - Admin menu gear icon
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.34.0-SUPER-USER-ROLE
+**Release Date**: November 25, 2025
+
+**Feature: Nieuwe Super User Rol (D) 👤**
+- ✅ **Nieuwe rol toegevoegd**: Rol D = Super User
+- ✅ **Admin rechten**: Alle rechten van rol C (Administrator)
+- ✅ **Exclusieve toegang**: Alleen Super Users zien "Debug & Test" menu
+- 🔐 **Verbeterde controle**: Betere scheiding van admin en super user rechten
+
+**Wat is Nieuw:**
+
+**1. Rol Definitie** ([JavaScript.html:17](JavaScript.html#L17)):
+- Rol D toegevoegd aan het systeem
+- Comment bijgewerkt: `A = user, B = authorizer, C = admin, D = super user`
+
+**2. Menu Toegang** ([JavaScript.html:3707-3768](JavaScript.html#L3707-L3768)):
+- **Admin Menu**: Zichtbaar voor rol C én D
+- **Submenu "Gebruikers"**: Zichtbaar voor rol C én D
+- **Submenu "Debug & Test"**: ALLEEN zichtbaar voor rol D (super user)
+
+**3. Rechten & Permissies**:
+- **Aanvragen bekijken** ([JavaScript.html:463](JavaScript.html#L463)): Rol C én D zien alle aanvragen
+- **Goedkeuren/Afkeuren** ([JavaScript.html:5801](JavaScript.html#L5801)): Rol B, C én D kunnen beslissingen nemen
+- **Gebruikersbeheer**: Rol C én D hebben volledige CRUD rechten
+
+**4. UI Updates** ([JavaScript.html:4685-4694](JavaScript.html#L4685-L4694)):
+- **Badge kleur**: Groen voor Super User (#c8e6c9 achtergrond, #2e7d32 tekst)
+- **Badge tekst**: "Super User" label
+- **Dropdowns**: Rol D optie in Edit/Add User modals
+
+**Rol Vergelijking:**
+
+| Functie | A (User) | B (Authorizer) | C (Admin) | D (Super User) |
+|---------|----------|----------------|-----------|----------------|
+| Admin Menu | ❌ | ❌ | ✅ | ✅ |
+| Gebruikersbeheer | ❌ | ❌ | ✅ | ✅ |
+| Debug & Test | ❌ | ❌ | ❌ | ✅ |
+| Alle Aanvragen | ❌ | ❌ | ✅ | ✅ |
+| Goedkeuren | ❌ | ✅ | ✅ | ✅ |
+
+**Bestanden Gewijzigd**:
+- [JavaScript.html:2](JavaScript.html#L2) - Version naar 2.34.0
+- [JavaScript.html:17](JavaScript.html#L17) - Role comment update
+- [JavaScript.html:134](JavaScript.html#L134) - Version constant update
+- [JavaScript.html:463](JavaScript.html#L463) - Aanvragen filter logic
+- [JavaScript.html:1945](JavaScript.html#L1945) - Edit User modal dropdown
+- [JavaScript.html:2284](JavaScript.html#L2284) - Add User modal dropdown
+- [JavaScript.html:3707](JavaScript.html#L3707) - Admin menu visibility
+- [JavaScript.html:3756](JavaScript.html#L3756) - Debug & Test conditional rendering
+- [JavaScript.html:4685-4694](JavaScript.html#L4685-L4694) - Role badge display
+- [JavaScript.html:5801](JavaScript.html#L5801) - Approve/Reject button access
+- [Readme.html:8](Readme.html#L8) - Version info update
+
+---
+
+### v2.33.2-EMAIL-LOCKED-POINTS
 **Release Date**: November 23, 2025
 
 **Bug Fix: Vergrendelpunten Tabel in Beslissing Email 📧**

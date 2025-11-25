@@ -1,0 +1,819 @@
+# 📖 Aanvragen Rimses - Gebruikershandleiding
+
+**Versie**: 2.34.3
+**Laatst bijgewerkt**: November 25, 2025
+
+---
+
+## 📋 Inhoudsopgave
+
+1. [Introductie](#introductie)
+2. [Inloggen](#inloggen)
+3. [Eerste Gebruik - Nieuw Wachtwoord](#eerste-gebruik)
+4. [Vergrendelpunten Selecteren](#vergrendelpunten-selecteren)
+5. [Aanvraag Indienen](#aanvraag-indienen)
+6. [Autorisatie Workflow](#autorisatie-workflow)
+7. [Aanvragen Beheren](#aanvragen-beheren)
+8. [Veelgestelde Vragen](#veelgestelde-vragen)
+9. [Contact & Support](#contact)
+
+---
+
+## 🎯 Introductie {#introductie}
+
+Welkom bij **Aanvragen Rimses**, de webapplicatie voor het beheren van vergrendelpunten en aanvragen binnen installaties bij Aperam.
+
+### Wat kan je doen met deze applicatie?
+
+- ✅ **Vergrendelpunten zoeken en selecteren** voor vergrendelgroepen
+- ✅ **Aanvragen indienen** voor goedkeuring
+- ✅ **Aanvragen goedkeuren of afkeuren** (als je autorisator bent)
+- ✅ **Status volgen** van ingediende aanvragen
+- ✅ **Email notificaties** ontvangen bij nieuwe aanvragen en beslissingen
+- ✅ **Gebruikers beheren** (als je admin of super user bent)
+
+### Gebruikersrollen
+
+| Rol | Wat kan je doen? |
+|-----|------------------|
+| **👤 Gebruiker (A)** | Vergrendelpunten selecteren en aanvragen indienen |
+| **✅ Autorisator (B)** | Alles van Gebruiker + aanvragen goedkeuren/afkeuren |
+| **⚙️ Administrator (C)** | Alles van Autorisator + gebruikers beheren |
+| **🔧 Super User (D)** | Alles van Administrator + debug & test functies |
+
+---
+
+## 🔐 Inloggen {#inloggen}
+
+### Stap 1: Open de Applicatie
+
+1. Open je webbrowser (Chrome, Firefox, Edge of Safari)
+2. Navigeer naar de URL van de applicatie (krijg je van je systeembeheerder)
+3. Je ziet het **login scherm** met twee invoervelden
+
+### Stap 2: Voer je Gegevens In
+
+1. **Gebruikersnaam**: Voer je **volledige email adres** in
+   - Voorbeeld: `jan.janssen@aperam.com`
+   - Let op hoofdletters/kleine letters!
+
+2. **Wachtwoord**: Voer je wachtwoord in
+   - Bij eerste gebruik: het tijdelijke wachtwoord uit je email
+   - Bij terugkerende bezoeken: je persoonlijke wachtwoord
+
+3. Klik op de **"Inloggen"** knop
+
+### Stap 3: Wachten op Inladen
+
+- De applicatie laadt nu je gegevens
+- Je ziet een laad-indicator
+- Dit kan enkele seconden duren (alle vergrendelpunten worden geladen)
+
+### Stap 4: Je bent Ingelogd!
+
+- Je wordt begroet met: **"Welkom: [Jouw Naam]"**
+- Je ziet nu vier tabellen:
+  - **Linksboven**: Alle vergrendelpunten
+  - **Rechtsboven**: Jouw geselecteerde vergrendelpunten
+  - **Linksonder**: Overzicht van aanvragen
+  - **Rechtsonder**: (gereserveerd voor toekomstige functies)
+
+### ⚠️ Problemen met Inloggen?
+
+| Probleem | Oplossing |
+|----------|-----------|
+| "Ongeldige gebruikersnaam of wachtwoord" | Controleer je email adres en wachtwoord. Let op hoofdletters! |
+| "Geen internetverbinding" | Controleer je netwerkverbinding |
+| Applicatie laadt niet | Probeer de pagina te verversen (F5 of Ctrl+R) |
+| Wachtwoord vergeten | Neem contact op met je administrator |
+
+---
+
+## 🆕 Eerste Gebruik - Nieuw Wachtwoord {#eerste-gebruik}
+
+### Wanneer je voor het eerst inlogt
+
+Als je een nieuwe gebruiker bent, heeft de administrator je account aangemaakt.
+
+### Stap 1: Ontvang je Tijdelijke Wachtwoord
+
+Je ontvangt een **email** met:
+- Je gebruikersnaam (je email adres)
+- Je **tijdelijke wachtwoord**
+- Link naar de applicatie
+
+**📧 Voorbeeld Email:**
+```
+Onderwerp: Welkom bij Aanvragen Rimses
+
+Hallo Jan,
+
+Je account is aangemaakt!
+
+Gebruikersnaam: jan.janssen@aperam.com
+Tijdelijk wachtwoord: TempPass123
+
+Log in op: https://[applicatie-url]
+
+Na het inloggen kun je je wachtwoord wijzigen.
+
+Met vriendelijke groet,
+Aperam IT Team
+```
+
+### Stap 2: Log In met Tijdelijke Wachtwoord
+
+1. Ga naar de applicatie
+2. Log in met je email en het tijdelijke wachtwoord
+3. Je bent nu ingelogd!
+
+### Stap 3: Wijzig je Wachtwoord (Aanbevolen!)
+
+**⚠️ Let op**: De applicatie dwingt je NIET om je wachtwoord te wijzigen, maar het is sterk aanbevolen voor je veiligheid!
+
+**Hoe je je wachtwoord wijzigt:**
+1. Neem contact op met je **administrator**
+2. De administrator kan je wachtwoord wijzigen via het gebruikersbeheer
+3. Je ontvangt een nieuw tijdelijk wachtwoord
+4. Log opnieuw in met het nieuwe wachtwoord
+
+> 💡 **Tip**: Bewaar je wachtwoord op een veilige plek (bijvoorbeeld een wachtwoordmanager)
+
+---
+
+## 🔍 Vergrendelpunten Selecteren {#vergrendelpunten-selecteren}
+
+### Overzicht: Tabel 1 (Linksboven)
+
+Deze tabel toont **alle beschikbare vergrendelpunten** van alle installaties.
+
+**Kolommen:**
+- **Code**: Unieke code van het vergrendelpunt (bijv. `APL3-0001`)
+- **Geografische Locatie**: Locatiecode (bijv. `APL3-10-0Y`)
+- **Naam**: Beschrijving van het vergrendelpunt (bijv. `NO kraan 1`)
+- **Naam Geografische Locatie**: Locatie beschrijving
+- **Sleutelbox**: Sleutelbox nummer
+- **Type**: Type vergrendeling (NO/NC)
+
+### Stap 1: Zoek je Vergrendelpunten
+
+**Methode 1: Gebruik de Filters** (Aanbevolen)
+
+Boven elke kolom zie je een **zoekbalk**:
+
+1. **Filter op Code**: Typ bijv. `APL3` om alleen APL3 installatie te zien
+2. **Filter op Type**: Typ `NO` om alleen NO types te zien
+3. **Filter op Sleutelbox**: Typ een sleutelbox nummer
+4. **Filter op Naam**: Typ een deel van de naam
+5. **Filter op Geografische Naam**: Typ een locatie
+
+**💡 Tips:**
+- Filters werken **direct** terwijl je typt (geen enter nodig)
+- Je kunt **meerdere filters tegelijk** gebruiken
+- Filters zijn **niet hoofdlettergevoelig**
+- Klik op **"🗑 Filters Wissen"** om alle filters te resetten
+
+**Methode 2: Blader door de Pagina's**
+
+Onderaan de tabel zie je **paginanummers**:
+- Klik op **"← Vorige"** voor vorige pagina
+- Klik op **"Volgende →"** voor volgende pagina
+- Klik op een **paginanummer** om direct naar die pagina te gaan
+- Elke pagina toont **15 vergrendelpunten**
+
+### Stap 2: Selecteer Vergrendelpunten
+
+Wanneer je het juiste vergrendelpunt hebt gevonden:
+
+1. Klik op de **groene ✓ knop** in de eerste kolom (Code)
+2. De rij wordt **gemarkeerd** (lichte achtergrondkleur)
+3. Het vergrendelpunt verschijnt **automatisch** in Tabel 2 (rechtsboven)
+
+**Je kunt:**
+- ✅ Meerdere vergrendelpunten selecteren
+- ✅ Filters gebruiken en selecteren, dan nieuwe filters en weer selecteren
+- ✅ Pagina's wisselen terwijl je selecteert (selecties blijven behouden)
+
+### Stap 3: Controleer je Selectie
+
+**Tabel 2 (Rechtsboven)** toont al je **geselecteerde vergrendelpunten**.
+
+**Je ziet:**
+- Alle vergrendelpunten die je hebt geselecteerd
+- Een **✕ knop** naast elk vergrendelpunt (om te verwijderen)
+- Een **"📋 Aanvragen"** knop onderaan (om aanvraag in te dienen)
+
+### Stap 4: Selectie Aanpassen (Optioneel)
+
+**Een vergrendelpunt verwijderen:**
+1. Klik op de **rode ✕ knop** naast het vergrendelpunt in Tabel 2
+2. Het vergrendelpunt wordt verwijderd uit je selectie
+3. De markering in Tabel 1 verdwijnt
+
+**Een vergrendelpunt toevoegen:**
+1. Zoek het vergrendelpunt in Tabel 1
+2. Klik op de **✓ knop**
+3. Het verschijnt in Tabel 2
+
+**Alle vergrendelpunten verwijderen:**
+1. Klik op elk **✕ knopje** in Tabel 2
+2. Of: ververs de pagina (F5) - **let op**: je verliest dan al je selecties!
+
+> 💡 **Tip**: Controleer je selectie goed voordat je een aanvraag indient!
+
+---
+
+## 📝 Aanvraag Indienen {#aanvraag-indienen}
+
+### Voordat je Begint
+
+**Zorg dat je:**
+- ✅ Minimaal **1 vergrendelpunt** hebt geselecteerd (in Tabel 2)
+- ✅ Weet welke **autorisator** je aanvraag moet goedkeuren
+- ✅ Alle **relevante informatie** hebt over je aanvraag
+
+### Stap 1: Open het Aanvraag Formulier
+
+1. Controleer je selectie in **Tabel 2 (rechtsboven)**
+2. Klik op de **"📋 Aanvragen"** knop onderaan Tabel 2
+3. Het **Aanvraag Formulier** opent als popup
+
+### Stap 2: Vul het Formulier In
+
+Het formulier heeft de volgende velden:
+
+#### **Naam** (Verplicht) ⭐
+- **Beschrijving**: Korte titel voor je aanvraag
+- **Maximaal**: 66 karakters
+- **Voorbeeld**: "Onderhoud kraan 3 gebouw APL3"
+- **Let op**: Teller toont resterende karakters
+
+#### **Installatie** (Automatisch ingevuld)
+- Dit veld wordt automatisch ingevuld
+- Toont de installatie van je geselecteerde vergrendelpunten
+- Je kunt dit **niet wijzigen**
+
+#### **Interne Opmerking** (Optioneel)
+- **Gebruik**: Notities voor intern gebruik
+- **Zichtbaar**: Alleen voor ingelogde gebruikers
+- **Niet zichtbaar**: Op printouts
+- **Voorbeeld**: "Overleg met Jan over planning"
+
+#### **Externe Opmerking** (Optioneel)
+- **Gebruik**: Informatie voor externe partijen
+- **Zichtbaar**: Op printouts en in emails
+- **Voorbeeld**: "Werkzaamheden gepland op 15/12/2025"
+
+#### **Opmerkingen Aanvrager** (Optioneel)
+- **Gebruik**: Extra notities van de aanvrager
+- **Voorbeeld**: "Contacteer mij voor details: +32 123 456 789"
+
+#### **Autorisator** (Verplicht) ⭐
+- **Dropdown lijst**: Kies wie je aanvraag moet goedkeuren
+- Toont alle beschikbare **autorisators** en **administrators**
+- **Sorteer alfabetisch**
+- **Let op**: Kies de juiste persoon voor je installatie/afdeling!
+
+### Stap 3: Controleer je Gegevens
+
+**Voordat je verzendt, controleer:**
+- ✅ Naam is ingevuld en duidelijk
+- ✅ Juiste autorisator is geselecteerd
+- ✅ Opmerkingen zijn correct (indien ingevuld)
+- ✅ Alle geselecteerde vergrendelpunten zijn correct (zie onderaan formulier)
+
+**Je ziet onderaan:**
+- **Tabel met geselecteerde vergrendelpunten**
+- Alle details: Code, Type, Sleutelbox, Naam, Locatie
+
+### Stap 4: Verzend de Aanvraag
+
+1. Klik op de **"Verzenden"** knop (paarse kleur, onderaan)
+2. De applicatie verwerkt je aanvraag (kan enkele seconden duren)
+3. Je ziet een **Success Modal** met:
+   - ✓ Bevestiging bericht
+   - **Aanvraag nummer** (format: YYYY-MM-DD-HH-MM-SS)
+   - **Firebase key** (technische ID)
+   - Bevestiging dat **email is verzonden** naar de autorisator
+
+### Stap 5: Na Verzending
+
+**Wat gebeurt er automatisch?**
+
+1. **Je aanvraag wordt opgeslagen** in het systeem
+2. **Email naar autorisator** 📧:
+   - Ontvangt alle aanvraag details
+   - Tabel met alle geselecteerde vergrendelpunten
+   - Link om in te loggen en te beslissen
+3. **Email naar jou (aanvrager)** 📧:
+   - Bevestiging van ontvangst
+   - Aanvraag nummer voor referentie
+   - Alle ingediende informatie
+4. **Je selectie wordt gewist**:
+   - Tabel 2 is nu leeg
+   - Je kunt een nieuwe aanvraag beginnen
+5. **Aanvraag verschijnt in Tabel 3**:
+   - Status: **"Pending"** (geel)
+   - Wacht op beslissing van autorisator
+
+### Stap 6: Formulier Annuleren (Optioneel)
+
+Als je het formulier wilt sluiten zonder te verzenden:
+
+1. Klik op **"Annuleren"** knop (grijze kleur)
+2. Of klik **buiten het formulier** (op donkere achtergrond)
+3. Het formulier sluit
+4. Je selectie blijft behouden in Tabel 2
+
+> 💡 **Tip**: Noteer je **aanvraag nummer** voor toekomstige referentie!
+
+---
+
+## 🔄 Autorisatie Workflow {#autorisatie-workflow}
+
+### Hoe werkt het Autorisatiesysteem?
+
+Het systeem gebruikt een **geautomatiseerde workflow** met email notificaties en logging van alle beslissingen.
+
+### Workflow Overzicht
+
+```
+┌─────────────────┐
+│  1. AANVRAGER   │  Dient aanvraag in
+└────────┬────────┘
+         │
+         ├─► 📧 Email naar Autorisator (nieuwe aanvraag)
+         ├─► 📧 Email naar Aanvrager (bevestiging)
+         └─► 💾 Opslaan in database (Status: Pending)
+         │
+         ▼
+┌─────────────────┐
+│  2. AUTORISATOR │  Bekijkt aanvraag in systeem
+└────────┬────────┘
+         │
+         ├─► ✅ Goedkeuren
+         │   ├─► 📧 Email naar Aanvrager (goedgekeurd)
+         │   ├─► 💾 Update database (Status: Approved)
+         │   └─► 📝 Log beslissing + datum + opmerkingen
+         │
+         └─► ❌ Afkeuren
+             ├─► 📧 Email naar Aanvrager (afgekeurd)
+             ├─► 💾 Update database (Status: Rejected)
+             └─► 📝 Log beslissing + datum + opmerkingen
+```
+
+### 1️⃣ Fase 1: Aanvraag Indienen
+
+**Wat gebeurt er?**
+
+1. **Aanvrager** (jij) vult het formulier in en klikt "Verzenden"
+
+2. **Systeem verwerkt**:
+   - Genereert uniek **Aanvraag Nummer**
+   - Slaat alle data op in **Firebase database**
+   - Status wordt gezet op **"Pending"** (in afwachting)
+
+3. **Email naar Autorisator** 📧:
+   ```
+   Onderwerp: Nieuwe Aanvraag Vergrendelgroep - [Aanvraag ID]
+
+   Nieuwe aanvraag van [Jouw Naam]
+
+   Aanvraag Details:
+   - Installatie: APL3
+   - Naam: Onderhoud kraan 3
+   - Aanvrager: jan.janssen@aperam.com
+
+   [Tabel met vergrendelpunten]
+
+   Log in om te beslissen: [Link]
+   ```
+
+4. **Email naar Aanvrager** (jou) 📧:
+   ```
+   Onderwerp: Bevestiging Aanvraag - [Aanvraag ID]
+
+   Je aanvraag is ingediend!
+
+   Aanvraag Nummer: 2025-11-25-14-30-45
+   Status: In afwachting van goedkeuring
+   Autorisator: marie.pieters@aperam.com
+
+   [Alle aanvraag details]
+   [Tabel met vergrendelpunten]
+   ```
+
+### 2️⃣ Fase 2: Autorisator Bekijkt Aanvraag
+
+**Als autorisator:**
+
+1. **Log in** op de applicatie
+2. Ga naar **Tabel 3 (Aanvragen)**
+3. Je ziet **alle aanvragen** die jij moet goedkeuren
+   - Status: **Pending** (gele badge)
+   - Jouw email staat bij "Autorisator"
+
+4. Klik op **👁 (oog icon)** om details te bekijken
+5. **Detail Modal** opent met:
+   - Alle aanvraag informatie
+   - Formulier gegevens
+   - Alle opmerkingen
+   - **Tabel met vergrendelpunten**
+   - **Beslissing sectie** (alleen als status = Pending)
+
+### 3️⃣ Fase 3A: Aanvraag Goedkeuren ✅
+
+**Stappen voor Autorisator:**
+
+1. Open de aanvraag detail modal
+2. Scroll naar beneden naar **"Beslissing"** sectie
+3. Vul **optioneel** een **opmerking** in over je beslissing
+   - Voorbeeld: "Goedgekeurd voor 15/12/2025"
+4. Klik op de **groene "✓ Goedkeuren"** knop
+5. Bevestig je beslissing
+6. **Success!** De aanvraag is goedgekeurd
+
+**Wat gebeurt er automatisch?**
+
+1. **Database update**:
+   - Status → **"Approved"** (goedgekeurd)
+   - Beslissing datum → Huidige datum/tijd
+   - Autorisator opmerking → Opgeslagen
+
+2. **Email naar Aanvrager** 📧:
+   ```
+   Onderwerp: Aanvraag Goedgekeurd - [Aanvraag ID]
+
+   ✅ Je aanvraag is GOEDGEKEURD!
+
+   Aanvraag: Onderhoud kraan 3
+   Goedgekeurd door: Marie Pieters
+   Datum: 25/11/2025 14:45
+
+   Opmerking autorisator:
+   "Goedgekeurd voor 15/12/2025"
+
+   [Alle aanvraag details]
+   [Tabel met vergrendelpunten]
+   ```
+
+3. **Status badge update**:
+   - In Tabel 3: Status badge wordt **groen**
+   - Tekst: **"Approved"**
+
+### 3️⃣ Fase 3B: Aanvraag Afkeuren ❌
+
+**Stappen voor Autorisator:**
+
+1. Open de aanvraag detail modal
+2. Scroll naar beneden naar **"Beslissing"** sectie
+3. Vul **verplicht** een **opmerking** in met reden van afwijzing
+   - Voorbeeld: "Onvoldoende documentatie, neem contact op"
+4. Klik op de **rode "✕ Afkeuren"** knop
+5. Bevestig je beslissing
+6. **Done!** De aanvraag is afgekeurd
+
+**Wat gebeurt er automatisch?**
+
+1. **Database update**:
+   - Status → **"Rejected"** (afgekeurd)
+   - Beslissing datum → Huidige datum/tijd
+   - Autorisator opmerking → Opgeslagen
+
+2. **Email naar Aanvrager** 📧:
+   ```
+   Onderwerp: Aanvraag Afgekeurd - [Aanvraag ID]
+
+   ❌ Je aanvraag is AFGEKEURD
+
+   Aanvraag: Onderhoud kraan 3
+   Afgekeurd door: Marie Pieters
+   Datum: 25/11/2025 14:45
+
+   Reden van afwijzing:
+   "Onvoldoende documentatie, neem contact op"
+
+   [Alle aanvraag details]
+   [Tabel met vergrendelpunten]
+   ```
+
+3. **Status badge update**:
+   - In Tabel 3: Status badge wordt **rood**
+   - Tekst: **"Rejected"**
+
+### 📝 Logging Systeem
+
+**Alle beslissingen worden gelogd met:**
+
+- ✅ **Wie**: Email van de autorisator
+- ✅ **Wanneer**: Datum en tijd van beslissing
+- ✅ **Wat**: Goedgekeurd of Afgekeurd
+- ✅ **Waarom**: Opmerking van autorisator
+- ✅ **Details**: Volledige aanvraag data en vergrendelpunten
+
+**Traceability:**
+- Elke aanvraag heeft een uniek nummer
+- Alle stappen zijn gedocumenteerd
+- Emails bevatten volledige history
+- Database bevat alle data voor audits
+
+### 🔐 Autorisatie Rechten
+
+**Wie kan aanvragen goedkeuren/afkeuren?**
+
+| Rol | Kan Beslissen? | Welke Aanvragen? |
+|-----|----------------|------------------|
+| **👤 Gebruiker (A)** | ❌ Nee | - |
+| **✅ Autorisator (B)** | ✅ Ja | Alleen aanvragen waar jij als autorisator bent geselecteerd |
+| **⚙️ Administrator (C)** | ✅ Ja | ALLE aanvragen (ook van andere autorisators) |
+| **🔧 Super User (D)** | ✅ Ja | ALLE aanvragen (ook van andere autorisators) |
+
+**Beslissing knoppen zijn alleen zichtbaar als:**
+- ✅ Je bent **Autorisator/Admin/Super User**
+- ✅ De aanvraag status is **"Pending"**
+- ✅ Je hebt de juiste rechten voor deze aanvraag
+
+> 💡 **Tip**: Administrators en Super Users kunnen alle aanvragen zien en beslissen, handig als een autorisator afwezig is!
+
+---
+
+## 📊 Aanvragen Beheren {#aanvragen-beheren}
+
+### Tabel 3: Aanvragen Overzicht (Linksonder)
+
+Deze tabel toont **al je aanvragen** (of alle aanvragen als je admin bent).
+
+**Kolommen:**
+- **Naam**: Titel van de aanvraag
+- **Datum**: Wanneer ingediend
+- **Aanvrager**: Wie heeft aangevraagd
+- **Autorisator**: Wie moet goedkeuren
+- **Status**: Huidige status (Pending/Approved/Rejected)
+- **Acties**: Knoppen om te bekijken (👁) of verwijderen (✕)
+
+### Status Badges
+
+| Status | Kleur | Betekenis |
+|--------|-------|-----------|
+| **Pending** | 🟡 Geel | In afwachting van beslissing |
+| **Approved** | 🟢 Groen | Goedgekeurd door autorisator |
+| **Rejected** | 🔴 Rood | Afgekeurd door autorisator |
+
+### Aanvraag Details Bekijken
+
+1. Klik op de **👁 (oog icon)** in de Acties kolom
+2. **Detail Modal** opent met volledige informatie:
+   - **Status badge** met datum
+   - **Aanvraag Informatie**: Naam, Installatie, Aanvrager, Autorisator
+   - **Opmerkingen**: Alle drie types (indien ingevuld)
+   - **Vergrendelpunten Tabel**: Alle geselecteerde punten
+   - **Beslissing sectie**: (alleen als status = Pending en je bent autorisator)
+
+### Aanvraag Verwijderen
+
+**⚠️ Let op**: Verwijderen is **permanent** en kan **niet ongedaan** gemaakt worden!
+
+**Stappen:**
+1. Klik op de **✕ (kruis icon)** in de Acties kolom
+2. **Bevestigings Modal** opent:
+   - ⚠️ Waarschuwing over permanent verwijderen
+   - Aanvraag details (naam, aanvrager, datum)
+   - Gele warning box met extra waarschuwing
+3. Klik op **"Ja, Verwijderen"** (rode knop) om te bevestigen
+4. Of klik op **"Annuleren"** (grijze knop) om te annuleren
+5. **Success Modal** bevestigt verwijdering
+6. Aanvraag verdwijnt uit Tabel 3
+
+**Wie kan verwijderen?**
+- ✅ **Aanvrager**: Kan eigen aanvragen verwijderen
+- ✅ **Autorisator**: Kan aanvragen verwijderen die voor hen zijn
+- ✅ **Administrator/Super User**: Kan alle aanvragen verwijderen
+
+> 💡 **Tip**: Verwijder alleen aanvragen die echt niet meer nodig zijn. Alle beslissingen en emails blijven behouden!
+
+### Aanvragen Filteren
+
+Je kunt de aanvragen lijst filteren op:
+
+**Filters beschikbaar:**
+- **Naam**: Filter op aanvraag titel
+- **Datum**: Filter op datum (type gedeeltelijke datum)
+- **Aanvrager**: Filter op aanvrager email/naam
+- **Autorisator**: Filter op autorisator email/naam
+- **Status**: Filter op status (Pending/Approved/Rejected)
+
+**Hoe te gebruiken:**
+1. Typ in het filterveld boven de kolom
+2. De lijst wordt **automatisch** gefilterd terwijl je typt
+3. Filters werken **niet hoofdlettergevoelig**
+4. Je kunt **meerdere filters tegelijk** gebruiken
+
+### Rol-Gebaseerde Filtering
+
+**Wat je ziet hangt af van je rol:**
+
+| Rol | Welke Aanvragen Zie Je? |
+|-----|------------------------|
+| **👤 Gebruiker (A)** | Alleen **jouw eigen aanvragen** (Requester Email = jouw email) |
+| **✅ Autorisator (B)** | Alleen aanvragen **die jij moet goedkeuren** (Approver Email = jouw email) |
+| **⚙️ Administrator (C)** | **ALLE aanvragen** van alle gebruikers |
+| **🔧 Super User (D)** | **ALLE aanvragen** van alle gebruikers |
+
+> 💡 **Tip**: Als autorisator zie je alleen aanvragen voor jou. Als je ook je eigen aanvragen wil zien, moet je je collega's vragen om JOU als autorisator te selecteren!
+
+---
+
+## ❓ Veelgestelde Vragen {#veelgestelde-vragen}
+
+### Algemeen
+
+**Q: Hoe krijg ik toegang tot de applicatie?**
+A: Neem contact op met je **administrator** of **IT-afdeling**. Zij maken een account voor je aan en sturen je een email met inloggegevens.
+
+**Q: Kan ik de applicatie op mijn smartphone gebruiken?**
+A: De applicatie is geoptimaliseerd voor **desktop browsers**. Mobiel gebruik is mogelijk maar niet ideaal vanwege de vier-tabellen layout.
+
+**Q: Ondersteunt de applicatie offline gebruik?**
+A: Nee, je hebt een **actieve internetverbinding** nodig. Alle data wordt opgehaald van Firebase.
+
+### Inloggen & Account
+
+**Q: Ik ben mijn wachtwoord vergeten, wat nu?**
+A: Neem contact op met je **administrator**. Zij kunnen je wachtwoord resetten en je een nieuw tijdelijk wachtwoord geven.
+
+**Q: Kan ik zelf mijn wachtwoord wijzigen?**
+A: Op dit moment niet via de applicatie. Vraag je administrator om je wachtwoord te wijzigen.
+
+**Q: Hoe weet ik welke rol ik heb?**
+A: Je rol is niet direct zichtbaar in de applicatie. Vraag je administrator of let op welke functies je kunt gebruiken (zie "Gebruikersrollen" sectie).
+
+**Q: Kan ik meerdere rollen hebben?**
+A: Nee, elke gebruiker heeft **één rol**: A, B, C of D.
+
+### Vergrendelpunten
+
+**Q: Waarom zie ik niet alle vergrendelpunten?**
+A: Je ziet **alle vergrendelpunten** van **alle installaties**. Gebruik de **filters** om te zoeken naar specifieke installaties of vergrendelpunten.
+
+**Q: Hoeveel vergrendelpunten kan ik selecteren?**
+A: Er is **geen limiet**. Je kunt zoveel vergrendelpunten selecteren als nodig voor je aanvraag.
+
+**Q: Wat gebeurt er met mijn selectie als ik uitlog?**
+A: Je selectie wordt **gewist**. Zorg dat je je aanvraag indient voordat je uitlogt!
+
+**Q: Kan ik vergrendelpunten van verschillende installaties selecteren?**
+A: Ja, maar het **Installatie veld** in het formulier zal dan "Mixed" of de eerste installatie tonen.
+
+**Q: Waarom zie ik lege rijen in de vergrendelpunten tabel?**
+A: Dit zou **niet meer** moeten gebeuren vanaf versie 2.34.2. Als je dit nog ziet, ververs de pagina (F5) of neem contact op met support.
+
+### Aanvragen
+
+**Q: Kan ik een aanvraag bewerken na het indienen?**
+A: Nee, je kunt een aanvraag **niet bewerken** na het verzenden. Je kunt alleen:
+  - De aanvraag **bekijken** (👁 icon)
+  - De aanvraag **verwijderen** (✕ icon) en opnieuw indienen
+
+**Q: Wat als ik de verkeerde autorisator heb geselecteerd?**
+A: **Verwijder** de aanvraag en dien een **nieuwe aanvraag** in met de juiste autorisator.
+
+**Q: Krijg ik een bevestiging als mijn aanvraag is goedgekeurd/afgekeurd?**
+A: Ja! Je ontvangt een **email** met de beslissing, datum, en eventuele opmerkingen van de autorisator.
+
+**Q: Hoe lang duurt het voordat een autorisator beslist?**
+A: Dit hangt af van de **beschikbaarheid** van de autorisator. Neem indien nodig rechtstreeks contact op met hen.
+
+**Q: Kan ik een aanvraag intrekken na goedkeuring?**
+A: Neem contact op met je **autorisator** of **administrator**. Zij kunnen de status handmatig aanpassen of de aanvraag verwijderen.
+
+**Q: Waarom zie ik bepaalde aanvragen niet?**
+A: Dit hangt af van je **rol**:
+  - **Gebruiker**: Ziet alleen eigen aanvragen
+  - **Autorisator**: Ziet alleen aanvragen voor hem/haar
+  - **Admin/Super User**: Ziet alle aanvragen
+
+### Autorisatie
+
+**Q: Ik ben autorisator, waarom zie ik geen beslissing knoppen?**
+A: Beslissing knoppen zijn alleen zichtbaar voor aanvragen met status **"Pending"**. Goedgekeurde/afgekeurde aanvragen kunnen niet meer gewijzigd worden.
+
+**Q: Kan ik mijn beslissing wijzigen na goedkeuren/afkeuren?**
+A: Nee, beslissingen zijn **definitief**. Neem contact op met een administrator als je een beslissing moet wijzigen.
+
+**Q: Als autorisator, kan ik mijn eigen aanvragen goedkeuren?**
+A: Ja, technisch kan dit, maar dit is **niet aanbevolen** vanwege vier-ogen principe. Vraag een collega om je aanvraag goed te keuren.
+
+**Q: Wat als een autorisator afwezig/ziek is?**
+A: Een **administrator** of **Super User** kan alle aanvragen goedkeuren/afkeuren, ook die van andere autorisators.
+
+### Emails
+
+**Q: Ik ontvang geen emails, wat kan ik doen?**
+A: Controleer:
+  1. Je **spam/junk folder**
+  2. Je **email adres** in de applicatie (vraag admin)
+  3. Email notificaties zijn **ingeschakeld** (vraag admin)
+  4. Neem contact op met IT als emails blijven missen
+
+**Q: Van welk email adres komen de notificaties?**
+A: Emails worden verstuurd vanaf: **reliabilitycmms@gmail.com** met naam "Reliability CMMS"
+
+**Q: Bevatten emails gevoelige informatie?**
+A: Emails bevatten alle aanvraag details en vergrendelpunten. Behandel emails **vertrouwelijk**.
+
+### Technisch
+
+**Q: Welke browsers worden ondersteund?**
+A: Getest op:
+  - ✅ Google Chrome 90+
+  - ✅ Mozilla Firefox 88+
+  - ✅ Microsoft Edge 90+
+  - ✅ Safari 14+
+  - ❌ Internet Explorer wordt **niet ondersteund**
+
+**Q: De applicatie laadt traag, wat kan ik doen?**
+A: Tips:
+  1. Controleer je **internetverbinding**
+  2. Sluit andere **browser tabs**
+  3. **Ververs** de pagina (F5 of Ctrl+R)
+  4. **Wis** je browser cache
+  5. Probeer een andere **browser**
+
+**Q: Ik zie een error "SyntaxError", wat betekent dit?**
+A: Dit is een **code error**. Neem contact op met IT of je administrator. Vermeld:
+  - Exacte error bericht
+  - Browser en versie
+  - Wat je aan het doen was
+
+**Q: Worden mijn gegevens veilig opgeslagen?**
+A: Ja, alle data wordt opgeslagen in **Google Firebase** (cloud database) met beveiligde verbindingen (HTTPS/SSL).
+
+---
+
+## 📞 Contact & Support {#contact}
+
+### Heb je Hulp Nodig?
+
+**Voor technische problemen:**
+- 📧 Email: [IT Support Email]
+- ☎️ Telefoon: [IT Support Nummer]
+- 💬 Teams: [IT Support Team]
+
+**Voor account problemen (wachtwoord, toegang, rollen):**
+- Neem contact op met je **Administrator**
+- Of via IT Support
+
+**Voor functionele vragen (hoe werkt de applicatie):**
+- Lees deze handleiding nogmaals
+- Vraag een collega die al ervaring heeft
+- Neem contact op met je supervisor
+
+### Feedback & Suggesties
+
+Heb je ideeën om de applicatie te verbeteren?
+
+- 📧 Stuur je suggesties naar: [Product Owner Email]
+- 💡 Of bespreek tijdens team meetings
+
+### Bug Rapporteren
+
+Als je een bug/fout vindt:
+
+1. **Noteer**:
+   - Wat je aan het doen was
+   - Exacte error bericht (maak screenshot)
+   - Browser en versie
+   - Datum en tijd
+
+2. **Rapporteer** via:
+   - IT Support
+   - Of GitHub: https://github.com/anthropics/claude-code/issues
+
+---
+
+## 📚 Appendix
+
+### Versie Geschiedenis
+
+| Versie | Datum | Wijzigingen |
+|--------|-------|-------------|
+| 1.0.0 | Nov 2025 | Eerste versie van de handleiding |
+| 2.34.3 | Nov 25, 2025 | Huidige applicatie versie |
+
+### Documentatie
+
+- **Readme.html**: Technische documentatie voor developers
+- **Handleiding.html**: Deze gebruikershandleiding
+
+### Nuttige Links
+
+- Applicatie URL: [Krijg je van IT]
+- Firebase Database: [Voor administrators]
+- GitHub Repository: [Voor developers]
+
+---
+
+**🎉 Succes met het gebruik van Aanvragen Rimses!**
+
+*Laatst bijgewerkt: November 25, 2025*
+*Versie: 1.0.0*
