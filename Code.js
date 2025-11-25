@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.33.2-EMAIL-LOCKED-POINTS
+// Version: 2.35.1-CRITICALITEIT-SINGLE-PANEL
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====

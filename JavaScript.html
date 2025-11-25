@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.34.3-FIX-BABEL-SYNTAX";
+//version = "2.35.1-CRITICALITEIT-SINGLE-PANEL";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -14,7 +14,7 @@
     
     // User and data state
     const [userName, setUserName] = React.useState('');
-    const [userRole, setUserRole] = React.useState('A'); // A = user (default for security), B = authorizer, C = admin, D = super user
+    const [userRole, setUserRole] = React.useState('A'); // A = user (default for security), B = authorizer, C = admin, D = super user, T = technical admin
     const [tableData, setTableData] = React.useState({ headers: [], data: [] });
     const [filteredTableData, setFilteredTableData] = React.useState([]);
     const [showTable, setShowTable] = React.useState(false);
@@ -23,7 +23,10 @@
 
     // Admin menu state
     const [isAdminMenuExpanded, setIsAdminMenuExpanded] = React.useState(false);
-    const [activeAdminView, setActiveAdminView] = React.useState(null); // null, 'users', 'debug'
+    const [activeAdminView, setActiveAdminView] = React.useState(null); // null, 'users', 'debug', 'criticaliteit'
+
+    // Criticaliteit view state
+    const [activeCriticaliteitView, setActiveCriticaliteitView] = React.useState(false);
 
     // Users management state
     const [users, setUsers] = React.useState([]);
@@ -131,8 +134,8 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.34.3-FIX-BABEL-SYNTAX";
-    const stylesheetVersion = "1.2.0";
+    const version = "2.35.1-CRITICALITEIT-SINGLE-PANEL";
+    const stylesheetVersion = "1.3.1";
 
     // ===== HELPER FUNCTIONS =====
 
@@ -596,10 +599,18 @@
               setIsLoggedIn(true);
               // Set username from login (werkt ongeacht deployment setting)
               setUserName(username);
-              // Set user role (A = user, B = authorizer, C = admin)
-              setUserRole(result.role || 'A'); // Default to user if role not provided
-              // Direct alle data laden (gebruikt prefetched data indien beschikbaar)
-              loadAllTableData();
+              // Set user role (A = user, B = authorizer, C = admin, D = super user, T = technical admin)
+              const role = result.role || 'A'; // Default to user if role not provided
+              setUserRole(role);
+
+              // If role is T (technical admin), go directly to Criticaliteit view
+              if (role === 'T') {
+                setActiveCriticaliteitView(true);
+                setShowTable(true); // Enable main content
+              } else {
+                // For other roles, load normal table data
+                loadAllTableData();
+              }
             } else if (result.emptyPassword) {
               // Password is empty - show modal
               setIsEmptyPasswordModalOpen(true);
@@ -1946,6 +1957,7 @@
                   <option value="A">Gebruiker (A)</option>
                   <option value="B">Autorisator (B)</option>
                   <option value="C">Administrator (C)</option>
+                  <option value="T">Technisch Beheerder (T)</option>
                   {/* Role D (Super User) is only visible if the user being edited already has role D */}
                   {/* This prevents admins from promoting users to Super User role */}
                   {/* Only database admins can assign role D manually */}
@@ -2290,6 +2302,7 @@
                   <option value="A">A - Gebruiker</option>
                   <option value="B">B - Autorisator</option>
                   <option value="C">C - Admin</option>
+                  <option value="T">T - Technisch Beheerder</option>
                   {/* Role D (Super User) is not available in Add User form for security reasons */}
                   {/* Super User role must be assigned manually in the database */}
                 </select>
@@ -3703,14 +3716,40 @@
 
             {/* Installatie dropdown verwijderd - toon nu alle data zonder filter */}
 
-            {!isSidebarCollapsed && (
-              <button className="nav-button active">
+            {/* Vergrendelpunten menu - Hidden for Role T (technical admin) */}
+            {!isSidebarCollapsed && userRole !== 'T' && (
+              <button
+                className={`nav-button ${!activeCriticaliteitView ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveCriticaliteitView(false);
+                  setActiveAdminView(null);
+                }}
+              >
                 <span className="icon">
                   <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
                     <path fill="currentColor" d="M6.906.664a1.75 1.75 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z"/>
                   </svg>
                 </span>
                 Vergrendelpunten
+              </button>
+            )}
+
+            {/* Criticaliteit menu - Visible for Role C (admin), D (super user), and T (technical admin) */}
+            {!isSidebarCollapsed && (userRole === 'C' || userRole === 'D' || userRole === 'T') && (
+              <button
+                className={`nav-button ${activeCriticaliteitView ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveCriticaliteitView(true);
+                  setActiveAdminView(null);
+                  setIsAdminMenuExpanded(false);
+                }}
+              >
+                <span className="icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
+                    <path fill="currentColor" d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0M9 11a1 1 0 1 1-2 0a1 1 0 0 1 2 0"/>
+                  </svg>
+                </span>
+                Criticaliteit
               </button>
             )}
 
@@ -3801,9 +3840,9 @@
             <header>
               <div className="welcome">Welkom: {userName}</div>
               <div className="header-actions">
-                {showTable && (
-                  <button 
-                    className="reset-layout-btn" 
+                {showTable && !activeCriticaliteitView && (
+                  <button
+                    className="reset-layout-btn"
                     onClick={() => {
                       setColumnSplit(50);
                       setRowSplit(60);
@@ -3816,8 +3855,48 @@
                 <button className="about" onClick={handleOpenAboutModal}>About</button>
               </div>
             </header>
-            
-            {isLoadingTable ? (
+
+            {activeCriticaliteitView ? (
+              <div className="criticaliteit-container">
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: '600',
+                  marginBottom: '20px',
+                  color: '#333',
+                  textAlign: 'center'
+                }}>
+                  Criticaliteit Beheer
+                </h2>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 'calc(100vh - 220px)',
+                  padding: '20px'
+                }}>
+                  {/* Single centered table container */}
+                  <div className="criticaliteit-table-container" style={{
+                    backgroundColor: 'white',
+                    border: '2px solid #e0e0e0',
+                    borderRadius: '8px',
+                    padding: '20px',
+                    width: '90%',
+                    maxWidth: '1400px',
+                    height: '80%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#999',
+                    fontSize: '18px',
+                    fontWeight: '500',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    Criticaliteit Tabel (placeholder)
+                  </div>
+                </div>
+              </div>
+            ) : isLoadingTable ? (
               <div className="loading-spinner">
                 <div className="spinner"></div>
                 <p>Bezig met laden van data...</p>
@@ -4702,13 +4781,16 @@
                                       fontWeight: '600',
                                       backgroundColor: user.ROLE === 'D' ? '#c8e6c9' :
                                                       user.ROLE === 'C' ? '#e3f2fd' :
+                                                      user.ROLE === 'T' ? '#ffe0b2' :
                                                       user.ROLE === 'B' ? '#fff3cd' : '#f3e5f5',
                                       color: user.ROLE === 'D' ? '#2e7d32' :
                                              user.ROLE === 'C' ? '#1565c0' :
+                                             user.ROLE === 'T' ? '#e65100' :
                                              user.ROLE === 'B' ? '#856404' : '#6a1b9a'
                                     }}>
                                       {user.ROLE === 'D' ? 'Super User' :
                                        user.ROLE === 'C' ? 'Administrator' :
+                                       user.ROLE === 'T' ? 'Technisch Beheerder' :
                                        user.ROLE === 'B' ? 'Autorisator' : 'Gebruiker'}
                                     </span>
                                   </td>
