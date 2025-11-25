@@ -9,10 +9,10 @@
 > 🔧 **Voor developers en IT**: Deze Readme bevat technische documentatie, architectuur en ontwikkelingsgeschiedenis.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.34.3-FIX-BABEL-SYNTAX
-- **CSS Versie**: 1.2.0
+- **JavaScript Versie**: 2.38.1-CRITICALITEIT-ADD-BUTTON
+- **CSS Versie**: 1.3.1
 - **Framework**: React (via Babel transpiler in browser)
-- **Backend**: Google Apps Script + Firebase (3 databases)
+- **Backend**: Google Apps Script + Firebase (4 databases)
 
 ---
 
@@ -29,6 +29,7 @@
 - **Firebase Realtime Database #1** - Vergrendelpunten data (`aanvragen-a3d22`)
 - **Firebase Realtime Database #2** - Aanvragen data (`aanvragen-groepen`)
 - **Firebase Realtime Database #3** - Gebruikers/Autorisators data (`users-6e913`)
+- **Firebase Realtime Database #4** - Criticaliteit data (`criticality-32c16`)
 
 ---
 
@@ -39,10 +40,10 @@ aanvragen-rimses/
 ├── Readme.html                  # Technische documentatie (dit bestand)
 ├── Handleiding.html             # Gebruikershandleiding (nieuw!)
 ├── Index.html                   # Main HTML bestand
-├── JavaScript.html              # React applicatie code (v2.34.3)
-├── Stylesheet.html              # CSS styles (v1.2.0)
+├── JavaScript.html              # React applicatie code (v2.38.1)
+├── Stylesheet.html              # CSS styles (v1.3.1)
 ├── debug.html                   # Debug & test panel (alleen voor Super Users)
-└── Code.js                      # Google Apps Script backend (v2.8.9)
+└── Code.js                      # Google Apps Script backend (v2.38.1)
 ```
 
 **Belangrijke Bestanden:**
@@ -830,7 +831,34 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### 🎯 Sessie Overzicht: November 25, 2025
+### 🎯 Sessie Overzicht: November 25, 2025 (Deel 2)
+
+Deze ontwikkelsessie (v2.35.1 → v2.38.1) bevatte de volledige implementatie van het **Criticaliteit Management Systeem**:
+
+**Nieuwe Features:**
+- ✅ **Rol T (Technisch Beheerder)** - Toegang tot alleen Criticaliteit menu
+- ✅ **Criticaliteit Menu** - Warning triangle icon, zichtbaar voor rollen C, D, T
+- ✅ **Firebase Criticality Database** - Integratie met 4e Firebase database
+- ✅ **Color-coded Badges** - QS0 (light blue), QS2 (dark blue), QS3 (orange)
+- ✅ **Detail Modal** - Eye icon voor volledige record weergave
+- ✅ **Date Formatting** - Human-readable datum (DD MMM YYYY)
+- ✅ **Sticky Headers** - Proper positioning zonder overlap
+- ✅ **Pagination** - 20 items per pagina met navigation controls
+- ✅ **Add Button** - '+' knop voor nieuwe criticaliteit ingave (voorbereid)
+
+**Technical Improvements:**
+- 🔧 **Sticky Header Fix** - Per-cell positioning i.p.v. thead-level
+- 🔧 **Date Helper Function** - `formatCriticalityDate()` voor consistente formatting
+- 🔧 **Pagination Logic** - `.slice()` based page filtering
+- 🔧 **Color-coding System** - Consistent badge styling voor alle categorieën
+
+**Database Structure:**
+- 📊 Firebase Criticality path: `/SpareParts` (root level)
+- 📊 10 records met ID, Naam, RemaxNummer, Categorie, Machine Crit, Risico, Status, etc.
+
+---
+
+### 🎯 Sessie Overzicht: November 25, 2025 (Deel 1)
 
 Deze ontwikkelsessie (v2.34.0 → v2.34.3) bevatte belangrijke updates:
 
@@ -853,7 +881,229 @@ Deze ontwikkelsessie (v2.34.0 → v2.34.3) bevatte belangrijke updates:
 
 ---
 
-### v2.34.3-FIX-BABEL-SYNTAX (Current)
+### v2.38.1-CRITICALITEIT-ADD-BUTTON (Current)
+**Release Date**: November 25, 2025
+
+**Feature: Add Button voor Nieuwe Criticaliteit ➕**
+- ✅ **'+' Knop toegevoegd** naast totaal tekst in Criticaliteit tabel header
+- 🎨 **Oranje accent** (#ff9800) consistent met Criticaliteit branding
+- 🖱️ **Hover effect** - Border verandert naar oranje
+- 📝 **Tooltip**: "Nieuwe criticaliteit toevoegen"
+- 🔮 **Voorbereid**: onClick handler met TODO comment voor modal implementatie
+
+**Implementatie Details** ([JavaScript.html:3979-4010](JavaScript.html#L3979-L4010)):
+- 28x28px knop met witte achtergrond
+- SVG '+' icon in oranje
+- Dezelfde styling als Users '+' knop maar met oranje i.p.v. geel
+- Smooth transitions (0.2s)
+
+---
+
+### v2.38.0-CRITICALITEIT-PAGINATION
+**Release Date**: November 25, 2025
+
+**Feature: Pagination voor Criticaliteit Tabel 📄**
+- ✅ **20 items per pagina** - Verbeterde performance en overzicht
+- ✅ **Pagination controls** - Eerste, Vorige, Volgende, Laatste knoppen
+- ✅ **Page indicator** - "Pagina X van Y" in centrum
+- ✅ **Vergroot container** - Van 85% naar 92% hoogte
+- ✅ **Smart filtering** - `.slice()` based page data filtering
+
+**Pagination Features**:
+- Disabled state voor eerste/laatste pagina (grijs met not-allowed cursor)
+- Totaal items counter met pagina info: "Totaal: 10 items (Pagina 1 van 1)"
+- Navigation: « Eerste | ‹ Vorige | Pagina X van Y | Volgende › | Laatste »
+
+**Implementation** ([JavaScript.html:34-35](JavaScript.html#L34-L35), [JavaScript.html:4196-4276](JavaScript.html#L4196-L4276)):
+```javascript
+const [criticalityCurrentPage, setCriticalityCurrentPage] = React.useState(1);
+const criticalityItemsPerPage = 20;
+```
+
+---
+
+### v2.37.2-CRITICALITEIT-STICKY-HEADER-FIX
+**Release Date**: November 25, 2025
+
+**Bug Fix: Sticky Header Overlap Opgelost 🔧**
+- ✅ **Per-cell sticky positioning** - Verplaatst van `<thead>` naar elke `<th>`
+- ✅ **Geen overlap meer** - Headers blijven correct boven tbody rijen
+- ✅ **Betere spacing** - Padding verhoogd van 8px naar 10px
+- ✅ **Consistent met Aanvragen** - Volgt zelfde pattern als Aanvragen tabel
+
+**Het Probleem:**
+- Sticky positioning op `<thead>` niveau veroorzaakte overlap met eerste data rij
+- Headers leken "door" de eerste tbody rij heen te schemeren
+
+**De Oplossing** ([JavaScript.html:3988-4099](JavaScript.html#L3988-L4099)):
+- Elke `<th>` krijgt eigen sticky properties:
+  - `position: 'sticky'`
+  - `top: 0`
+  - `zIndex: 10`
+  - `backgroundColor: '#f5f5f5'`
+
+---
+
+### v2.37.1-CRITICALITEIT-DATE-FORMAT-TABLE-HEADERS
+**Release Date**: November 25, 2025
+
+**Feature: Verbeterde Datum Formatting & Headers 📅**
+- ✅ **Human-readable dates** - "29 okt 2025" i.p.v. ISO timestamp
+- ✅ **Nederlandse maanden** - jan, feb, mrt, apr, mei, jun, jul, aug, sep, okt, nov, dec
+- ✅ **Verkorte headers** - "Remax Nr" → "Remax", "Categorie" → "Cat.", "Machine Crit" → "Mach. Crit"
+- ✅ **Kleinere font** - Headers van 14px naar 12px
+
+**Nieuwe Helper Function** ([JavaScript.html:182-195](JavaScript.html#L182-L195)):
+```javascript
+const formatCriticalityDate = (isoString) => {
+  const date = new Date(isoString);
+  const months = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const day = date.getDate();
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+```
+
+**Gebruikt in:**
+- Tabel datum kolom ([JavaScript.html:4091](JavaScript.html#L4091))
+- Detail modal datum veld ([JavaScript.html:6751](JavaScript.html#L6751))
+
+---
+
+### v2.37.0-CRITICALITEIT-DETAIL-MODAL
+**Release Date**: November 25, 2025
+
+**Feature: Detail Modal met Eye Icon 👁️**
+- ✅ **Blue eye icon** in ID kolom voor elke record
+- ✅ **Comprehensive modal** - Toont alle record velden (ook verborgen kolommen)
+- ✅ **Orange gradient header** - `linear-gradient(135deg, #ff9800 0%, #f57c00 100%)`
+- ✅ **Organized sections** - Main Info, Aanvullende Info, Status & Metadata
+- ✅ **Color-coded badges** - Consistent met tabel styling
+
+**Modal Structure** ([JavaScript.html:6467-6755](JavaScript.html#L6467-L6755)):
+1. **Header**: Orange gradient met titel en sluit knop (✕)
+2. **Main Info Grid**: ID & Naam (full width), Remax Nr, Categorie (2 cols)
+3. **Color-coded Badges**: Categorie, Machine Crit, Risico
+4. **Aanvullende Informatie**: 6 verborgen velden in 2-column grid
+   - Falen Frequentie, Falen Severity
+   - Functie Criticiteit, Levertijd
+   - Kosten, Aankoop Factor
+5. **Status & Metadata Footer**: Status, Datum, User (3 cols)
+
+**Eye Icon Implementation** ([JavaScript.html:3997-4026](JavaScript.html#L3997-L4026)):
+- Blue button (#2196f3) met eye SVG icon
+- Flexbox layout met 8px gap tussen icon en ID
+- onClick handler: `handleOpenCriticalityDetail(item)`
+
+---
+
+### v2.36.2-CRITICALITEIT-SIMPLIFIED-COLUMNS
+**Release Date**: November 25, 2025
+
+**Feature: Simplified Table Columns 📊**
+- ✅ **6 kolommen verwijderd** uit tabel view:
+  - Falen Freq, Falen Severity, Functie Crit
+  - Levertijd, Kosten, Aankoop Factor
+- ✅ **Date-only formatting** - Tijd verwijderd uit Datum kolom
+- ✅ **9 zichtbare kolommen** - ID, Naam, Remax Nr, Categorie, Machine Crit, Risico, Status, Datum, User
+- ✅ **Alle data behouden** - Verborgen kolommen beschikbaar in detail modal
+
+**Simplification Rationale:**
+- Verbeterde leesbaarheid en overzicht
+- Focus op meest relevante velden
+- Behoud van volledige data in detail view
+
+---
+
+### v2.36.1-CRITICALITEIT-COLOR-CODING
+**Release Date**: November 25, 2025
+
+**Feature: Color-coded Category Badges 🎨**
+- ✅ **Categorie badges**:
+  - QS0: Light blue (#bbdefb) met dark blue text (#0d47a1)
+  - QS2: Dark blue (#1976d2) met white text
+  - QS3: Orange (#ff9800) met white text
+- ✅ **Machine Crit badges**:
+  - AA: Green (#c8e6c9) met dark green text (#2e7d32)
+  - A: Yellow (#fff3cd) met dark yellow text (#856404)
+  - Other: Red (#f8d7da) met dark red text (#721c24)
+- ✅ **Risico badges**: A (green), B (yellow), C (red)
+- ✅ **Status badges**: Voltooid (green), In behandeling (yellow)
+
+**Badge Styling** ([JavaScript.html:4028-4039](JavaScript.html#L4028-L4039)):
+```javascript
+backgroundColor: item.Categorie === 'QS0' ? '#bbdefb' :
+                 item.Categorie === 'QS2' ? '#1976d2' :
+                 item.Categorie === 'QS3' ? '#ff9800' : '#e0e0e0',
+color: item.Categorie === 'QS0' ? '#0d47a1' :
+       item.Categorie === 'QS2' ? '#ffffff' :
+       item.Categorie === 'QS3' ? '#ffffff' : '#666'
+```
+
+---
+
+### v2.36.0-CRITICALITEIT-FIREBASE-INTEGRATION
+**Release Date**: November 25, 2025
+
+**Feature: Firebase Criticality Database Integration 🔥**
+- ✅ **4e Firebase database** toegevoegd aan applicatie
+- ✅ **getCriticalityData()** functie in Google Apps Script
+- ✅ **Data path discovery** - `/SpareParts` key op root level
+- ✅ **10 criticaliteit items** geladen en getoond in tabel
+- ✅ **Extensive debugging** - Console logging voor data structure analysis
+
+**Firebase Configuration** ([Code.js:21-23](Code.js#L21-L23)):
+```javascript
+const FIREBASE_CRITICALITY_URL = 'https://criticality-32c16-default-rtdb.europe-west1.firebasedatabase.app';
+const FIREBASE_CRITICALITY_SECRET = 'uU8khW9s4Zg4mAcPSjwuXhNfBNAtxLrV4tBHtftP';
+```
+
+**Data Structure Discovery**:
+- Root path fetch: `/.json` i.p.v. `/criticality.json`
+- Data onder `SpareParts` key op root level
+- Fallback logic voor toekomstige structuur wijzigingen
+
+**Debug Process** ([Code.js:2643-2702](Code.js#L2643-L2702)):
+1. Fetch root path om structuur te ontdekken
+2. Log alle root keys
+3. Check voor `SpareParts` key
+4. Convert Firebase object naar array met `firebaseKey`
+5. Return data array voor frontend
+
+---
+
+### v2.35.1-CRITICALITEIT-MENU-ROLE-T
+**Release Date**: November 25, 2025
+
+**Feature: Criticaliteit Menu & Rol T 🛑**
+- ✅ **Nieuwe Rol T** (Technisch Beheerder) - Selecteerbaar bij nieuwe gebruikers
+- ✅ **Criticaliteit menu item** - Warning triangle SVG icon
+- ✅ **Role-based visibility** - Menu zichtbaar voor rollen C, D, en T
+- ✅ **Restricted access** - Rol T ziet alleen Criticaliteit menu (geen Vergrendelpunten/Aanvragen)
+- ✅ **Single centered table** - 90% width, 80% height placeholder voor tabel
+
+**Menu Icon** ([JavaScript.html:3756-3774](JavaScript.html#L3756-L3774)):
+```javascript
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
+  <path fill="currentColor" d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Z..."/>
+</svg>
+```
+
+**Login Logic for Role T** ([JavaScript.html:608-613](JavaScript.html#L608-L613)):
+```javascript
+if (role === 'T') {
+  setActiveCriticaliteitView(true);
+  setShowTable(true);
+  fetchCriticalityData();
+} else {
+  loadAllTableData();
+}
+```
+
+---
+
+### v2.34.3-FIX-BABEL-SYNTAX
 **Release Date**: November 25, 2025
 
 **Bug Fix: Babel Standalone 6 Syntax Error 🔧**

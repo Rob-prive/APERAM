@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.37.2-CRITICALITEIT-STICKY-HEADER-FIX
+// Version: 2.38.1-CRITICALITEIT-ADD-BUTTON
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====

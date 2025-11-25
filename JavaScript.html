@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.37.2-CRITICALITEIT-STICKY-HEADER-FIX";
+//version = "2.38.1-CRITICALITEIT-ADD-BUTTON";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -31,6 +31,8 @@
     const [isLoadingCriticality, setIsLoadingCriticality] = React.useState(false);
     const [isCriticalityDetailModalOpen, setIsCriticalityDetailModalOpen] = React.useState(false);
     const [selectedCriticalityItem, setSelectedCriticalityItem] = React.useState(null);
+    const [criticalityCurrentPage, setCriticalityCurrentPage] = React.useState(1);
+    const criticalityItemsPerPage = 20;
 
     // Users management state
     const [users, setUsers] = React.useState([]);
@@ -138,7 +140,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.37.2-CRITICALITEIT-STICKY-HEADER-FIX";
+    const version = "2.38.1-CRITICALITEIT-ADD-BUTTON";
     const stylesheetVersion = "1.3.1";
 
     // ===== HELPER FUNCTIONS =====
@@ -3931,7 +3933,7 @@
                     padding: '20px',
                     width: '95%',
                     maxWidth: '1600px',
-                    height: '85%',
+                    height: '92%',
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                     transition: 'all 0.2s ease',
                     display: 'flex',
@@ -3970,8 +3972,42 @@
                           justifyContent: 'space-between',
                           alignItems: 'center'
                         }}>
-                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
-                            Totaal: {criticalityData.length} items
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                              Totaal: {criticalityData.length} items (Pagina {criticalityCurrentPage} van {Math.ceil(criticalityData.length / criticalityItemsPerPage)})
+                            </span>
+                            <button
+                              onClick={() => {
+                                console.log('Nieuwe criticaliteit toevoegen - TODO');
+                                // TODO: Open modal voor nieuwe criticaliteit ingave
+                              }}
+                              title="Nieuwe criticaliteit toevoegen"
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                backgroundColor: 'white',
+                                border: '2px solid #e0e0e0',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s',
+                                padding: 0
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                e.currentTarget.style.borderColor = '#ff9800';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.backgroundColor = 'white';
+                                e.currentTarget.style.borderColor = '#e0e0e0';
+                              }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 3V13M3 8H13" stroke="#ff9800" strokeWidth="2.5" strokeLinecap="round"/>
+                              </svg>
+                            </button>
                           </div>
                         </div>
                         <div style={{
@@ -4098,7 +4134,9 @@
                               </tr>
                             </thead>
                             <tbody>
-                              {criticalityData.map((item, index) => (
+                              {criticalityData
+                                .slice((criticalityCurrentPage - 1) * criticalityItemsPerPage, criticalityCurrentPage * criticalityItemsPerPage)
+                                .map((item, index) => (
                                 <tr key={item.firebaseKey || index} style={{
                                   backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
                                   transition: 'background-color 0.15s'
@@ -4188,6 +4226,87 @@
                               ))}
                             </tbody>
                           </table>
+                        </div>
+                        {/* Pagination Controls */}
+                        <div style={{
+                          marginTop: '15px',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <button
+                            onClick={() => setCriticalityCurrentPage(1)}
+                            disabled={criticalityCurrentPage === 1}
+                            style={{
+                              padding: '8px 12px',
+                              border: '1px solid #ddd',
+                              borderRadius: '4px',
+                              backgroundColor: criticalityCurrentPage === 1 ? '#f5f5f5' : 'white',
+                              color: criticalityCurrentPage === 1 ? '#999' : '#333',
+                              cursor: criticalityCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '500'
+                            }}
+                          >
+                            &laquo; Eerste
+                          </button>
+                          <button
+                            onClick={() => setCriticalityCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={criticalityCurrentPage === 1}
+                            style={{
+                              padding: '8px 12px',
+                              border: '1px solid #ddd',
+                              borderRadius: '4px',
+                              backgroundColor: criticalityCurrentPage === 1 ? '#f5f5f5' : 'white',
+                              color: criticalityCurrentPage === 1 ? '#999' : '#333',
+                              cursor: criticalityCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '500'
+                            }}
+                          >
+                            &lsaquo; Vorige
+                          </button>
+                          <span style={{
+                            padding: '8px 16px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: '#333'
+                          }}>
+                            Pagina {criticalityCurrentPage} van {Math.ceil(criticalityData.length / criticalityItemsPerPage)}
+                          </span>
+                          <button
+                            onClick={() => setCriticalityCurrentPage(prev => Math.min(Math.ceil(criticalityData.length / criticalityItemsPerPage), prev + 1))}
+                            disabled={criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage)}
+                            style={{
+                              padding: '8px 12px',
+                              border: '1px solid #ddd',
+                              borderRadius: '4px',
+                              backgroundColor: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? '#f5f5f5' : 'white',
+                              color: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? '#999' : '#333',
+                              cursor: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '500'
+                            }}
+                          >
+                            Volgende &rsaquo;
+                          </button>
+                          <button
+                            onClick={() => setCriticalityCurrentPage(Math.ceil(criticalityData.length / criticalityItemsPerPage))}
+                            disabled={criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage)}
+                            style={{
+                              padding: '8px 12px',
+                              border: '1px solid #ddd',
+                              borderRadius: '4px',
+                              backgroundColor: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? '#f5f5f5' : 'white',
+                              color: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? '#999' : '#333',
+                              cursor: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '500'
+                            }}
+                          >
+                            Laatste &raquo;
+                          </button>
                         </div>
                       </React.Fragment>
                     )}
