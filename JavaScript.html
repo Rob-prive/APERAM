@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.35.1-CRITICALITEIT-SINGLE-PANEL";
+//version = "2.36.2-CRITICALITEIT-SIMPLIFIED-COLUMNS";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -27,6 +27,8 @@
 
     // Criticaliteit view state
     const [activeCriticaliteitView, setActiveCriticaliteitView] = React.useState(false);
+    const [criticalityData, setCriticalityData] = React.useState([]);
+    const [isLoadingCriticality, setIsLoadingCriticality] = React.useState(false);
 
     // Users management state
     const [users, setUsers] = React.useState([]);
@@ -134,7 +136,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.35.1-CRITICALITEIT-SINGLE-PANEL";
+    const version = "2.36.2-CRITICALITEIT-SIMPLIFIED-COLUMNS";
     const stylesheetVersion = "1.3.1";
 
     // ===== HELPER FUNCTIONS =====
@@ -607,6 +609,7 @@
               if (role === 'T') {
                 setActiveCriticaliteitView(true);
                 setShowTable(true); // Enable main content
+                fetchCriticalityData(); // Load criticality data
               } else {
                 // For other roles, load normal table data
                 loadAllTableData();
@@ -724,6 +727,23 @@
           setUsers([]);
         })
         .getUsers();
+    };
+
+    const fetchCriticalityData = () => {
+      setIsLoadingCriticality(true);
+
+      google.script.run
+        .withSuccessHandler((data) => {
+          setIsLoadingCriticality(false);
+          setCriticalityData(data || []);
+          console.log('✓ Criticality data loaded:', (data || []).length, 'items');
+        })
+        .withFailureHandler((error) => {
+          setIsLoadingCriticality(false);
+          console.error('Error fetching criticality data:', error);
+          setCriticalityData([]);
+        })
+        .getCriticalityData();
     };
 
     // User edit handlers
@@ -3742,6 +3762,7 @@
                   setActiveCriticaliteitView(true);
                   setActiveAdminView(null);
                   setIsAdminMenuExpanded(false);
+                  fetchCriticalityData();
                 }}
               >
                 <span className="icon">
@@ -3880,19 +3901,146 @@
                     border: '2px solid #e0e0e0',
                     borderRadius: '8px',
                     padding: '20px',
-                    width: '90%',
-                    maxWidth: '1400px',
-                    height: '80%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#999',
-                    fontSize: '18px',
-                    fontWeight: '500',
+                    width: '95%',
+                    maxWidth: '1600px',
+                    height: '85%',
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
                   }}>
-                    Criticaliteit Tabel (placeholder)
+                    {isLoadingCriticality ? (
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: '#999'
+                      }}>
+                        <div className="spinner"></div>
+                        <p>Bezig met laden van criticaliteit data...</p>
+                      </div>
+                    ) : criticalityData.length === 0 ? (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: '#999',
+                        fontSize: '18px',
+                        fontWeight: '500'
+                      }}>
+                        Geen criticaliteit data beschikbaar
+                      </div>
+                    ) : (
+                      <React.Fragment>
+                        <div style={{
+                          marginBottom: '15px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                            Totaal: {criticalityData.length} items
+                          </div>
+                        </div>
+                        <div style={{
+                          flex: 1,
+                          overflow: 'auto',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '4px'
+                        }}>
+                          <table style={{
+                            width: '100%',
+                            borderCollapse: 'collapse',
+                            fontSize: '13px'
+                          }}>
+                            <thead style={{
+                              position: 'sticky',
+                              top: 0,
+                              backgroundColor: '#f5f5f5',
+                              zIndex: 10
+                            }}>
+                              <tr>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '60px' }}>ID</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '200px' }}>Naam</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '120px' }}>Remax Nr</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '100px' }}>Categorie</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '120px' }}>Machine Crit</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '100px' }}>Risico</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '120px' }}>Status</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '120px' }}>Datum</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '2px solid #ddd', fontWeight: '600', minWidth: '200px' }}>User</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {criticalityData.map((item, index) => (
+                                <tr key={item.firebaseKey || index} style={{
+                                  backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
+                                  transition: 'background-color 0.15s'
+                                }}>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0' }}>{item.ID || '-'}</td>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0', fontWeight: '500' }}>{item.Naam || '-'}</td>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0' }}>{item.RemaxNummer || '-'}</td>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0' }}>
+                                    <span style={{
+                                      backgroundColor: item.Categorie === 'QS0' ? '#bbdefb' : item.Categorie === 'QS2' ? '#1976d2' : item.Categorie === 'QS3' ? '#ff9800' : '#e0e0e0',
+                                      color: item.Categorie === 'QS0' ? '#0d47a1' : item.Categorie === 'QS2' ? '#ffffff' : item.Categorie === 'QS3' ? '#ffffff' : '#666',
+                                      padding: '3px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontWeight: '600'
+                                    }}>
+                                      {item.Categorie || '-'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0' }}>
+                                    <span style={{
+                                      backgroundColor: item.MachineCrit === 'AA' ? '#c8e6c9' : item.MachineCrit === 'A' ? '#fff3cd' : '#f8d7da',
+                                      color: item.MachineCrit === 'AA' ? '#2e7d32' : item.MachineCrit === 'A' ? '#856404' : '#721c24',
+                                      padding: '3px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontWeight: '600'
+                                    }}>
+                                      {item.MachineCrit || '-'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0' }}>
+                                    <span style={{
+                                      backgroundColor: item.Risico === 'A' ? '#c8e6c9' : item.Risico === 'B' ? '#fff3cd' : '#f8d7da',
+                                      color: item.Risico === 'A' ? '#2e7d32' : item.Risico === 'B' ? '#856404' : '#721c24',
+                                      padding: '3px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontWeight: '600'
+                                    }}>
+                                      {item.Risico || '-'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0' }}>
+                                    <span style={{
+                                      backgroundColor: item.Status === 'Voltooid' ? '#c8e6c9' : item.Status === 'In behandeling' ? '#fff3cd' : '#e0e0e0',
+                                      color: item.Status === 'Voltooid' ? '#2e7d32' : item.Status === 'In behandeling' ? '#856404' : '#666',
+                                      padding: '3px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '11px',
+                                      fontWeight: '600'
+                                    }}>
+                                      {item.Status || '-'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0' }}>{item.Datum ? item.Datum.split(' ')[0] : '-'}</td>
+                                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #e0e0e0', fontSize: '12px', color: '#666' }}>{item.User || '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </React.Fragment>
+                    )}
                   </div>
                 </div>
               </div>

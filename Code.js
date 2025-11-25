@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.35.1-CRITICALITEIT-SINGLE-PANEL
+// Version: 2.36.2-CRITICALITEIT-SIMPLIFIED-COLUMNS
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -18,6 +18,10 @@ const FIREBASE_AANVRAGEN_SECRET = 'Cv5y8Dk4hPEGbjAiilKeReRvijqECnUu89qSY2TZ';
 // Firebase for Users database
 const FIREBASE_USERS_URL = 'https://users-6e913.firebaseio.com';
 const FIREBASE_USERS_SECRET = 'BBcmkVVW6jrsfA3GSJI0f7NovJNJ8yN8lKOQRzrK';
+
+// Firebase for Criticaliteit database
+const FIREBASE_CRITICALITY_URL = 'https://criticality-32c16-default-rtdb.europe-west1.firebasedatabase.app';
+const FIREBASE_CRITICALITY_SECRET = 'uU8khW9s4Zg4mAcPSjwuXhNfBNAtxLrV4tBHtftP';
 
 // ===== HELPER FUNCTIONS =====
 
@@ -2628,4 +2632,96 @@ function prefetchAllData() {
 function refreshAllCaches() {
   fetchAndCacheInstallations();
   return { success: true };
+}
+
+// ===== CRITICALITY DATA FUNCTIONS =====
+
+/**
+ * Fetch all criticality data from Firebase
+ * @returns {Array} Array of criticality objects
+ */
+function getCriticalityData() {
+  try {
+    console.log('🔍 [DEBUG] getCriticalityData: Starting fetch...');
+    console.log('🔍 [DEBUG] Firebase URL:', FIREBASE_CRITICALITY_URL);
+
+    // Try root path to see all available data
+    const url = `${FIREBASE_CRITICALITY_URL}/.json?auth=${FIREBASE_CRITICALITY_SECRET}`;
+    console.log('🔍 [DEBUG] Full URL (without secret):', url.replace(FIREBASE_CRITICALITY_SECRET, '***SECRET***'));
+    console.log('🔍 [DEBUG] Trying root path to discover data structure...');
+
+    const response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      muteHttpExceptions: true
+    });
+
+    const responseCode = response.getResponseCode();
+    console.log('🔍 [DEBUG] Response code:', responseCode);
+
+    if (responseCode !== 200) {
+      console.error('❌ Firebase Criticality error:', responseCode, response.getContentText());
+      return [];
+    }
+
+    const responseText = response.getContentText();
+    console.log('🔍 [DEBUG] Response length:', responseText.length, 'characters');
+    console.log('🔍 [DEBUG] Response preview (first 200 chars):', responseText.substring(0, 200));
+
+    const data = JSON.parse(responseText);
+    console.log('🔍 [DEBUG] Parsed data type:', typeof data);
+    console.log('🔍 [DEBUG] Is data null?:', data === null);
+    console.log('🔍 [DEBUG] Is data object?:', typeof data === 'object');
+
+    if (!data) {
+      console.log('⚠️ No criticality data found in Firebase (data is null/undefined)');
+      return [];
+    }
+
+    // Log the root keys to see the structure
+    const rootKeys = Object.keys(data);
+    console.log('🔍 [DEBUG] Root keys in Firebase:', rootKeys);
+
+    // Data is under 'SpareParts' key
+    let criticalityData = data;
+
+    // Check if data has 'SpareParts' key
+    if (data.SpareParts) {
+      console.log('✓ Found SpareParts key, using that data');
+      criticalityData = data.SpareParts;
+    } else if (rootKeys.length > 0) {
+      // Fallback: use first key if it contains objects
+      console.log('⚠️ No SpareParts key, checking first key:', rootKeys[0]);
+      if (typeof data[rootKeys[0]] === 'object' && data[rootKeys[0]] !== null) {
+        const firstKeySubKeys = Object.keys(data[rootKeys[0]]);
+        console.log('🔍 [DEBUG] First key has', firstKeySubKeys.length, 'sub-keys');
+        if (firstKeySubKeys.length > 0) {
+          criticalityData = data[rootKeys[0]];
+        }
+      }
+    }
+
+    const keys = Object.keys(criticalityData);
+    console.log('🔍 [DEBUG] Number of items in criticalityData:', keys.length);
+    console.log('🔍 [DEBUG] First 5 firebase keys:', keys.slice(0, 5));
+
+    // Convert Firebase object to array with firebaseKey
+    const dataArray = keys.map(key => ({
+      firebaseKey: key,
+      ...criticalityData[key]
+    }));
+
+    console.log('🔍 [DEBUG] DataArray length:', dataArray.length);
+    if (dataArray.length > 0) {
+      console.log('🔍 [DEBUG] First item keys:', Object.keys(dataArray[0]));
+      console.log('🔍 [DEBUG] First item sample:', JSON.stringify(dataArray[0]).substring(0, 200));
+    }
+
+    console.log(`✓ Loaded ${dataArray.length} criticality items from Firebase`);
+    return dataArray;
+
+  } catch (error) {
+    console.error('❌ Error fetching criticality data:', error);
+    console.error('❌ Error stack:', error.stack);
+    return [];
+  }
 }
