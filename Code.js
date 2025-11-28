@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.40.0-LOGIN-LOGGING
+// Version: 2.40.1-LOGIN-VERSION-DISPLAY
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====

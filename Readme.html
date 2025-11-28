@@ -9,7 +9,7 @@
 > 🔧 **Voor developers en IT**: Deze Readme bevat technische documentatie, architectuur en ontwikkelingsgeschiedenis.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.40.0-LOGIN-LOGGING
+- **JavaScript Versie**: 2.40.1-LOGIN-VERSION-DISPLAY
 - **CSS Versie**: 1.3.1
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (4 databases)
@@ -40,10 +40,10 @@ aanvragen-rimses/
 ├── Readme.html                  # Technische documentatie (dit bestand)
 ├── Handleiding.html             # Gebruikershandleiding (nieuw!)
 ├── Index.html                   # Main HTML bestand
-├── JavaScript.html              # React applicatie code (v2.40.0)
+├── JavaScript.html              # React applicatie code (v2.40.1)
 ├── Stylesheet.html              # CSS styles (v1.3.1)
 ├── debug.html                   # Debug & test panel (alleen voor Super Users)
-└── Code.js                      # Google Apps Script backend (v2.40.0)
+└── Code.js                      # Google Apps Script backend (v2.40.1)
 ```
 
 **Belangrijke Bestanden:**
@@ -833,7 +833,7 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ### 🎯 Sessie Overzicht: November 25, 2025 (Deel 2)
 
-Deze ontwikkelsessie (v2.35.1 → v2.40.0) bevatte de volledige implementatie van het **Criticaliteit Management Systeem** en **Login Logging**:
+Deze ontwikkelsessie (v2.35.1 → v2.40.1) bevatte de volledige implementatie van het **Criticaliteit Management Systeem** en **Login Logging**:
 
 **Nieuwe Features:**
 - ✅ **Rol T (Technisch Beheerder)** - Toegang tot alleen Criticaliteit menu
@@ -881,7 +881,21 @@ Deze ontwikkelsessie (v2.34.0 → v2.34.3) bevatte belangrijke updates:
 
 ---
 
-### v2.40.0-LOGIN-LOGGING (Current)
+### v2.40.1-LOGIN-VERSION-DISPLAY (Current)
+**Release Date**: November 28, 2025
+
+**Feature: Login Scherm Versie Display Verbetering 🎨**
+- ✅ **Numeric version only** - Login scherm toont alleen versienummer (2.40.1) i.p.v. volledige string
+- 📦 **versionNumber constant** - Nieuwe const die alleen het numerieke deel extraheert via `.split('-')[0]`
+- 🎯 **Cleaner UI** - Versie info sectie onder "Inloggen" knop is nu overzichtelijker
+
+**Implementatie:**
+- [JavaScript.html:157](JavaScript.html#L157) - Added `versionNumber` constant
+- [JavaScript.html:3391](JavaScript.html#L3391) - Changed `{version}` to `{versionNumber}` in login screen display
+
+---
+
+### v2.40.0-LOGIN-LOGGING
 **Release Date**: November 28, 2025
 
 **Feature: Automatische Login Logging naar Firebase 🔐**
