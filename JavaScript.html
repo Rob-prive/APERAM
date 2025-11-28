@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.38.3-LOGIN-PLACEHOLDER-ABOUT-SIMPLIFY";
+//version = "2.38.4-FIX-ADMIN-NAVIGATION-FROM-CRITICALITEIT";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -140,7 +140,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.38.3-LOGIN-PLACEHOLDER-ABOUT-SIMPLIFY";
+    const version = "2.38.4-FIX-ADMIN-NAVIGATION-FROM-CRITICALITEIT";
     const stylesheetVersion = "1.3.1";
 
     // ===== HELPER FUNCTIONS =====
@@ -993,6 +993,7 @@
     const handleToggleDebugPanel = () => {
       console.log('🔧 Toggle debug panel:', !isDebugPanelOpen);
       setIsDebugPanelOpen(!isDebugPanelOpen);
+      setActiveCriticaliteitView(false);
     };
 
     const handleConfirmDelete = () => {
@@ -3846,6 +3847,7 @@
                       className="nav-button submenu-item"
                       onClick={() => {
                         setActiveAdminView('users');
+                        setActiveCriticaliteitView(false);
                         fetchUsers();
                       }}
                       style={{

@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.38.3-LOGIN-PLACEHOLDER-ABOUT-SIMPLIFY
+// Version: 2.38.4-FIX-ADMIN-NAVIGATION-FROM-CRITICALITEIT
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
