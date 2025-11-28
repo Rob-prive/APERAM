@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.38.2-FIX-ROLE-B-AANVRAGEN-FILTER";
+//version = "2.38.3-LOGIN-PLACEHOLDER-ABOUT-SIMPLIFY";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -140,7 +140,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.38.2-FIX-ROLE-B-AANVRAGEN-FILTER";
+    const version = "2.38.3-LOGIN-PLACEHOLDER-ABOUT-SIMPLIFY";
     const stylesheetVersion = "1.3.1";
 
     // ===== HELPER FUNCTIONS =====
@@ -1547,19 +1547,14 @@
                 }}>
                   Features
                 </div>
-                <ul style={{
+                <div style={{
                   margin: 0,
-                  paddingLeft: '20px',
                   color: '#666',
                   fontSize: '13px',
                   lineHeight: '1.8'
                 }}>
-                  <li>4 dynamisch aanpasbare tabellen</li>
-                  <li>Background prefetch voor snelle load</li>
-                  <li>Real-time data synchronisatie</li>
-                  <li>In-memory filtering</li>
-                  <li>Centrale layout slider</li>
-                </ul>
+                  Oversteyns Rob 93903
+                </div>
               </div>
             </div>
 
@@ -3683,7 +3678,7 @@
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Gebruikersnaam"
+                placeholder="Aperam email"
                 required
                 disabled={isLoading}
               />
