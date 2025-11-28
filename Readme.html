@@ -40,10 +40,10 @@ aanvragen-rimses/
 ├── Readme.html                  # Technische documentatie (dit bestand)
 ├── Handleiding.html             # Gebruikershandleiding (nieuw!)
 ├── Index.html                   # Main HTML bestand
-├── JavaScript.html              # React applicatie code (v2.38.1)
+├── JavaScript.html              # React applicatie code (v2.40.0)
 ├── Stylesheet.html              # CSS styles (v1.3.1)
 ├── debug.html                   # Debug & test panel (alleen voor Super Users)
-└── Code.js                      # Google Apps Script backend (v2.38.1)
+└── Code.js                      # Google Apps Script backend (v2.40.0)
 ```
 
 **Belangrijke Bestanden:**
@@ -833,7 +833,7 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ### 🎯 Sessie Overzicht: November 25, 2025 (Deel 2)
 
-Deze ontwikkelsessie (v2.35.1 → v2.38.1) bevatte de volledige implementatie van het **Criticaliteit Management Systeem**:
+Deze ontwikkelsessie (v2.35.1 → v2.40.0) bevatte de volledige implementatie van het **Criticaliteit Management Systeem** en **Login Logging**:
 
 **Nieuwe Features:**
 - ✅ **Rol T (Technisch Beheerder)** - Toegang tot alleen Criticaliteit menu
@@ -881,7 +881,18 @@ Deze ontwikkelsessie (v2.34.0 → v2.34.3) bevatte belangrijke updates:
 
 ---
 
-### v2.38.1-CRITICALITEIT-ADD-BUTTON (Current)
+### v2.40.0-LOGIN-LOGGING (Current)
+**Release Date**: November 28, 2025
+
+**Feature: Automatische Login Logging naar Firebase 🔐**
+- ✅ **Login tracking** - Elke succesvolle login wordt gelogd naar Firebase
+- 🗄️ **Aparte database** - Dedicated Firebase database voor login logs
+- ⚡ **Non-blocking** - Login logging faalt niet de login flow
+- 📊 **Audit trail** - ID, LoginTime (formatted), Username
+
+---
+
+### v2.38.1-CRITICALITEIT-ADD-BUTTON
 **Release Date**: November 25, 2025
 
 **Feature: Add Button voor Nieuwe Criticaliteit ➕**
@@ -3194,10 +3205,13 @@ De login logging feature is bedoeld voor audit/analytics doeleinden. Als de Fire
 **Versie updates:**
 - [Code.js:2](Code.js#L2) - Version naar 2.40.0-LOGIN-LOGGING
 - [JavaScript.html:2](JavaScript.html#L2) - Version comment naar 2.40.0-LOGIN-LOGGING
+- [JavaScript.html:155](JavaScript.html#L155) - Version constant naar 2.40.0-LOGIN-LOGGING
 - [Readme.html:12](Readme.html#L12) - JavaScript Versie naar 2.40.0-LOGIN-LOGGING
+- [Readme.html:43](Readme.html#L43) - File version reference naar v2.40.0
+- [Readme.html:46](Readme.html#L46) - File version reference naar v2.40.0
 
 **Git info:**
-- Commit: (pending)
+- Commit: `972db85` (initial), update pending
 - Previous: `352c534` (v2.38.1-CRITICALITEIT-README-UPDATE)
 
 ---
