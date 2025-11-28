@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.38.1-CRITICALITEIT-ADD-BUTTON
+// Version: 2.38.2-FIX-ROLE-B-AANVRAGEN-FILTER
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====

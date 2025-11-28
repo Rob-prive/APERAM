@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.38.1-CRITICALITEIT-ADD-BUTTON";
+//version = "2.38.2-FIX-ROLE-B-AANVRAGEN-FILTER";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -140,7 +140,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.38.1-CRITICALITEIT-ADD-BUTTON";
+    const version = "2.38.2-FIX-ROLE-B-AANVRAGEN-FILTER";
     const stylesheetVersion = "1.3.1";
 
     // ===== HELPER FUNCTIONS =====
@@ -476,7 +476,7 @@
 
     // Filter aanvragen based on user role:
     // Role A (user): See only own requests (Requester Email = username)
-    // Role B (authorizer): See only requests to approve (Approver Email = username)
+    // Role B (authorizer): See requests to approve (Approver Email = username) OR own requests (Requester Email = username)
     // Role C (admin) and D (super user): See all requests
     const filteredAanvragen = React.useMemo(() => {
       if (!processedAanvragen || processedAanvragen.length === 0) return [];
@@ -488,9 +488,9 @@
         // Admin and Super User see all
         filtered = processedAanvragen;
       } else if (userRole === 'B') {
-        // Authorizer sees only requests they need to approve
+        // Authorizer sees requests they need to approve OR their own requests
         filtered = processedAanvragen.filter(aanvraag =>
-          aanvraag['Approver Email'] === username
+          aanvraag['Approver Email'] === username || aanvraag['Requester Email'] === username
         );
       } else if (userRole === 'A') {
         // Standard user sees only their own requests
