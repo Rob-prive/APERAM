@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.38.4-FIX-ADMIN-NAVIGATION-FROM-CRITICALITEIT
+// Version: 2.39.0-ADD-CRITICALITEIT-CALCULATION-MODAL
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -2723,5 +2723,78 @@ function getCriticalityData() {
     console.error('❌ Error fetching criticality data:', error);
     console.error('❌ Error stack:', error.stack);
     return [];
+  }
+}
+
+/**
+ * Save a new criticality part to Firebase
+ */
+function saveCriticalityPart(data) {
+  try {
+    console.log('💾 [saveCriticalityPart] Starting save operation...');
+    console.log('📦 Data to save:', JSON.stringify(data));
+
+    // Generate unique ID using timestamp
+    const timestamp = new Date().getTime();
+    const id = 'CRIT-' + timestamp;
+
+    // Prepare data for Firebase
+    const firebaseData = {
+      ID: id,
+      Datum: data.Datum || new Date().toISOString(),
+      Naam: data.Naam || '',
+      RemaxNummer: data.RemaxNummer || '',
+      Kosten: data.Kosten || '',
+      Levertijd: data.Levertijd || '',
+      FalenFreq: data.FalenFreq || '',
+      FalenSeverity: data.FalenSeverity || '',
+      MachineCrit: data.MachineCrit || 'C',
+      AankoopFactor: data.AankoopFactor || 0,
+      Risico: data.Risico || '',
+      FunctieCrit: data.FunctieCrit || 0,
+      Categorie: data.Categorie || '',
+      User: data.User || '',
+      Status: data.Status || 'In behandeling'
+    };
+
+    console.log('🔧 Prepared Firebase data:', JSON.stringify(firebaseData));
+
+    // Save to Firebase under SpareParts path
+    const url = FIREBASE_CRITICALITY_URL + '/SpareParts.json?auth=' + FIREBASE_CRITICALITY_SECRET;
+
+    const payload = JSON.stringify(firebaseData);
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    };
+
+    console.log('📡 Sending POST request to Firebase...');
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    console.log('📨 Response code:', responseCode);
+    console.log('📨 Response text:', responseText);
+
+    if (responseCode === 200) {
+      const result = JSON.parse(responseText);
+      console.log('✅ Criticality part saved successfully! Firebase key:', result.name);
+      return {
+        success: true,
+        firebaseKey: result.name,
+        id: id,
+        message: 'Onderdeel opgeslagen als ' + firebaseData.Categorie
+      };
+    } else {
+      console.error('❌ Firebase error:', responseCode, responseText);
+      throw new Error('Firebase returned status ' + responseCode + ': ' + responseText);
+    }
+
+  } catch (error) {
+    console.error('❌ Error in saveCriticalityPart:', error);
+    console.error('❌ Error stack:', error.stack);
+    throw new Error('Fout bij opslaan: ' + error.message);
   }
 }

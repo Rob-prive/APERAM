@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.38.4-FIX-ADMIN-NAVIGATION-FROM-CRITICALITEIT";
+//version = "2.39.0-ADD-CRITICALITEIT-CALCULATION-MODAL";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -33,6 +33,18 @@
     const [selectedCriticalityItem, setSelectedCriticalityItem] = React.useState(null);
     const [criticalityCurrentPage, setCriticalityCurrentPage] = React.useState(1);
     const criticalityItemsPerPage = 20;
+    const [isAddCriticalityModalOpen, setIsAddCriticalityModalOpen] = React.useState(false);
+    const [criticalityFormData, setCriticalityFormData] = React.useState({
+      Naam: '',
+      RemaxNummer: '',
+      Kosten: '',
+      Levertijd: '',
+      FalenFreq: '',
+      FalenSeverity: '',
+      MachineCrit: 'C'
+    });
+    const [criticalityPreview, setCriticalityPreview] = React.useState(null);
+    const [isSavingCriticality, setIsSavingCriticality] = React.useState(false);
 
     // Users management state
     const [users, setUsers] = React.useState([]);
@@ -140,7 +152,7 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.38.4-FIX-ADMIN-NAVIGATION-FROM-CRITICALITEIT";
+    const version = "2.39.0-ADD-CRITICALITEIT-CALCULATION-MODAL";
     const stylesheetVersion = "1.3.1";
 
     // ===== HELPER FUNCTIONS =====
@@ -194,6 +206,110 @@
         console.error('Error formatting criticality date:', error);
         return isoString;
       }
+    };
+
+    // Criticaliteit classification logic (from CODE_GS_OLD_CRITICALITEIT.gs)
+    const classifyPart = (data) => {
+      // Convert cost text to numeric value
+      let cost = 0;
+      const kostenText = (data.Kosten || '').toString();
+
+      if (kostenText === 'Minder dan €1000') cost = 999;
+      else if (kostenText === 'Tussen €1000 en €5000') cost = 2500;
+      else if (kostenText === 'Tussen €5000 en €10000') cost = 7500;
+      else if (kostenText === 'Meer dan €10000') cost = 15000;
+      else cost = parseFloat(data.Kosten) || 0;
+
+      const lead = parseFloat(data.Levertijd) || 0;
+      const freq = (data.FalenFreq || '').toString();
+      const impact = parseFloat(data.FalenSeverity) || 0;
+      let crit = (data.MachineCrit || '').toString().toUpperCase();
+      if (!crit) crit = 'C';
+
+      console.log('classifyPart input:', { cost, lead, freq, impact, crit });
+
+      // TABLE 1: cost vs delivery
+      const costBucket = (c) => {
+        if (c < 1000) return 0;
+        if (c >= 1000 && c < 5000) return 1;
+        if (c >= 5000 && c <= 10000) return 2;
+        return 3;
+      };
+
+      const deliveryBucket = (w) => {
+        if (w < 2) return 0;
+        if (w >= 2 && w < 6) return 1;
+        if (w >= 6 && w < 10) return 2;
+        return 3;
+      };
+
+      const TABLE1 = [
+        [2,2,1,1],
+        [2,2,2,1],
+        [3,3,3,2],
+        [4,3,3,3]
+      ];
+
+      const cIdx = costBucket(cost);
+      const dIdx = deliveryBucket(lead);
+      const table1Index = TABLE1[dIdx][cIdx];
+      console.log('TABLE1:', { cIdx, dIdx, table1Index });
+
+      // RISK FACTOR calculation
+      let riskFactor = 'C';
+      const f = freq.toLowerCase();
+
+      if (impact === 0) {
+        riskFactor = 'C';
+      } else if (impact > 8) {
+        if (f === '>1/week' || f === '>1/maand') riskFactor = 'AA';
+        else if (f === '>1/jaar') riskFactor = 'A';
+        else riskFactor = 'B';
+      } else if (impact >= 2 && impact <= 8) {
+        if (f === '>1/week') riskFactor = 'AA';
+        else if (f === '>1/maand') riskFactor = 'A';
+        else if (f === '>1/jaar') riskFactor = 'B';
+        else riskFactor = 'C';
+      } else if (impact < 2) {
+        if (f === '>1/week' || f === '>1/maand') riskFactor = 'B';
+        else if (f === '>1/jaar') riskFactor = 'B';
+        else riskFactor = 'C';
+      }
+
+      console.log('Risicofactor:', riskFactor);
+
+      // TABLE 2: function criticality
+      const funcMatrix = {
+        'AA': { 'AA':4, 'A':4, 'B':3, 'C':2 },
+        'A':  { 'AA':4, 'A':4, 'B':3, 'C':2 },
+        'B':  { 'AA':3, 'A':3, 'B':2, 'C':1 },
+        'C':  { 'AA':2, 'A':2, 'B':1, 'C':1 }
+      };
+
+      const validCrit = funcMatrix[crit] ? crit : 'C';
+      const validRisk = funcMatrix[validCrit][riskFactor] ? riskFactor : 'C';
+      const functieCrit = funcMatrix[validCrit][validRisk] || 1;
+      console.log('Functie-criticaliteit:', functieCrit);
+
+      // TABLE 3: QS category
+      const TABLE3 = [
+        ['QS0','QS0','QS0','QS0'],
+        ['QS0','QS0','QS1','QS1'],
+        ['QS1','QS1','QS2','QS2'],
+        ['QS1','QS2','QS3','QS3']
+      ];
+
+      const row = Math.max(1, Math.min(4, functieCrit)) - 1;
+      const col = Math.max(1, Math.min(4, table1Index)) - 1;
+      const category = TABLE3[row][col] || 'QS0';
+      console.log('QS category:', category);
+
+      return {
+        Categorie: category,
+        AankoopFactor: table1Index,
+        Risico: riskFactor,
+        FunctieCrit: functieCrit
+      };
     };
     
     const parseFormData = (formDataString) => {
@@ -774,6 +890,78 @@
     const handleCloseCriticalityDetail = () => {
       setIsCriticalityDetailModalOpen(false);
       setSelectedCriticalityItem(null);
+    };
+
+    // Add Criticaliteit modal handlers
+    const handleOpenAddCriticalityModal = () => {
+      setIsAddCriticalityModalOpen(true);
+      setCriticalityFormData({
+        Naam: '',
+        RemaxNummer: '',
+        Kosten: '',
+        Levertijd: '',
+        FalenFreq: '',
+        FalenSeverity: '',
+        MachineCrit: 'C'
+      });
+      setCriticalityPreview(null);
+    };
+
+    const handleCloseAddCriticalityModal = () => {
+      setIsAddCriticalityModalOpen(false);
+      setCriticalityFormData({
+        Naam: '',
+        RemaxNummer: '',
+        Kosten: '',
+        Levertijd: '',
+        FalenFreq: '',
+        FalenSeverity: '',
+        MachineCrit: 'C'
+      });
+      setCriticalityPreview(null);
+      setIsSavingCriticality(false);
+    };
+
+    const handleCriticalityFormChange = (field, value) => {
+      setCriticalityFormData(prev => ({ ...prev, [field]: value }));
+      setCriticalityPreview(null); // Reset preview when form changes
+    };
+
+    const handleCalculateCriticality = () => {
+      const result = classifyPart(criticalityFormData);
+      setCriticalityPreview(result);
+      console.log('Classification result:', result);
+    };
+
+    const handleSaveCriticality = () => {
+      if (!criticalityPreview) {
+        alert('Bereken eerst de classificatie');
+        return;
+      }
+
+      setIsSavingCriticality(true);
+
+      const dataToSave = {
+        ...criticalityFormData,
+        ...criticalityPreview,
+        Datum: new Date().toISOString(),
+        User: username,
+        Status: 'In behandeling'
+      };
+
+      google.script.run
+        .withSuccessHandler(() => {
+          setIsSavingCriticality(false);
+          handleCloseAddCriticalityModal();
+          fetchCriticalityData(); // Reload data
+          console.log('✓ Criticaliteit opgeslagen');
+        })
+        .withFailureHandler((error) => {
+          setIsSavingCriticality(false);
+          console.error('Error saving criticality:', error);
+          alert('Fout bij opslaan: ' + error);
+        })
+        .saveCriticalityPart(dataToSave);
     };
 
     // User edit handlers
@@ -3974,10 +4162,7 @@
                               Totaal: {criticalityData.length} items (Pagina {criticalityCurrentPage} van {Math.ceil(criticalityData.length / criticalityItemsPerPage)})
                             </span>
                             <button
-                              onClick={() => {
-                                console.log('Nieuwe criticaliteit toevoegen - TODO');
-                                // TODO: Open modal voor nieuwe criticaliteit ingave
-                              }}
+                              onClick={handleOpenAddCriticalityModal}
                               title="Nieuwe criticaliteit toevoegen"
                               style={{
                                 width: '28px',
@@ -6974,6 +7159,208 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Criticaliteit Modal */}
+        {isAddCriticalityModalOpen && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '20px'
+          }} onClick={handleCloseAddCriticalityModal}>
+            <div onClick={(e) => e.stopPropagation()} style={{
+              backgroundColor: 'white', borderRadius: '12px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)', maxWidth: '550px',
+              width: '100%', maxHeight: '90vh', overflowY: 'auto'
+            }}>
+              {/* Header */}
+              <div style={{
+                padding: '20px 25px', borderBottom: '2px solid #e0e0e0',
+                background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)', borderRadius: '12px 12px 0 0'
+              }}>
+                <h2 style={{margin: 0, color: 'white', fontSize: '20px', fontWeight: '700'}}>
+                  Nieuw onderdeel toevoegen
+                </h2>
+              </div>
+
+              {/* Form */}
+              <div style={{padding: '25px'}}>
+                <label style={{display: 'block', marginBottom: '15px'}}>
+                  <span style={{fontWeight: 'bold', fontSize: '13px', color: '#333', marginBottom: '5px', display: 'block'}}>Naam *</span>
+                  <input
+                    value={criticalityFormData.Naam}
+                    onChange={(e) => handleCriticalityFormChange('Naam', e.target.value)}
+                    placeholder="Naam van het onderdeel"
+                    required
+                    style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px'}}
+                  />
+                </label>
+
+                <label style={{display: 'block', marginBottom: '15px'}}>
+                  <span style={{fontWeight: 'bold', fontSize: '13px', color: '#333', marginBottom: '5px', display: 'block'}}>Remax nummer</span>
+                  <input
+                    value={criticalityFormData.RemaxNummer}
+                    onChange={(e) => handleCriticalityFormChange('RemaxNummer', e.target.value)}
+                    placeholder="Optioneel"
+                    style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px'}}
+                  />
+                </label>
+
+                <label style={{display: 'block', marginBottom: '15px'}}>
+                  <span style={{fontWeight: 'bold', fontSize: '13px', color: '#333', marginBottom: '5px', display: 'block'}}>Kosten *</span>
+                  <select
+                    value={criticalityFormData.Kosten}
+                    onChange={(e) => handleCriticalityFormChange('Kosten', e.target.value)}
+                    required
+                    style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px'}}
+                  >
+                    <option value="">-- Selecteer kostencategorie --</option>
+                    <option value="Minder dan €1000">Minder dan €1000</option>
+                    <option value="Tussen €1000 en €5000">Tussen €1000 en €5000</option>
+                    <option value="Tussen €5000 en €10000">Tussen €5000 en €10000</option>
+                    <option value="Meer dan €10000">Meer dan €10000</option>
+                  </select>
+                </label>
+
+                <label style={{display: 'block', marginBottom: '15px'}}>
+                  <span style={{fontWeight: 'bold', fontSize: '13px', color: '#333', marginBottom: '5px', display: 'block'}}>Levertijd *</span>
+                  <select
+                    value={criticalityFormData.Levertijd}
+                    onChange={(e) => handleCriticalityFormChange('Levertijd', e.target.value)}
+                    required
+                    style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px'}}
+                  >
+                    <option value="">-- Selecteer levertijd --</option>
+                    <option value="1.5">Minder dan 2 weken</option>
+                    <option value="4">Tussen 2 en 6 weken</option>
+                    <option value="8">Tussen 6 en 10 weken</option>
+                    <option value="12">Meer dan 10 weken</option>
+                  </select>
+                </label>
+
+                <label style={{display: 'block', marginBottom: '15px'}}>
+                  <span style={{fontWeight: 'bold', fontSize: '13px', color: '#333', marginBottom: '5px', display: 'block'}}>Faalfrequentie *</span>
+                  <select
+                    value={criticalityFormData.FalenFreq}
+                    onChange={(e) => handleCriticalityFormChange('FalenFreq', e.target.value)}
+                    required
+                    style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px'}}
+                  >
+                    <option value="">-- Selecteer frequentie --</option>
+                    <option value=">1/week">&gt; 1 per week</option>
+                    <option value=">1/maand">&gt; 1 per maand</option>
+                    <option value=">1/jaar">&gt; 1 per jaar</option>
+                    <option value="<1/jaar">&lt; 1 per jaar</option>
+                  </select>
+                </label>
+
+                <label style={{display: 'block', marginBottom: '15px'}}>
+                  <span style={{fontWeight: 'bold', fontSize: '13px', color: '#333', marginBottom: '5px', display: 'block'}}>OTT-impact (uren) *</span>
+                  <select
+                    value={criticalityFormData.FalenSeverity}
+                    onChange={(e) => handleCriticalityFormChange('FalenSeverity', e.target.value)}
+                    required
+                    style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px'}}
+                  >
+                    <option value="">-- Selecteer impact --</option>
+                    <option value="10">Meer dan 8 uren</option>
+                    <option value="6">Tussen 2 en 8 uren</option>
+                    <option value="1">Minder dan 2 uren</option>
+                    <option value="0">Geen stop</option>
+                  </select>
+                </label>
+
+                <label style={{display: 'block', marginBottom: '15px'}}>
+                  <span style={{fontWeight: 'bold', fontSize: '13px', color: '#333', marginBottom: '5px', display: 'block'}}>Machine-criticaliteit</span>
+                  <select
+                    value={criticalityFormData.MachineCrit}
+                    onChange={(e) => handleCriticalityFormChange('MachineCrit', e.target.value)}
+                    style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '13px'}}
+                  >
+                    <option value="AA">AA (zeer hoog)</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C (laag)</option>
+                  </select>
+                </label>
+
+                {/* Buttons */}
+                <div style={{display: 'flex', gap: '8px', marginBottom: '15px'}}>
+                  <button
+                    onClick={handleCalculateCriticality}
+                    disabled={!criticalityFormData.Naam || !criticalityFormData.Kosten || !criticalityFormData.Levertijd || !criticalityFormData.FalenFreq || !criticalityFormData.FalenSeverity}
+                    style={{
+                      flex: 1, padding: '10px', background: '#4CAF50', color: 'white',
+                      border: 'none', borderRadius: '4px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'
+                    }}
+                  >
+                    Classificatie berekenen
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCriticalityFormData({Naam: '', RemaxNummer: '', Kosten: '', Levertijd: '', FalenFreq: '', FalenSeverity: '', MachineCrit: 'C'});
+                      setCriticalityPreview(null);
+                    }}
+                    style={{
+                      padding: '10px 20px', background: '#f5f5f5', color: '#666',
+                      border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', cursor: 'pointer'
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                {/* Preview */}
+                {criticalityPreview && (
+                  <div style={{
+                    background: '#f7f7f7', padding: '12px', borderRadius: '4px',
+                    borderLeft: '3px solid #4CAF50', marginBottom: '15px'
+                  }}>
+                    <span style={{
+                      display: 'inline-block', padding: '6px 12px', borderRadius: '4px',
+                      fontWeight: 'bold', marginRight: '10px',
+                      backgroundColor: criticalityPreview.Categorie === 'QS0' ? '#bbdefb' :
+                                      criticalityPreview.Categorie === 'QS1' ? '#b0d8ff' :
+                                      criticalityPreview.Categorie === 'QS2' ? '#ff9800' : '#ff8a80',
+                      color: criticalityPreview.Categorie === 'QS0' ? '#0d47a1' : '#000'
+                    }}>
+                      {criticalityPreview.Categorie}
+                    </span>
+                    <span style={{fontSize: '13px'}}>
+                      Aankoopfactor: {criticalityPreview.AankoopFactor} | Risico: {criticalityPreview.Risico} | FunctieCrit: {criticalityPreview.FunctieCrit}
+                    </span>
+                  </div>
+                )}
+
+                {/* Save Button */}
+                {criticalityPreview && (
+                  <button
+                    onClick={handleSaveCriticality}
+                    disabled={isSavingCriticality}
+                    style={{
+                      width: '100%', padding: '12px', background: '#FF9800', color: 'white',
+                      border: 'none', borderRadius: '4px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer'
+                    }}
+                  >
+                    {isSavingCriticality ? '💾 Bezig met opslaan...' : '💾 Opslaan'}
+                  </button>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div style={{padding: '15px 25px', borderTop: '1px solid #e0e0e0', display: 'flex', justifyContent: 'flex-end'}}>
+                <button
+                  onClick={handleCloseAddCriticalityModal}
+                  style={{
+                    padding: '10px 24px', background: '#f5f5f5', color: '#666',
+                    border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', cursor: 'pointer'
+                  }}
+                >
+                  Annuleren
+                </button>
               </div>
             </div>
           </div>
