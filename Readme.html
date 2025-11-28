@@ -9,7 +9,7 @@
 > 🔧 **Voor developers en IT**: Deze Readme bevat technische documentatie, architectuur en ontwikkelingsgeschiedenis.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.38.1-CRITICALITEIT-ADD-BUTTON
+- **JavaScript Versie**: 2.40.0-LOGIN-LOGGING
 - **CSS Versie**: 1.3.1
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (4 databases)
@@ -3149,3 +3149,55 @@ Voor nieuwe developers:
 9. [ ] Check CHANGELOG.md voor version history
 
 **Klaar om te beginnen? Happy coding! 🚀**
+
+---
+
+### v2.40.0-LOGIN-LOGGING (November 2025)
+
+**Wat is er toegevoegd:**
+- **Login logging naar Firebase**: Elke succesvolle login wordt automatisch gelogd naar aparte Firebase database
+- **Backend functie**: `logUserLogin(username)` in Code.js schrijft login events weg
+- **Database structuur**: Logins worden opgeslagen met ID (timestamp), LoginTime (formatted), en Username
+- **Non-blocking implementatie**: Login logging faalt niet de login flow - errors worden gelogd maar blokkeren login niet
+
+**Implementatie details:**
+- **Backend** ([Code.js:2807-2882](Code.js#L2807-L2882)): `logUserLogin()` functie met timestamp-based ID generatie
+- **Firebase credentials** ([Code.js:26-28](Code.js#L26-L28)): `FIREBASE_LOGIN_LOG_URL` en `FIREBASE_LOGIN_LOG_SECRET`
+- **Frontend integration** ([JavaScript.html:743-751](JavaScript.html#L743-L751)): Call naar `logUserLogin()` na succesvolle login (new format)
+- **Legacy format support** ([JavaScript.html:775-783](JavaScript.html#L775-L783)): Ook logging voor legacy boolean login response
+- **Error handling**: `withFailureHandler` logt warning maar blokkeert login flow niet
+
+**Database structuur (Firebase Login Log):**
+```javascript
+{
+  "ID": 1732804053000,  // timestamp
+  "LoginTime": "2025-11-28 15:05:53",  // formatted string
+  "Username": "user@aperam.com"
+}
+```
+
+**Firebase URL:**
+- Database: `https://userlogin-f7339-default-rtdb.europe-west1.firebasedatabase.app/`
+- Path: `/logins`
+- Auth: Secret key voor write access
+
+**Console logging:**
+- ✅ Success: "Login logged: {logResult}"
+- ⚠️ Failure: "Login logging failed (non-critical): {error}" (warning, niet error)
+
+**Waarom non-blocking?**
+De login logging feature is bedoeld voor audit/analytics doeleinden. Als de Firebase login database tijdelijk niet bereikbaar is, mag dat de gebruiker niet blokkeren om in te loggen. Daarom:
+- Geen `throw` in catch block
+- `withFailureHandler` gebruikt `console.warn` i.p.v. `alert`
+- Return object met `success: false` i.p.v. error throw
+
+**Versie updates:**
+- [Code.js:2](Code.js#L2) - Version naar 2.40.0-LOGIN-LOGGING
+- [JavaScript.html:2](JavaScript.html#L2) - Version comment naar 2.40.0-LOGIN-LOGGING
+- [Readme.html:12](Readme.html#L12) - JavaScript Versie naar 2.40.0-LOGIN-LOGGING
+
+**Git info:**
+- Commit: (pending)
+- Previous: `352c534` (v2.38.1-CRITICALITEIT-README-UPDATE)
+
+---

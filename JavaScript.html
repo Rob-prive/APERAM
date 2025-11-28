@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.39.0-ADD-CRITICALITEIT-CALCULATION-MODAL";
+//version = "2.40.0-LOGIN-LOGGING";
   function App() {
     // Authentication state
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -740,6 +740,16 @@
               const role = result.role || 'A'; // Default to user if role not provided
               setUserRole(role);
 
+              // Log the login to Firebase
+              google.script.run
+                .withSuccessHandler((logResult) => {
+                  console.log('✅ Login logged:', logResult);
+                })
+                .withFailureHandler((logError) => {
+                  console.warn('⚠️ Login logging failed (non-critical):', logError);
+                })
+                .logUserLogin(username);
+
               // If role is T (technical admin), go directly to Criticaliteit view
               if (role === 'T') {
                 setActiveCriticaliteitView(true);
@@ -761,6 +771,17 @@
             setIsLoggedIn(true);
             setUserName(username);
             setUserRole('A'); // Default to user for legacy format (security)
+
+            // Log the login to Firebase
+            google.script.run
+              .withSuccessHandler((logResult) => {
+                console.log('✅ Login logged:', logResult);
+              })
+              .withFailureHandler((logError) => {
+                console.warn('⚠️ Login logging failed (non-critical):', logError);
+              })
+              .logUserLogin(username);
+
             loadAllTableData();
           } else {
             // Legacy format: boolean false

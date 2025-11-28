@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.39.0-ADD-CRITICALITEIT-CALCULATION-MODAL
+// Version: 2.40.0-LOGIN-LOGGING
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
@@ -22,6 +22,11 @@ const FIREBASE_USERS_SECRET = 'BBcmkVVW6jrsfA3GSJI0f7NovJNJ8yN8lKOQRzrK';
 // Firebase for Criticaliteit database
 const FIREBASE_CRITICALITY_URL = 'https://criticality-32c16-default-rtdb.europe-west1.firebasedatabase.app';
 const FIREBASE_CRITICALITY_SECRET = 'uU8khW9s4Zg4mAcPSjwuXhNfBNAtxLrV4tBHtftP';
+
+// Firebase for LOG IN LOG database
+const FIREBASE_LOGIN_LOG_URL = 'https://userlogin-f7339-default-rtdb.europe-west1.firebasedatabase.app/';
+const FIREBASE_LOGIN_LOG_SECRET = 'eStXHU0LSnsvPime0pgGNQOq78VQSgOYiHumh7hn';
+
 
 // ===== HELPER FUNCTIONS =====
 
@@ -2796,5 +2801,82 @@ function saveCriticalityPart(data) {
     console.error('❌ Error in saveCriticalityPart:', error);
     console.error('❌ Error stack:', error.stack);
     throw new Error('Fout bij opslaan: ' + error.message);
+  }
+}
+
+/**
+ * Log user login to Firebase
+ * @param {string} username - Username that logged in
+ */
+function logUserLogin(username) {
+  try {
+    console.log('🔐 [logUserLogin] Logging login for user:', username);
+
+    // Generate timestamp and ID
+    const now = new Date();
+    const timestamp = now.getTime();
+
+    // Format LoginTime as "YYYY-MM-DD HH:MM:SS"
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const loginTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    // Prepare login data
+    const loginData = {
+      ID: timestamp,
+      LoginTime: loginTime,
+      Username: username
+    };
+
+    console.log('📦 Login data:', JSON.stringify(loginData));
+
+    // Save to Firebase under /logins path
+    const url = FIREBASE_LOGIN_LOG_URL + 'logins.json?auth=' + FIREBASE_LOGIN_LOG_SECRET;
+
+    const payload = JSON.stringify(loginData);
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    };
+
+    console.log('📡 Sending login log to Firebase...');
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    console.log('📨 Response code:', responseCode);
+    console.log('📨 Response text:', responseText);
+
+    if (responseCode === 200) {
+      const result = JSON.parse(responseText);
+      console.log('✅ Login logged successfully! Firebase key:', result.name);
+      return {
+        success: true,
+        firebaseKey: result.name,
+        loginTime: loginTime
+      };
+    } else {
+      console.error('❌ Firebase login log error:', responseCode, responseText);
+      // Don't throw - we don't want to block login if logging fails
+      return {
+        success: false,
+        error: 'Firebase returned status ' + responseCode
+      };
+    }
+
+  } catch (error) {
+    console.error('❌ Error in logUserLogin:', error);
+    console.error('❌ Error stack:', error.stack);
+    // Don't throw - we don't want to block login if logging fails
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }

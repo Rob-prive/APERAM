@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 16px;
+        background: #fafafa;
+        font-size: 13px;
+      }
+      
+      h3 {
+        margin-top: 0;
+        margin-bottom: 14px;
+        color: #333;
+        font-size: 1.1em;
+      }
+      
+      form label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+        color: #333;
+        font-size: 0.9em;
+      }
+      
+      form input, form select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 8px;
+        margin-top: 3px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      
+      form input:focus, form select:focus {
+        outline: none;
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+      }
+      
+      .button-group {
+        margin-top: 14px;
+        display: flex;
+        gap: 6px;
+      }
+      
+      button {
+        padding: 7px 12px;
+        border-radius: 4px;
+        border: 1px solid #999;
+        cursor: pointer;
+        background: #eee;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+      
+      button:hover { 
+        background: #ddd; 
+      }
+      
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      
+      .btn-calculate {
+        background: #4CAF50;
+        color: white;
+        border-color: #45a049;
+        flex: 1;
+      }
+      
+      .btn-calculate:hover {
+        background: #45a049;
+      }
+      
+      .btn-save {
+        background: #FF9800;
+        color: white;
+        border-color: #F57C00;
+        font-weight: bold;
+        flex: 1;
+      }
+      
+      .btn-save:hover {
+        background: #F57C00;
+      }
+      
+      .btn-reset {
+        background: #f5f5f5;
+        color: #666;
+        border-color: #ddd;
+      }
+      
+      .btn-reset:hover {
+        background: #e0e0e0;
+      }
+
+      .result {
+        background: #f7f7f7;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 12px;
+        border-left: 3px solid #4CAF50;
+        font-size: 0.9em;
+        line-height: 1.6;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: bold;
+        text-align: center;
+        color: #000;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      
+      .qs0 { background: #e0e0e0; }
+      .qs1 { background: #b0d8ff; }
+      .qs2 { background: #ffcc80; }
+      .qs3 { background: #ff8a80; }
+
+      .error-msg {
+        background: #ffebee;
+        border: 1px solid #ef5350;
+        color: #c62828;
+        padding: 8px;
+        border-radius: 4px;
+        margin-top: 10px;
+        font-size: 0.85em;
+      }
+
+      .success-msg {
+        background: #e8f5e9;
+        border: 1px solid #66bb6a;
+        color: #2e7d32;
+        padding: 8px;
+        border-radius: 4px;
+        margin-top: 10px;
+        font-size: 0.85em;
+      }
+      
+      .loading {
+        text-align: center;
+        color: #666;
+        padding: 8px;
+      }
+      
+      .footer {
+        margin-top: 20px;
+        padding-top: 10px;
+        color: #666;
+        font-size: 11px;
+        border-top: 1px solid #e0e0e0;
+      }
+    </style>
+  </head>
+  <body>
+    <h3> Nieuw onderdeel toevoegen</h3>
+    
+    <form id="partForm">
+      <label>Naam *
+        <input name="Naam" required placeholder="Naam van het onderdeel">
+      </label>
+
+      <label>Remax of artikelnummer
+        <input name="RemaxNummer" placeholder="Optioneel">
+      </label>
+
+      <label>Kosten *
+        <select name="Kosten" required>
+          <option value="">-- Selecteer kostencategorie --</option>
+          <option value="Minder dan €1000">Minder dan €1000</option>
+          <option value="Tussen €1000 en €5000">Tussen €1000 en €5000</option>
+          <option value="Tussen €5000 en €10000">Tussen €5000 en €10000</option>
+          <option value="Meer dan €10000">Meer dan €10000</option>
+        </select>
+      </label>
+
+      <label>Levertijd *
+        <select name="Levertijd" required>
+          <option value="">-- Selecteer levertijd --</option>
+          <option value="1.5">Minder dan 2 weken</option>
+          <option value="4">Tussen 2 en 6 weken</option>
+          <option value="8">Tussen 6 en 10 weken</option>
+          <option value="12">Meer dan 10 weken</option>
+        </select>
+      </label>
+
+      <label>Faalfrequentie *
+        <select name="FalenFreq" required>
+          <option value="">-- Selecteer frequentie --</option>
+          <option value=">1/week">&gt; 1 per week</option>
+          <option value=">1/maand">&gt; 1 per maand</option>
+          <option value=">1/jaar">&gt; 1 per jaar</option>
+          <option value="<1/jaar">&lt; 1 per jaar</option>
+        </select>
+      </label>
+
+      <label>OTT-impact (uren) *
+        <select name="FalenSeverity" required>
+          <option value="">-- Selecteer impact --</option>
+          <option value="10">Meer dan 8 uren</option>
+          <option value="6">Tussen 2 en 8 uren</option>
+          <option value="1">Minder dan 2 uren</option>
+          <option value="0">Geen stop</option>
+        </select>
+      </label>
+
+      <label>Machine-criticaliteit
+        <select name="MachineCrit">
+          <option value="AA">AA (zeer hoog)</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C (laag)</option>
+        </select>
+      </label>
+
+      <div class="button-group">
+        <button type="button" class="btn-calculate" onclick="preview()">
+          Classificatie berekenen
+        </button>
+        <button type="button" class="btn-reset" onclick="resetForm()">
+          Reset
+        </button>
+      </div>
+      
+      <button type="button" class="btn-save" id="saveBtn" style="display:none; margin-top: 6px; width: 100%;" onclick="save()">
+        💾 Opslaan naar sheet
+      </button>
+    </form>
+
+    <div id="previewBox" class="result" style="display:none;"></div>
+    <div id="statusMsg"></div>
+
+    <div class="footer">
+      Oversteyns R. &nbsp;&nbsp;V1.5
+    </div>
+
+    <script>
+      function getFormData() {
+        const form = document.getElementById('partForm');
+        const data = {};
+        new FormData(form).forEach((v, k) => data[k] = v);
+        return data;
+      }
+
+      function colorClass(cat) {
+        if (!cat) return '';
+        const c = cat.toLowerCase();
+        if (c === 'qs0') return 'qs0';
+        if (c === 'qs1') return 'qs1';
+        if (c === 'qs2') return 'qs2';
+        if (c === 'qs3') return 'qs3';
+        return '';
+      }
+
+      function showStatus(msg, isError) {
+        const el = document.getElementById('statusMsg');
+        el.className = isError ? 'error-msg' : 'success-msg';
+        el.textContent = msg;
+        el.style.display = 'block';
+        
+        setTimeout(() => {
+          el.style.display = 'none';
+        }, 5000);
+      }
+
+      function preview() {
+        const data = getFormData();
+        const form = document.getElementById('partForm');
+        
+        // Validatie
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = 'Berekenen...';
+        
+        google.script.run
+          .withSuccessHandler(res => {
+            const el = document.getElementById('previewBox');
+            el.style.display = 'block';
+            el.innerHTML = `
+              <span class="badge ${colorClass(res.category)}">${res.category}</span>
+              Aankoopfactor: ${res.table1Index} | Risico: ${res.risk} | FunctieCrit: ${res.table2Index}
+            `;
+            
+            btn.disabled = false;
+            btn.textContent = 'Classificatie berekenen';
+            
+            // Toon opslaan knop
+            document.getElementById('saveBtn').style.display = 'block';
+          })
+          .withFailureHandler(err => {
+            showStatus('Fout bij berekenen: ' + err, true);
+            btn.disabled = false;
+            btn.textContent = 'Classificatie berekenen';
+            document.getElementById('saveBtn').style.display = 'none';
+          })
+          .classifyPart(data);
+      }
+
+      function save() {
+        const data = getFormData();
+        const form = document.getElementById('partForm');
+        
+        // Validatie
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = '💾 Bezig met opslaan...';
+        
+        google.script.run
+          .withSuccessHandler(res => {
+            showStatus('✓ Onderdeel opgeslagen als ' + res.category + '!', false);
+            
+            // Wacht 1.5 seconden en sluit dan de popup
+            setTimeout(() => {
+              google.script.host.close();
+            }, 1500);
+          })
+          .withFailureHandler(err => {
+            showStatus('Fout bij opslaan: ' + err, true);
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 Opslaan naar sheet';
+          })
+          .savePart(data);
+      }
+
+      function resetForm() {
+        const form = document.getElementById('partForm');
+        form.reset();
+        
+        const previewBox = document.getElementById('previewBox');
+        previewBox.style.display = 'none';
+        previewBox.innerHTML = '';
+        
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.style.display = 'none';
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 Opslaan naar sheet';
+        
+        document.getElementById('statusMsg').style.display = 'none';
+      }
+    </script>
+  </body>
+</html>
