@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+/* ==============================================
+   ANIMATIE: WEAVING + FADE TO WHITE ENDING
+   ============================================== */
+body {
+    background: #111; /* Start donker */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: sans-serif;
+    overflow: hidden;
+
+    /* NIEUW: Animatie die het hele scherm wit maakt op het einde */
+    /* Start na 5s (na de bounce), duurt 2.5s */
+    animation: screenToWhite 2.5s ease-in forwards 5s;
+}
+
+.container {
+    position: relative;
+    width: 1100px; 
+    height: 160px;
+}
+
+/* --- BASIS SLICE STIJLEN --- */
+.slice {
+    position: absolute;
+    width: 100%;
+    height: calc(100% / 30);
+    left: 0;
+    top: calc(var(--i) * (100% / 30)); 
+    overflow: hidden;
+    /* Delay voor beweging */
+    animation-delay: calc(var(--i) * 0.05s) !important;
+}
+
+/* --- BASIS TEKST STIJLEN --- */
+.slice span {
+    position: absolute;
+    font-size: 140px;
+    line-height: 160px; 
+    font-weight: 900;
+    width: 100%;        
+    text-align: center; 
+    left: 0;
+    top: calc(var(--i) * -1 * (160px / 30)); 
+    
+    /* Kleur animatie (van zwart naar wit) */
+    color: #111; 
+    animation: fadeInColor 3s ease-in-out forwards;
+    animation-delay: calc(var(--i) * 0.05s);
+}
+
+/* --- ANIMATIES --- */
+
+/* 1. Beweging van LINKS */
+@keyframes slideFromLeft {
+    from { transform: translateX(-120%); }
+    to   { transform: translateX(0); }
+}
+
+/* 2. Beweging van RECHTS */
+@keyframes slideFromRight {
+    from { transform: translateX(120%); } 
+    to   { transform: translateX(0); }
+}
+
+/* 3. Kleur fade-in (Tekst wordt wit) */
+@keyframes fadeInColor {
+    from { color: #111; }
+    to   { color: white; }
+}
+
+/* 4. NIEUW: Achtergrond naar Wit (Eind animatie) */
+@keyframes screenToWhite {
+    from { background: #111; }
+    to   { background: #ffffff; }
+}
+
+/* --- TOEPASSING OP EVEN/ONEVEN LIJNEN --- */
+.slice:nth-child(odd) {
+    transform: translateX(-120%);
+    animation: slideFromLeft 3s ease-in-out forwards;
+}
+
+.slice:nth-child(even) {
+    transform: translateX(120%);
+    animation: slideFromRight 3s ease-in-out forwards;
+}
+
+/* --- FINALE BOUNCE & SHAKE --- */
+@keyframes bounce {
+    0%   { transform: translateY(-25px); }
+    40%  { transform: translateY(10px); }
+    70%  { transform: translateY(-6px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes shake {
+    0%   { transform: translateX(0); }
+    25%  { transform: translateX(3px); }
+    50%  { transform: translateX(-3px); }
+    75%  { transform: translateX(2px); }
+    100% { transform: translateX(0); }
+}
+
+.container {
+    animation: bounce 0.6s ease-out 4.2s forwards,
+               shake 0.25s ease-in-out 4.8s;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <script>
+        for (let i = 0; i < 30; i++) {
+            document.write(
+                '<div class="slice" style="--i:' + i + '">' +
+                    '<span>RELIABILITY</span>' +
+                '</div>'
+            );
+        }
+    </script>
+</div>
+
+</body>
+</html>

@@ -1,5 +1,5 @@
 // ===== Google Apps Script Backend =====
-// Version: 2.40.1-LOGIN-VERSION-DISPLAY
+// Version: 2.40.2-INTRO-ANIMATION
 // Last Updated: November 2025
 
 // ===== CONFIGURATION =====
