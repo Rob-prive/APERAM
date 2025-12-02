@@ -9,7 +9,7 @@
 > 🔧 **Voor developers en IT**: Deze Readme bevat technische documentatie, architectuur en ontwikkelingsgeschiedenis.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.43.0-RIMSES-OPLEIDING-MENU
+- **JavaScript Versie**: 2.43.1-WHATS-NEW-PDF
 - **CSS Versie**: 1.3.1
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (4 databases)
@@ -40,10 +40,10 @@ aanvragen-rimses/
 ├── Readme.html                  # Technische documentatie (dit bestand)
 ├── Handleiding.html             # Gebruikershandleiding (nieuw!)
 ├── Index.html                   # Main HTML bestand
-├── JavaScript.html              # React applicatie code (v2.43.0)
+├── JavaScript.html              # React applicatie code (v2.43.1)
 ├── Stylesheet.html              # CSS styles (v1.3.1)
 ├── debug.html                   # Debug & test panel (alleen voor Super Users)
-└── Code.js                      # Google Apps Script backend (v2.43.0)
+└── Code.js                      # Google Apps Script backend (v2.43.1)
 ```
 
 **Belangrijke Bestanden:**
@@ -830,6 +830,28 @@ const [data, setData] = React.useState(value); // In-memory state
 ---
 
 ## 📦 Version History & Breaking Changes
+
+### v2.43.1-WHATS-NEW-PDF
+**Release Date**: December 2, 2025
+
+**Feature: PDF Embed in What's New Page 📄**
+- ✅ **Google Drive PDF embed** - Release notes document embedded in What's New page
+- 📋 **Iframe viewer** - Full PDF viewer (600px height) with native Google Drive controls
+- 🎨 **Styled container** - Blue header with document icon and title
+- 🔗 **Shared access** - PDF accessible for entire department via Google Drive sharing
+
+**Implementatie:**
+- [JavaScript.html:4574-4606](JavaScript.html#L4574-L4606) - PDF iframe container with styled header
+- Google Drive file ID: `17xbJT3qAgF8zUcpdKxEX2MUZkBM_Eewl`
+- Embed URL: `https://drive.google.com/file/d/17xbJT3qAgF8zUcpdKxEX2MUZkBM_Eewl/preview`
+
+**Technical Details:**
+- 🔧 **Google Drive preview URL** - Converted from `/view` to `/preview` format
+- 🔧 **Responsive iframe** - 100% width, 600px height
+- 🔧 **No border styling** - Clean integration with page layout
+- 🔧 **Allow autoplay** - Required for some PDF features
+
+---
 
 ### v2.43.0-RIMSES-OPLEIDING-MENU
 **Release Date**: December 2, 2025
