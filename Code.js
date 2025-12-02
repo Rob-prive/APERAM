@@ -2805,6 +2805,61 @@ function saveCriticalityPart(data) {
 }
 
 /**
+ * Update criticality status in Firebase
+ * @param {string} firebaseKey - Firebase key of the record
+ * @param {string} newStatus - New status value (e.g., 'Behandeld')
+ */
+function updateCriticalityStatus(firebaseKey, newStatus) {
+  try {
+    console.log('🔄 [updateCriticalityStatus] Updating status...');
+    console.log('🔑 Firebase key:', firebaseKey);
+    console.log('📝 New status:', newStatus);
+
+    if (!firebaseKey || !newStatus) {
+      throw new Error('Firebase key and new status are required');
+    }
+
+    // Update only the Status field in Firebase
+    const url = FIREBASE_CRITICALITY_URL + '/SpareParts/' + firebaseKey + '.json?auth=' + FIREBASE_CRITICALITY_SECRET;
+
+    const payload = JSON.stringify({
+      Status: newStatus
+    });
+
+    const options = {
+      method: 'patch',  // PATCH only updates specified fields
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    };
+
+    console.log('📡 Sending PATCH request to Firebase...');
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    console.log('📨 Response code:', responseCode);
+    console.log('📨 Response text:', responseText);
+
+    if (responseCode === 200) {
+      console.log('✅ Status updated successfully to:', newStatus);
+      return {
+        success: true,
+        message: 'Status updated to ' + newStatus
+      };
+    } else {
+      console.error('❌ Firebase error:', responseCode, responseText);
+      throw new Error('Firebase returned status ' + responseCode + ': ' + responseText);
+    }
+
+  } catch (error) {
+    console.error('❌ Error in updateCriticalityStatus:', error);
+    console.error('❌ Error stack:', error.stack);
+    throw new Error('Fout bij updaten status: ' + error.message);
+  }
+}
+
+/**
  * Log user login to Firebase
  * @param {string} username - Username that logged in
  */

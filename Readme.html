@@ -9,7 +9,7 @@
 > 🔧 **Voor developers en IT**: Deze Readme bevat technische documentatie, architectuur en ontwikkelingsgeschiedenis.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.41.0-CRITICALITY-FILTERS
+- **JavaScript Versie**: 2.42.0-CRITICALITY-STATUS-UPDATE
 - **CSS Versie**: 1.3.1
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (4 databases)
@@ -40,10 +40,10 @@ aanvragen-rimses/
 ├── Readme.html                  # Technische documentatie (dit bestand)
 ├── Handleiding.html             # Gebruikershandleiding (nieuw!)
 ├── Index.html                   # Main HTML bestand
-├── JavaScript.html              # React applicatie code (v2.41.0)
+├── JavaScript.html              # React applicatie code (v2.42.0)
 ├── Stylesheet.html              # CSS styles (v1.3.1)
 ├── debug.html                   # Debug & test panel (alleen voor Super Users)
-└── Code.js                      # Google Apps Script backend (v2.41.0)
+└── Code.js                      # Google Apps Script backend (v2.42.0)
 ```
 
 **Belangrijke Bestanden:**
@@ -830,6 +830,36 @@ const [data, setData] = React.useState(value); // In-memory state
 ---
 
 ## 📦 Version History & Breaking Changes
+
+### v2.42.0-CRITICALITY-STATUS-UPDATE
+**Release Date**: December 2, 2025
+
+**Feature: Status Update Button in Criticaliteit Detail Modal 🔄**
+- ✅ **"Behandeld" button** - Nieuwe knop in detail modal bij Status veld
+- 🟢 **Groene badge** - "Behandeld" status krijgt groene achtergrond zoals "Voltooid"
+- ⚡ **Optimistic UI** - Direct visuele feedback, database update op achtergrond
+- 🔄 **Firebase PATCH** - Alleen Status veld wordt geüpdatet (efficient)
+- 🎯 **Conditional rendering** - Knop verdwijnt voor "Behandeld" en "Voltooid" statussen
+- ⏪ **Auto-revert** - Bij fout automatisch data refresh en error melding
+
+**Implementatie:**
+- [JavaScript.html:1023-1052](JavaScript.html#L1023-L1052) - `handleMarkAsBehandeld()` functie met optimistic update
+- [JavaScript.html:7559-7592](JavaScript.html#L7559-L7592) - Status sectie in detail modal met button
+- [JavaScript.html:4828-4838](JavaScript.html#L4828-L4838) - Groene styling voor "Behandeld" in tabel
+- [Code.js:2812-2860](Code.js#L2812-L2860) - `updateCriticalityStatus()` backend functie
+
+**Status Kleuren:**
+- 🟢 **Groen** (`#c8e6c9`): "Voltooid", "Behandeld"
+- 🟡 **Geel** (`#fff3cd`): "In behandeling"
+- ⚪ **Grijs** (`#e0e0e0`): Andere statussen
+
+**Technical Details:**
+- 🔧 **Optimistic UI pattern** - UI update onmiddellijk, backend async
+- 🔧 **Firebase PATCH method** - Alleen gewijzigd veld versturen
+- 🔧 **Error handling** - Revert bij failure met user notification
+- 🔧 **State synchronization** - Updates zowel tabel als detail modal
+
+---
 
 ### v2.41.0-CRITICALITY-FILTERS
 **Release Date**: December 2, 2025
