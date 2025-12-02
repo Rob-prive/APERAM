@@ -1,5 +1,5 @@
 <script type="text/babel">
-//version = "2.40.2-INTRO-ANIMATION";
+//version = "2.41.0-CRITICALITY-FILTERS";
   function App() {
     // Intro animation state
     const [showIntroAnimation, setShowIntroAnimation] = React.useState(true);
@@ -48,6 +48,18 @@
     });
     const [criticalityPreview, setCriticalityPreview] = React.useState(null);
     const [isSavingCriticality, setIsSavingCriticality] = React.useState(false);
+
+    // Criticaliteit filters state
+    const [criticalityFilters, setCriticalityFilters] = React.useState({
+      id: '',
+      naam: '',
+      remaxNummer: '',
+      categorie: '',
+      machineCrit: '',
+      risico: '',
+      status: '',
+      user: ''
+    });
 
     // Users management state
     const [users, setUsers] = React.useState([]);
@@ -155,9 +167,9 @@
     const [aanvragen, setAanvragen] = React.useState([]);
     const [isLoadingAanvragen, setIsLoadingAanvragen] = React.useState(false);
 
-    const version = "2.40.2-INTRO-ANIMATION";
+    const version = "2.41.0-CRITICALITY-FILTERS";
     const stylesheetVersion = "1.3.1";
-    const versionNumber = version.split('-')[0]; // Extract only the numeric version (e.g., "2.40.2")
+    const versionNumber = version.split('-')[0]; // Extract only the numeric version (e.g., "2.41.0")
 
     // ===== INTRO ANIMATION EFFECT =====
 
@@ -442,6 +454,13 @@
       }));
     };
 
+    const handleCriticalityFilterChange = (filterName, value) => {
+      setCriticalityFilters(prev => ({
+        ...prev,
+        [filterName]: value
+      }));
+    };
+
     const clearFilters = () => {
       setFilters({
         code: '',
@@ -674,6 +693,72 @@
       return filtered;
     }, [processedAanvragen, userRole, username, aanvraagFilters.naam, aanvraagFilters.datum, aanvraagFilters.aanvrager, aanvraagFilters.autorisator, aanvraagFilters.status]);
 
+    // Pre-compute cached fields for criticaliteit data (parsing JSON, formatting dates)
+    const processedCriticalityData = React.useMemo(() => {
+      if (!criticalityData || criticalityData.length === 0) return [];
+
+      return criticalityData.map(item => ({
+        ...item,
+        _id: String(item.ID || '').toLowerCase(),
+        _naam: String(item.Naam || '').toLowerCase(),
+        _remaxNummer: String(item.RemaxNummer || '').toLowerCase(),
+        _categorie: String(item.Categorie || '').toLowerCase(),
+        _machineCrit: String(item.MachineCrit || '').toLowerCase(),
+        _risico: String(item.Risico || '').toLowerCase(),
+        _status: String(item.Status || '').toLowerCase(),
+        _user: String(item.User || '').toLowerCase()
+      }));
+    }, [criticalityData]);
+
+    // Filter criticaliteit data using cached fields
+    const filteredCriticalityData = React.useMemo(() => {
+      if (!processedCriticalityData || processedCriticalityData.length === 0) return [];
+
+      let filtered = processedCriticalityData;
+
+      if (criticalityFilters.id) {
+        const searchText = criticalityFilters.id.toLowerCase();
+        filtered = filtered.filter(item => item._id.includes(searchText));
+      }
+
+      if (criticalityFilters.naam) {
+        const searchText = criticalityFilters.naam.toLowerCase();
+        filtered = filtered.filter(item => item._naam.includes(searchText));
+      }
+
+      if (criticalityFilters.remaxNummer) {
+        const searchText = criticalityFilters.remaxNummer.toLowerCase();
+        filtered = filtered.filter(item => item._remaxNummer.includes(searchText));
+      }
+
+      if (criticalityFilters.categorie) {
+        const searchText = criticalityFilters.categorie.toLowerCase();
+        filtered = filtered.filter(item => item._categorie.includes(searchText));
+      }
+
+      if (criticalityFilters.machineCrit) {
+        const searchText = criticalityFilters.machineCrit.toLowerCase();
+        filtered = filtered.filter(item => item._machineCrit.includes(searchText));
+      }
+
+      if (criticalityFilters.risico) {
+        const searchText = criticalityFilters.risico.toLowerCase();
+        filtered = filtered.filter(item => item._risico.includes(searchText));
+      }
+
+      if (criticalityFilters.status) {
+        const searchText = criticalityFilters.status.toLowerCase();
+        filtered = filtered.filter(item => item._status.includes(searchText));
+      }
+
+      if (criticalityFilters.user) {
+        const searchText = criticalityFilters.user.toLowerCase();
+        filtered = filtered.filter(item => item._user.includes(searchText));
+      }
+
+      return filtered;
+    }, [processedCriticalityData, criticalityFilters.id, criticalityFilters.naam, criticalityFilters.remaxNummer, criticalityFilters.categorie, criticalityFilters.machineCrit, criticalityFilters.risico, criticalityFilters.status, criticalityFilters.user]);
+
 	// ===== EFFECTS =====
 
     React.useEffect(() => {
@@ -685,6 +770,11 @@
     React.useEffect(() => {
       setCurrentPage(1);
     }, [filters, selectedInstallation]);
+
+    // Reset criticaliteit page to 1 when filters change
+    React.useEffect(() => {
+      setCriticalityCurrentPage(1);
+    }, [criticalityFilters]);
 
     // VERWIJDERD: Username prefetch voor installaties - niet meer nodig
     // VERWIJDERD: getUserName() call - gebruiken nu de login username direct
@@ -4307,7 +4397,7 @@
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <span style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
-                              Totaal: {criticalityData.length} items (Pagina {criticalityCurrentPage} van {Math.ceil(criticalityData.length / criticalityItemsPerPage)})
+                              Totaal: {filteredCriticalityData.length} items (Pagina {criticalityCurrentPage} van {Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage)})
                             </span>
                             <button
                               onClick={handleOpenAddCriticalityModal}
@@ -4462,9 +4552,205 @@
                                   zIndex: 10
                                 }}>User</th>
                               </tr>
+                              <tr>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Filter ID..."
+                                    value={criticalityFilters.id}
+                                    onChange={(e) => handleCriticalityFilterChange('id', e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '4px 6px',
+                                      fontSize: '11px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                </th>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Filter Naam..."
+                                    value={criticalityFilters.naam}
+                                    onChange={(e) => handleCriticalityFilterChange('naam', e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '4px 6px',
+                                      fontSize: '11px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                </th>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Filter Remax..."
+                                    value={criticalityFilters.remaxNummer}
+                                    onChange={(e) => handleCriticalityFilterChange('remaxNummer', e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '4px 6px',
+                                      fontSize: '11px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                </th>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Filter Cat..."
+                                    value={criticalityFilters.categorie}
+                                    onChange={(e) => handleCriticalityFilterChange('categorie', e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '4px 6px',
+                                      fontSize: '11px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                </th>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Filter Mach..."
+                                    value={criticalityFilters.machineCrit}
+                                    onChange={(e) => handleCriticalityFilterChange('machineCrit', e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '4px 6px',
+                                      fontSize: '11px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                </th>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Filter Risico..."
+                                    value={criticalityFilters.risico}
+                                    onChange={(e) => handleCriticalityFilterChange('risico', e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '4px 6px',
+                                      fontSize: '11px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                </th>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Filter Status..."
+                                    value={criticalityFilters.status}
+                                    onChange={(e) => handleCriticalityFilterChange('status', e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '4px 6px',
+                                      fontSize: '11px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                </th>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  {/* Datum - geen filter */}
+                                </th>
+                                <th style={{
+                                  padding: '4px',
+                                  backgroundColor: '#fafafa',
+                                  borderBottom: '1px solid #ddd',
+                                  position: 'sticky',
+                                  top: '42px',
+                                  zIndex: 9
+                                }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Filter User..."
+                                    value={criticalityFilters.user}
+                                    onChange={(e) => handleCriticalityFilterChange('user', e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '4px 6px',
+                                      fontSize: '11px',
+                                      border: '1px solid #ddd',
+                                      borderRadius: '3px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                </th>
+                              </tr>
                             </thead>
                             <tbody>
-                              {criticalityData
+                              {filteredCriticalityData
                                 .slice((criticalityCurrentPage - 1) * criticalityItemsPerPage, criticalityCurrentPage * criticalityItemsPerPage)
                                 .map((item, index) => (
                                 <tr key={item.firebaseKey || index} style={{
@@ -4603,18 +4889,18 @@
                             fontWeight: '600',
                             color: '#333'
                           }}>
-                            Pagina {criticalityCurrentPage} van {Math.ceil(criticalityData.length / criticalityItemsPerPage)}
+                            Pagina {criticalityCurrentPage} van {Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage)}
                           </span>
                           <button
-                            onClick={() => setCriticalityCurrentPage(prev => Math.min(Math.ceil(criticalityData.length / criticalityItemsPerPage), prev + 1))}
-                            disabled={criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage)}
+                            onClick={() => setCriticalityCurrentPage(prev => Math.min(Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage), prev + 1))}
+                            disabled={criticalityCurrentPage >= Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage)}
                             style={{
                               padding: '8px 12px',
                               border: '1px solid #ddd',
                               borderRadius: '4px',
-                              backgroundColor: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? '#f5f5f5' : 'white',
-                              color: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? '#999' : '#333',
-                              cursor: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? 'not-allowed' : 'pointer',
+                              backgroundColor: criticalityCurrentPage >= Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage) ? '#f5f5f5' : 'white',
+                              color: criticalityCurrentPage >= Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage) ? '#999' : '#333',
+                              cursor: criticalityCurrentPage >= Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage) ? 'not-allowed' : 'pointer',
                               fontSize: '14px',
                               fontWeight: '500'
                             }}
@@ -4622,15 +4908,15 @@
                             Volgende &rsaquo;
                           </button>
                           <button
-                            onClick={() => setCriticalityCurrentPage(Math.ceil(criticalityData.length / criticalityItemsPerPage))}
-                            disabled={criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage)}
+                            onClick={() => setCriticalityCurrentPage(Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage))}
+                            disabled={criticalityCurrentPage >= Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage)}
                             style={{
                               padding: '8px 12px',
                               border: '1px solid #ddd',
                               borderRadius: '4px',
-                              backgroundColor: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? '#f5f5f5' : 'white',
-                              color: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? '#999' : '#333',
-                              cursor: criticalityCurrentPage >= Math.ceil(criticalityData.length / criticalityItemsPerPage) ? 'not-allowed' : 'pointer',
+                              backgroundColor: criticalityCurrentPage >= Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage) ? '#f5f5f5' : 'white',
+                              color: criticalityCurrentPage >= Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage) ? '#999' : '#333',
+                              cursor: criticalityCurrentPage >= Math.ceil(filteredCriticalityData.length / criticalityItemsPerPage) ? 'not-allowed' : 'pointer',
                               fontSize: '14px',
                               fontWeight: '500'
                             }}

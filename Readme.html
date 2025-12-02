@@ -9,7 +9,7 @@
 > 🔧 **Voor developers en IT**: Deze Readme bevat technische documentatie, architectuur en ontwikkelingsgeschiedenis.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.40.2-INTRO-ANIMATION
+- **JavaScript Versie**: 2.41.0-CRITICALITY-FILTERS
 - **CSS Versie**: 1.3.1
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (4 databases)
@@ -40,10 +40,10 @@ aanvragen-rimses/
 ├── Readme.html                  # Technische documentatie (dit bestand)
 ├── Handleiding.html             # Gebruikershandleiding (nieuw!)
 ├── Index.html                   # Main HTML bestand
-├── JavaScript.html              # React applicatie code (v2.40.2)
+├── JavaScript.html              # React applicatie code (v2.41.0)
 ├── Stylesheet.html              # CSS styles (v1.3.1)
 ├── debug.html                   # Debug & test panel (alleen voor Super Users)
-└── Code.js                      # Google Apps Script backend (v2.40.2)
+└── Code.js                      # Google Apps Script backend (v2.41.0)
 ```
 
 **Belangrijke Bestanden:**
@@ -830,6 +830,34 @@ const [data, setData] = React.useState(value); // In-memory state
 ---
 
 ## 📦 Version History & Breaking Changes
+
+### v2.41.0-CRITICALITY-FILTERS
+**Release Date**: December 2, 2025
+
+**Feature: Column Filters voor Criticaliteit Tabel 🔍**
+- ✅ **Filter inputs** - Filter row toegevoegd onder alle column headers
+- 🎯 **Real-time filtering** - Direct filteren tijdens het typen zonder focus loss
+- ⚡ **Performance optimized** - useMemo met pre-computed cache voor snelle filtering
+- 📊 **8 Filter velden** - ID, Naam, Remax, Categorie, Mach. Crit, Risico, Status, User
+- 📄 **Paginatie update** - Gebruikt gefilterde data voor accurate page counts
+- 🔄 **Auto page reset** - Pagina wordt automatisch gereset naar 1 bij filter wijziging
+
+**Implementatie:**
+- [JavaScript.html:52-62](JavaScript.html#L52-L62) - `criticalityFilters` state toegevoegd
+- [JavaScript.html:457-462](JavaScript.html#L457-L462) - `handleCriticalityFilterChange` handler
+- [JavaScript.html:696-760](JavaScript.html#L696-L760) - `processedCriticalityData` en `filteredCriticalityData` useMemo hooks
+- [JavaScript.html:774-777](JavaScript.html#L774-L777) - useEffect om pagina te resetten bij filter change
+- [JavaScript.html:4550-4745](JavaScript.html#L4550-L4745) - Filter input row met sticky positioning
+- [JavaScript.html:4748](JavaScript.html#L4748) - tbody gebruikt `filteredCriticalityData`
+- [JavaScript.html:4395,4887,4890-4914](JavaScript.html#L4395) - Paginatie gebruikt gefilterde data
+
+**Technical Details:**
+- 🔧 **Sticky headers** - Filter row blijft zichtbaar tijdens scrolling (position: sticky, top: 42px)
+- 🔧 **Cache optimization** - Pre-computed lowercase strings (_id, _naam, etc.) voor snelle comparison
+- 🔧 **Individual dependencies** - useMemo gebruikt separate filter properties voor optimale performance
+- 🔧 **Table key stability** - Gebruikt firebaseKey voor stabiele React keys (geen data.length)
+
+---
 
 ### 🎯 Sessie Overzicht: December 2, 2025 (Continuation)
 
