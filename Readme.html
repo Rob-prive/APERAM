@@ -9,7 +9,7 @@
 > 🔧 **Voor developers en IT**: Deze Readme bevat technische documentatie, architectuur en ontwikkelingsgeschiedenis.
 
 ### Versie Informatie
-- **JavaScript Versie**: 2.42.0-CRITICALITY-STATUS-UPDATE
+- **JavaScript Versie**: 2.43.0-RIMSES-OPLEIDING-MENU
 - **CSS Versie**: 1.3.1
 - **Framework**: React (via Babel transpiler in browser)
 - **Backend**: Google Apps Script + Firebase (4 databases)
@@ -40,10 +40,10 @@ aanvragen-rimses/
 ├── Readme.html                  # Technische documentatie (dit bestand)
 ├── Handleiding.html             # Gebruikershandleiding (nieuw!)
 ├── Index.html                   # Main HTML bestand
-├── JavaScript.html              # React applicatie code (v2.42.0)
+├── JavaScript.html              # React applicatie code (v2.43.0)
 ├── Stylesheet.html              # CSS styles (v1.3.1)
 ├── debug.html                   # Debug & test panel (alleen voor Super Users)
-└── Code.js                      # Google Apps Script backend (v2.42.0)
+└── Code.js                      # Google Apps Script backend (v2.43.0)
 ```
 
 **Belangrijke Bestanden:**
@@ -830,6 +830,38 @@ const [data, setData] = React.useState(value); // In-memory state
 ---
 
 ## 📦 Version History & Breaking Changes
+
+### v2.43.0-RIMSES-OPLEIDING-MENU
+**Release Date**: December 2, 2025
+
+**Feature: Rimses Opleiding Training Menu 🎓**
+- ✅ **New menu "Rimses Opleiding"** - Dedicated training and documentation section
+- 📚 **5 submenu items** - Basiskennis, Zoekfuncties, Uitvoeringsrol, Rimses Safety, What's New
+- 👥 **Visible for all users** - No role restrictions, accessible to everyone
+- 🎓 **Graduation cap icon** - Clean SVG icon representing training/education
+- 📄 **Content pages** - Each submenu has dedicated content with styling
+- 🎨 **Active state highlighting** - Selected submenu item shows with light blue background
+
+**Submenu Content:**
+1. **Basiskennis** - Introduction to Rimses locking system fundamentals
+2. **Zoekfuncties** - Search techniques and filter usage
+3. **Uitvoeringsrol** - Roles and responsibilities within the system
+4. **Rimses Safety** - Safety protocols and LOTO procedures (orange accent)
+5. **What's New** - Recent updates and version history (green accent)
+
+**Implementatie:**
+- [JavaScript.html:31-33](JavaScript.html#L31-L33) - Opleiding menu state variables
+- [JavaScript.html:4340-4440](JavaScript.html#L4340-L4440) - Main menu button and submenu structure
+- [JavaScript.html:4470-4596](JavaScript.html#L4470-L4596) - Content pages for all 5 submenu items
+
+**Technical Details:**
+- 🔧 **Graduation cap SVG** - Material Design icon (24x24 viewBox)
+- 🔧 **No role restrictions** - Unlike Admin menu, visible to all authenticated users
+- 🔧 **Expandable structure** - Same pattern as Admin menu with arrow rotation
+- 🔧 **Active state management** - `activeOpleidingView` tracks selected submenu
+- 🔧 **Content container** - Centralized, scrollable content area with consistent styling
+
+---
 
 ### v2.42.0-CRITICALITY-STATUS-UPDATE
 **Release Date**: December 2, 2025
