@@ -1766,7 +1766,7 @@
                   fontSize: '20px',
                   fontWeight: '600'
                 }}>
-                  Aanvragen Rimses
+                  RIMSES CMMS
                 </h3>
                 <p style={{
                   margin: 0,
@@ -4230,6 +4230,8 @@
                 onClick={() => {
                   setActiveCriticaliteitView(false);
                   setActiveAdminView(null);
+                  setActiveOpleidingView(null);
+                  setIsOpleidingMenuExpanded(false);
                 }}
               >
                 <span className="icon">
@@ -4249,6 +4251,8 @@
                   setActiveCriticaliteitView(true);
                   setActiveAdminView(null);
                   setIsAdminMenuExpanded(false);
+                  setActiveOpleidingView(null);
+                  setIsOpleidingMenuExpanded(false);
                   fetchCriticalityData();
                 }}
               >
@@ -4309,6 +4313,8 @@
                       onClick={() => {
                         setActiveAdminView('users');
                         setActiveCriticaliteitView(false);
+                        setActiveOpleidingView(null);
+                        setIsOpleidingMenuExpanded(false);
                         fetchUsers();
                       }}
                       style={{
