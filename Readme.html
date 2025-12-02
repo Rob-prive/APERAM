@@ -831,7 +831,7 @@ const [data, setData] = React.useState(value); // In-memory state
 
 ## 📦 Version History & Breaking Changes
 
-### 🎯 Sessie Overzicht: November 25, 2025 (Deel 2)
+### 🎯 Sessie Overzicht: December 2, 2025 (Continuation)
 
 Deze ontwikkelsessie (v2.35.1 → v2.40.2) bevatte de volledige implementatie van het **Criticaliteit Management Systeem**, **Login Logging**, en **Intro Animatie**:
 
@@ -844,17 +844,35 @@ Deze ontwikkelsessie (v2.35.1 → v2.40.2) bevatte de volledige implementatie va
 - ✅ **Date Formatting** - Human-readable datum (DD MMM YYYY)
 - ✅ **Sticky Headers** - Proper positioning zonder overlap
 - ✅ **Pagination** - 20 items per pagina met navigation controls
-- ✅ **Add Button** - '+' knop voor nieuwe criticaliteit ingave (voorbereid)
+- ✅ **Add Criticaliteit Modal** - Complete 3-table classification system (v2.39.0)
+- ✅ **Login Logging** - Automatic Firebase logging of all logins (v2.40.0)
+- ✅ **Clean Version Display** - Login screen shows numeric version only (v2.40.1)
+- ✅ **RELIABILITY Intro Animation** - Branded splash screen (v2.40.2)
 
 **Technical Improvements:**
 - 🔧 **Sticky Header Fix** - Per-cell positioning i.p.v. thead-level
 - 🔧 **Date Helper Function** - `formatCriticalityDate()` voor consistente formatting
 - 🔧 **Pagination Logic** - `.slice()` based page filtering
 - 🔧 **Color-coding System** - Consistent badge styling voor alle categorieën
+- 🔧 **3-Table Classification** - Cost/Delivery → Risk → Function Crit → QS Category
+- 🔧 **Login Audit Trail** - Non-blocking Firebase logging with timestamp and username
+- 🔧 **State Management** - showIntroAnimation state with useEffect timer (7.5s)
 
 **Database Structure:**
 - 📊 Firebase Criticality path: `/SpareParts` (root level)
-- 📊 10 records met ID, Naam, RemaxNummer, Categorie, Machine Crit, Risico, Status, etc.
+- 📊 Firebase Login Log path: `/logins` (timestamp-based IDs)
+- 📊 Criticality records: ID, Naam, RemaxNummer, Categorie, Machine Crit, Risico, Status, etc.
+- 📊 Login records: ID (timestamp), LoginTime (formatted), Username
+
+**Key Implementation Files:**
+- `Code.js:2807-2882` - logUserLogin() function
+- `Code.js:2737-2805` - saveCriticalityPart() function
+- `JavaScript.html:5` - showIntroAnimation state
+- `JavaScript.html:165-173` - Intro animation timer effect
+- `JavaScript.html:212-313` - classifyPart() 3-table algorithm
+- `JavaScript.html:3898-4006` - Intro animation component (30 slices)
+- `JavaScript.html:7167-7367` - Add Criticaliteit modal
+- `Slide.html` - Standalone animation reference file
 
 ---
 
